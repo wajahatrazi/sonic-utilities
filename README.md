@@ -3,7 +3,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/sonic-net/sonic-utilities.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/sonic-net/sonic-utilities/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/sonic-net/sonic-utilities.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/sonic-net/sonic-utilities/context:python)
 
-*sonic-utilities builds:*
+*sonic-utilities builds:::*
 
 [![master build](https://dev.azure.com/mssonic/build/_apis/build/status/Azure.sonic-utilities?branchName=master&label=master)](https://dev.azure.com/mssonic/build/_build/latest?definitionId=55&branchName=master)
 
