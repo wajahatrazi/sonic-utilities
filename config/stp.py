@@ -41,6 +41,8 @@ MST_MAX_INSTANCES = 63
 MST_DEFAULT_INSTANCE = 0
 
 
+
+
 @click.group(cls=clicommon.AbbreviationGroup, name='spanning_tree')
 def spanning_tree():
     """Multiple spanning tree related configurations"""
