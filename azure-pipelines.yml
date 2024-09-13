@@ -10,8 +10,8 @@ resources:
   repositories:
   - repository: sonic-swss
     type: github
-    name: wajahatrazi/sonic-swss
-    endpoint: wajahatrazi
+    name: sonic-net/sonic-swss
+    endpoint: sonic-net
 
 variables:
   - name: BUILD_BRANCH
