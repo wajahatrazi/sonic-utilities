@@ -53,22 +53,6 @@ MST_SHARED_LINK_TYPE = 'shared'
 # Functions
 #=============================================
 
-# GETTING INTERFACES IN VLAN MEMBER TABLE
-def get_intf_list_in_vlan_member_table(db):
-    config_db = ValidatedConfigDBConnector(db.cfgdb)
-    config_db.connect()
-
-    get_intf_vlan_info_from_configdb = config_db.get_table('VLAN_MEMBER')
-
-    intf_list = []
-    for key in get_intf_vlan_info_from_configdb:
-        interface = key[1]
-        if interface not in intf_list:
-            intf_list.append(interface)
-    
-    return intf_list
-
-
 # GETTING GLOBAL STP MODE FROM THE STP GLOBAL TABLE
 def get_global_stp_mode(ctx, db):
     config_db = ValidatedConfigDBConnector(db.cfgdb)
@@ -84,14 +68,42 @@ def get_global_stp_mode(ctx, db):
     return mode
 
 
-def enable_mst_for_ports(ctx, db):
-    # Enabling MST for all ports and portchannels
+
+
+
+
+
+def stp_global_table_update_for_mst(ctx, db):
+    config_db = ValidatedConfigDBConnector(db.cfgdb)
+    config_db.connect()
+
+    fvs_stp_global_table_for_mst = {
+            'mode': 'mst',
+            'rootguard_timeout': MST_DEFAULT_ROOT_GUARD_TIMEOUT,
+            'forward_delay': MST_DEFAULT_FORWARD_DELAY, 
+            'hello_time': MST_DEFAULT_HELLO_INTERVAL,
+            'max_age': MST_DEFAULT_MAX_AGE,
+            'priority': MST_DEFAULT_BRIDGE_PRIORITY
+        }
+    try:
+        config_db.set_entry('STP', "GLOBAL", fvs_stp_global_table_for_mst)
+    except ValueError as e:
+        ctx.fail ("STP global table configuration failed with error. Error: {}".format(e))
+
+
+
+
+
+
+
+def enable_stp_for_ports(ctx, db):
+    # Enabling STP for all ports and portchannels
     # Storing STP interface details in STP_PORT table
 
     config_db = ValidatedConfigDBConnector(db.cfgdb)
     config_db.connect()
 
-    fvs_stp_port_table = {
+    fvs_stp_port_table_for_mst = {
         'enabled': 'true',
         'root_guard': 'false',
         'bpdu_guard': 'false',
@@ -112,48 +124,140 @@ def enable_mst_for_ports(ctx, db):
     for port_key in port_dict:
         if port_key in intf_list_in_vlan_member_table:
             try:
-                config_db.set_entry('STP_PORT', port_key, fvs_stp_port_table)
+                config_db.set_entry('STP_PORT', port_key, fvs_stp_port_table_for_mst)
             except ValueError as e:
                 ctx.fail ("Setting port values for STP Port table failed. Error: {}".format(e))
 
     for po_ch_key in po_ch_dict:
         if po_ch_key in intf_list_in_vlan_member_table:
             try:
-                config_db.set_entry('STP_PORT', po_ch_key, fvs_stp_port_table)
+                config_db.set_entry('STP_PORT', po_ch_key, fvs_stp_port_table_for_mst)
             except ValueError as e:
                 ctx.fail ("Setting portchannel values for STP Port table failed. Error: {}".format(e))
 
-def stp_global_table_update(ctx, db):
+
+
+
+
+
+
+def set_mst_table_values(ctx, db):
     config_db = ValidatedConfigDBConnector(db.cfgdb)
     config_db.connect()
 
-    fvs_stp_global_table = {
-            'mode': 'mst',
-            'rootguard_timeout': MST_DEFAULT_ROOT_GUARD_TIMEOUT,
-            'forward_delay': MST_DEFAULT_FORWARD_DELAY, 
-            'hello_time': MST_DEFAULT_HELLO_INTERVAL,
-            'max_age': MST_DEFAULT_MAX_AGE,
-            'priority': MST_DEFAULT_BRIDGE_PRIORITY
-        }
+    fvs_stp_mst_table_for_mst = {
+        'name': 'default_region',
+        'revision': MST_DEFAULT_REVISION,
+        'max_hop': MST_DEFAULT_HOPS,
+        'max_age': MST_DEFAULT_MAX_AGE,
+        'hello_time': MST_DEFAULT_HELLO_INTERVAL,
+        'forward_delay': MST_DEFAULT_FORWARD_DELAY
+    }
+
     try:
-        config_db.set_entry('STP', "GLOBAL", fvs_stp_global_table)
+        config_db.set_entry('STP_MST', 'GLOBAL', fvs_stp_mst_table_for_mst)
     except ValueError as e:
-        ctx.fail ("STP global table configuration failed with error. Error: {}".format(e))
+        ctx.fail ("Setting MST values for STP MST table failed. Error: {}".format(e))
 
-def set_default_mst_values(ctx, db):
+    set_stp_mst_instance_table_values(ctx, config_db) #STP_MST_INST: CONFIGURATIONS PER MST INSTANCE
+    #set_stp_mst_port_values(ctx, config_db) #STP_MST_PORT TABLE: INTERFACE DETAILS PER MST INSTANCE
+
+   
+def set_stp_mst_instance_table_values(ctx, db):
     config_db = ValidatedConfigDBConnector(db.cfgdb)
     config_db.connect()
 
-    pass
+    # Fetch VLANs from the VLAN table
+    vlan_table = config_db.get_table('VLAN')
+    vlan_list = [vlan for vlan in vlan_table]
+    # Create the default MST instance 0
+    fvs_stp_mst_inst_table_for_mst = {
+        'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY,
+        'vlan_list': ','.join(vlan_list)  # Join VLANs into a comma-separated string
+    }
+
+    try:
+        config_db.set_entry('STP_MST_INST', f'STP_MST|MST_INSTANCE:{MST_DEFAULT_INSTANCE}', fvs_stp_mst_inst_table_for_mst)
+    except ValueError as e:
+        ctx.fail("Setting MST instance values for STP MST instance table failed. Error: {}".format(e))
+
+
+def set_stp_mst_port_values(ctx, db):
+    # Set the default port values for all interfaces
+
+    config_db = ValidatedConfigDBConnector(db.cfgdb)
+    config_db.connect()
+
+    fvs_stp_mst_port_table_for_mst = {
+        'path_cost': MST_DEFAULT_PORT_PATH_COST,
+        'priority': MST_DEFAULT_PORT_PRIORITY
+    }
+
+    # GETTING PORT & PORTCHANNEL TABLES
+    port_dict = natsorted(config_db.get_table('PORT'))
+    po_ch_dict = natsorted(config_db.get_table('PORTCHANNEL'))
+
+    # GETTING INTERFACES IN VLAN MEMBER TABLE
+    intf_list_in_vlan_member_table = get_intf_list_in_vlan_member_table(config_db)
+
+    for port_key in port_dict:
+        if port_key in intf_list_in_vlan_member_table:
+            try:
+                config_db.set_entry('STP_MST_PORT', f'MST_INSTANCE:0|{port_key}', fvs_stp_mst_port_table_for_mst)
+            except ValueError as e:
+                ctx.fail ("Setting port values for STP MST Port table failed. Error: {}".format(e))
+
+    for po_ch_key in po_ch_dict:
+        if po_ch_key in intf_list_in_vlan_member_table:
+            try:
+                config_db.set_entry('STP_MST_PORT', f'MST_INSTANCE:0|{po_ch_key}', fvs_stp_mst_port_table_for_mst)
+            except ValueError as e:
+                ctx.fail ("Setting portchannel values for STP MST Port table failed. Error: {}".format(e))
+
+
+
+
+
 
 def enable_mst_for_vlans(ctx, db):
-    # STP configuration values for each vlan
-    pass
+    # Fetch all VLANs and map them to instance 0
+
+    config_db = ValidatedConfigDBConnector(db.cfgdb)
+    config_db.connect()
+    
+    vlan_table = config_db.get_table('VLAN')
+    if not vlan_table:
+        ctx.fail("No VLANs found in the database")
+
+    for vlan in vlan_table:
+        vlan_id = vlan.split('Vlan')[-1]
+        if vlan_id.isdigit():
+            vlan_id = int(vlan_id)
+            if 1 <= vlan_id <= 4094:
+                try:
+                    config_db.mod_entry('STP_MST_INST', 'MST_INSTANCE:0', {'vlan_list': f'{vlan_id}'})
+                except ValueError as e:
+                    ctx.fail("Mapping VLAN to MST instance 0 failed. Error: {}".format(e))
 
 
 
 
 
+
+
+def get_intf_list_in_vlan_member_table(db):
+    config_db = ValidatedConfigDBConnector(db.cfgdb)
+    config_db.connect()
+
+    get_intf_vlan_info_from_configdb = config_db.get_table('VLAN_MEMBER')
+
+    intf_list = []
+    for key in get_intf_vlan_info_from_configdb:
+        interface = key[1]
+        if interface not in intf_list:
+            intf_list.append(interface)
+    
+    return intf_list
 
 
 
@@ -179,24 +283,24 @@ def enable(ctx):
     config_db.connect()
     ctx.obj = {'db': config_db}
 
-    mode = get_global_stp_mode(ctx, config_db)
+    mode = get_global_stp_mode(ctx, config_db) # GETTING GLOBAL STP MODE
 
     if mode == "mst":
         ctx.fail("MST is already configured")
     elif mode == "pvst":
         # What should It do if PVST is already configured?
         ctx.fail("PVST is already configured")
-    else:
-        # SETTING GLOBAL STP MODE TO MST
-        stp_global_table_update(ctx, config_db)
+    else:       
+        stp_global_table_update_for_mst(ctx, config_db) # SETTING GLOBAL STP MODE TO MST
         
-        # ENABLing MST FOR PORTS IN STP_PORT TABLE
-        enable_mst_for_ports(ctx, config_db)
+        enable_stp_for_ports(ctx, config_db) # ENABLING STP FOR PORTS IN STP_PORT TABLE
 
-        # SETTING DEFAULT MST VALUES IN STP_MST TABLE
-        set_default_mst_values(ctx, config_db)
+        set_mst_table_values(ctx, config_db) # SETTING DEFAULT MST VALUES IN STP_MST TABLE
 
-        #enable_mst_for_vlans(ctx, config_db)
+        #set_stp_mst_instance_values(ctx, config_db) #STP_MST_INST: CONFIGURATIONS PER MST INSTANCE
+        #set_stp_mst_port_values(ctx, config_db) #STP_MST_PORT TABLE: INTERFACE DETAILS PER MST INSTANCE
+
+        enable_mst_for_vlans(ctx, config_db) # ENABLING MST FOR VLANS
 
         
 
