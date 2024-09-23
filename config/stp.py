@@ -5,8 +5,59 @@
 
 import click
 import utilities_common.cli as clicommon
+from swsscommon.swsscommon import ConfigDBConnector
+from .validated_config_db_connector import ValidatedConfigDBConnector
 from natsort import natsorted
 import logging
+
+# MSTP parameters
+
+MST_MIN_HOPS = 1
+MST_MAX_HOPS = 40
+MST_DEFAULT_HOPS = 20
+
+MST_MIN_HELLO_INTERVAL = 1
+MST_MAX_HELLO_INTERVAL = 10
+MST_DEFAULT_HELLO_INTERVAL = 2
+
+MST_MIN_MAX_AGE = 6
+MST_MAX_MAX_AGE = 40
+MST_DEFAULT_MAX_AGE = 20
+
+MST_MIN_REVISION = 0
+MST_MAX_REVISION = 65535
+MST_DEFAULT_REVISION = 0
+
+MST_MIN_BRIDGE_PRIORITY = 0
+MST_MAX_BRIDGE_PRIORITY = 61440
+MST_DEFAULT_BRIDGE_PRIORITY = 32768
+
+MST_MIN_PORT_PRIORITY = 0
+MST_MAX_PORT_PRIORITY = 240
+MST_DEFAULT_PORT_PRIORITY = 128
+
+MST_MIN_FORWARD_DELAY = 4
+MST_MAX_FORWARD_DELAY = 30
+MST_DEFAULT_FORWARD_DELAY = 15
+
+MST_MIN_ROOT_GUARD_TIMEOUT = 5
+MST_MAX_ROOT_GUARD_TIMEOUT = 600
+MST_DEFAULT_ROOT_GUARD_TIMEOUT = 30
+
+MST_MIN_INSTANCES = 0
+MST_MAX_INSTANCES = 63
+MST_DEFAULT_INSTANCE = 0
+
+MST_MIN_PORT_PATH_COST = 20000000;
+MST_MAX_PORT_PATH_COST = 20000000;
+MST_DEFAULT_PORT_PATH_COST = 1;
+
+MST_AUTO_LINK_TYPE = 'auto'
+MST_P2P_LINK_TYPE = 'p2p'
+MST_SHARED_LINK_TYPE = 'shared'
+
+
+# STP parameters
 
 STP_MIN_ROOT_GUARD_TIMEOUT = 5
 STP_MAX_ROOT_GUARD_TIMEOUT = 600
@@ -396,20 +447,20 @@ def get_global_stp_priority(db):
 
 @click.group()
 @clicommon.pass_db
-def spanning_tree(_db):
+def spanning_tree(db):
     """STP command line"""
     pass
 
 
 ###############################################
-# STP Global commands implementation
+# PVST Global commands implementation
 ###############################################
 
 # cmd: STP enable
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
-@clicommon.pass_db
-def spanning_tree_enable(_db, mode):
+@clicommon.passdb
+def spanning_tree_enable(db, mode):
     """enable STP """
     ctx = click.get_current_context()
     db = _db.cfgdb
@@ -514,6 +565,11 @@ def stp_global_priority(_db, priority):
     is_valid_bridge_priority(ctx, priority)
     update_stp_vlan_parameter(db, parameter_bridge_priority, priority)
     db.mod_entry('STP', "GLOBAL", {'priority': priority})
+
+###############################################
+# MST Global commands implementation
+###############################################
+
 
 
 ###############################################
@@ -995,6 +1051,8 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
     is_valid_interface_path_cost(ctx, cost)
     vlan_interface = str(vlan_name) + "|" + interface_name
     db.mod_entry('STP_VLAN_PORT', vlan_interface, {'path_cost': cost})
+
+
 
 
 # Invoke main()
