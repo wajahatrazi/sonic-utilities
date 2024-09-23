@@ -88,7 +88,6 @@ setup(
         'utilities_common',
         'watchdogutil',
         'sonic_cli_gen',
-        'wol',
     ],
     package_data={
         'generic_config_updater': ['gcu_services_validator.conf.json', 'gcu_field_operation_validators.conf.json'],
@@ -125,6 +124,7 @@ setup(
         'scripts/dropstat',
         'scripts/dualtor_neighbor_check.py',
         'scripts/dump_nat_entries.py',
+        'scripts/debug_voq_chassis_packet_drops.sh',
         'scripts/ecnconfig',
         'scripts/fabricstat',
         'scripts/fanshow',
@@ -223,7 +223,6 @@ setup(
             'undebug = undebug.main:cli',
             'watchdogutil = watchdogutil.main:watchdogutil',
             'sonic-cli-gen = sonic_cli_gen.main:cli',
-            'wol = wol.main:wol',
         ]
     },
     install_requires=[
