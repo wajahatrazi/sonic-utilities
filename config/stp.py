@@ -81,6 +81,7 @@ STP_DEFAULT_BRIDGE_PRIORITY = 32768
 
 PVST_MAX_INSTANCES = 255
 
+
 # Tracks Global STP config
 global_stp_cfg = False
 
@@ -381,13 +382,14 @@ def is_portchannel_member_port(db, interface_name):
 
 
 def enable_stp_for_interfaces(db):
-    fvs = {'enabled': 'true',
-           'root_guard': 'false',
-           'bpdu_guard': 'false',
-           'bpdu_guard_do_disable': 'false',
-           'portfast': 'true',
-           'uplink_fast': 'false'
-           }
+    fvs = {
+        'enabled': 'true',
+        'root_guard': 'false',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do_disable': 'false',
+        'portfast': 'true',
+        'uplink_fast': 'false'
+    }
     port_dict = natsorted(db.get_table('PORT'))
     intf_list_in_vlan_member_table = get_intf_list_in_vlan_member_table(db)
 
@@ -453,14 +455,17 @@ def spanning_tree(db):
 
 
 ###############################################
-# PVST Global commands implementation
+# PVST & MST Global commands implementation
 ###############################################
 
+
 # cmd: STP enable
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree enable <pvst|mst>
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
 @clicommon.passdb
-def spanning_tree_enable(db, mode):
+def spanning_tree_enable(_db, mode):
     """enable STP """
     ctx = click.get_current_context()
     db = _db.cfgdb
@@ -480,7 +485,10 @@ def spanning_tree_enable(db, mode):
     enable_stp_for_vlans(db)
 
 
+
 # cmd: STP disable
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree disable <pvst|mst>
 @spanning_tree.command('disable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
 @clicommon.pass_db
@@ -496,6 +504,8 @@ def stp_disable(_db, mode):
 
 
 # cmd: STP global root guard timeout
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# config spanning_tree root_guard_timeout <5-600 seconds>
 @spanning_tree.command('root_guard_timeout')
 @click.argument('root_guard_timeout', metavar='<5-600 seconds>', required=True, type=int)
 @clicommon.pass_db
@@ -508,7 +518,10 @@ def stp_global_root_guard_timeout(_db, root_guard_timeout):
     db.mod_entry('STP', "GLOBAL", {'rootguard_timeout': root_guard_timeout})
 
 
+
 # cmd: STP global forward delay
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree forward_delay <4-30 seconds>
 @spanning_tree.command('forward_delay')
 @click.argument('forward_delay', metavar='<4-30 seconds>', required=True, type=int)
 @clicommon.pass_db
@@ -524,6 +537,8 @@ def stp_global_forward_delay(_db, forward_delay):
 
 
 # cmd: STP global hello interval
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree hello <1-10 seconds>
 @spanning_tree.command('hello')
 @click.argument('hello_interval', metavar='<1-10 seconds>', required=True, type=int)
 @clicommon.pass_db
@@ -538,7 +553,10 @@ def stp_global_hello_interval(_db, hello_interval):
     db.mod_entry('STP', "GLOBAL", {'hello_time': hello_interval})
 
 
+
 # cmd: STP global max age
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree max_age <6-40 seconds>
 @spanning_tree.command('max_age')
 @click.argument('max_age', metavar='<6-40 seconds>', required=True, type=int)
 @clicommon.pass_db
@@ -553,7 +571,28 @@ def stp_global_max_age(_db, max_age):
     db.mod_entry('STP', "GLOBAL", {'max_age': max_age})
 
 
+
+# cmd: STP global max hop
+# NO GLOBAL MAX HOP FOR PVST
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree max_hops <6-40 seconds>
+@spanning_tree.command('max_hops')
+@click.argument('max_hops', metavar='<1-40>', required=True, type=int)
+@clicommon.pass_db
+def stp_global_max_age(_db, max_hops):
+    """Configure STP global max_age"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    is_valid_max_age(ctx, max_hops)
+    is_valid_stp_global_parameters(ctx, db, parameter_max_age, max_hops)
+    update_stp_vlan_parameter(db, parameter_max_age, max_hops)
+    db.mod_entry('STP', "GLOBAL", {'max_hops': max_hops})
+
+
 # cmd: STP global bridge priority
+# MST CONFIGURATIONS IN THE STP_MST_INST TABLE
+# config spanning_tree priority <0-61440>
 @spanning_tree.command('priority')
 @click.argument('priority', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
@@ -566,9 +605,47 @@ def stp_global_priority(_db, priority):
     update_stp_vlan_parameter(db, parameter_bridge_priority, priority)
     db.mod_entry('STP', "GLOBAL", {'priority': priority})
 
+
+@spanning_tree.group()
+def mst():
+    """Configure MSTP region, instance, show, clear & debug commands"""
+    pass
+
+
 ###############################################
-# MST Global commands implementation
+# REGION commands implementation
 ###############################################
+
+# cmd: MST region-name
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree mst region-name <name>
+@mst.command('region-name')
+@click.argument('region_name', metavar='<name>', required=True, case_sensitive=True)
+@clicommon.pass_db
+def stp_mst_region_name(_db, region_name):
+    """Configure MSTP region name"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    if len(region_name) >= 32:
+        ctx.fail("Region name must be less than 32 characters")
+    db.mod_entry('STP', "GLOBAL", {'name': region_name})
+
+
+# cmd: MST Global revision number
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree mst revision <0-65535>
+@mst.command('revision')
+@click.argument('revision', metavar='<0-65535>', required=True, type=int)
+@clicommon.pass_db
+def stp_global_revision(_db, revision):
+    """Configure STP global revision number"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
+        ctx.fail("STP revision number must be in range 0-65535")
+    db.mod_entry('STP', "GLOBAL", {'revision': revision})
 
 
 
