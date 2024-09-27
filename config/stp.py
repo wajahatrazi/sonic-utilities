@@ -3,6 +3,21 @@
 # 'spanning-tree' group ('config spanning-tree ...')
 #
 
+# MST Commands:
+
+# EXISTING COMMAND: config spanning_tree enable <pvst|mst>
+# EXISTING COMMAND: config spanning_tree disable <pvst|mst>
+# EXISTING COMMAND: config spanning_tree max_hops <value>
+# EXISTING COMMAND: config spanning_tree hello <value>
+# EXISTING COMMAND: config spanning_tree max_age <value>
+# EXISTING COMMAND: config spanning_tree priority <value> (Bridge Priority)
+# EXISTING COMMAND: config spanning_tree forward_delay <value>
+
+# NEW COMMAND: config spanning_tree mst region-name <region-name>
+# NEW COMMAND: config spanning_tree mst revision <number> 
+
+
+
 import click
 import utilities_common.cli as clicommon
 from swsscommon.swsscommon import ConfigDBConnector
@@ -460,7 +475,7 @@ def spanning_tree(db):
 
 
 # cmd: STP enable
-# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# MST CONFIGURATION IN THE STP GLOBAL TABLE
 # config spanning_tree enable <pvst|mst>
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
