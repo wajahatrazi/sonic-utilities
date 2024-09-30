@@ -181,6 +181,8 @@ def set_stp_mst_instance_table_values(ctx, db):
     except ValueError as e:
         ctx.fail("Setting MST instance values for STP MST instance table failed. Error: {}".format(e))
 
+def stp_mst_instance_table_values(ctx, db):
+    print ("Hello wrold this a test statement")
 
 def set_stp_mst_port_values(ctx, db):
     # Set the default port values for all interfaces
@@ -299,6 +301,12 @@ def enable(ctx):
 
         #set_stp_mst_instance_values(ctx, config_db) #STP_MST_INST: CONFIGURATIONS PER MST INSTANCE
         #set_stp_mst_port_values(ctx, config_db) #STP_MST_PORT TABLE: INTERFACE DETAILS PER MST INSTANCE
+
+        x = 1
+
+        while x < 2:
+            x = x + 1
+
 
         enable_mst_for_vlans(ctx, config_db) # ENABLING MST FOR VLANS
 

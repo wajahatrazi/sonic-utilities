@@ -3,6 +3,13 @@
 # 'spanning-tree' group ('config spanning-tree ...')
 #
 
+# STEPS:
+# 1- FIGUREOUT COMMANDS ON EACH COMMAND FUNCTION
+# 2- START WITH GLOBAL LEVEL COMMAND (GLOBAL ENABLE COMMAND)
+# 3- WE MAY HAVE TO SET VALUES IN DIFFERENT TABLES AS PER THE HLD
+# 4- TRY AND ERROR SHOULD BE IN EACH GET, MOD & SET COMMANDS
+
+
 # MST Commands:
 
 # EXISTING COMMAND: config spanning_tree enable <pvst|mst>
@@ -13,9 +20,10 @@
 # EXISTING COMMAND: config spanning_tree priority <value> (Bridge Priority)
 # EXISTING COMMAND: config spanning_tree forward_delay <value>
 
+
+# CREATION OF SPANNING_TREE MST GROUP
 # NEW COMMAND: config spanning_tree mst region-name <region-name>
 # NEW COMMAND: config spanning_tree mst revision <number> 
-
 
 
 import click
@@ -470,13 +478,16 @@ def spanning_tree(db):
 
 
 ###############################################
-# PVST & MST Global commands implementation
+# Global commands implementation
 ###############################################
 
 
-# cmd: STP enable
-# MST CONFIGURATION IN THE STP GLOBAL TABLE
-# config spanning_tree enable <pvst|mst>
+# config spanning_tree enable <pvst|mst> (Modify & sets parameters in different tables for MST & PVST)
+# modify mode in STP GLOBAL table
+# set region name, revision, max_hop, max_age, hello_time, and forward delay in STP MST table
+# set bridge priority, and Vlans in STP MST_INST table
+# set path cost & port priority in STP MST_PORT table
+# set attributes in STP_PORT table
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
 @clicommon.passdb
@@ -501,9 +512,9 @@ def spanning_tree_enable(_db, mode):
 
 
 
-# cmd: STP disable
-# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
-# config spanning_tree disable <pvst|mst>
+# config spanning_tree disable <pvst|mst> (Modify mode parameter for MST or PVST and Delete tables)
+# Modify mode in STP GLOBAL table to None
+# Delete tables STP_MST, STP_MST_INST, STP_MST_PORT, and STP_PORT
 @spanning_tree.command('disable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
 @clicommon.pass_db
