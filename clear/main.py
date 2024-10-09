@@ -13,7 +13,6 @@ from show.plugins.pbh import read_pbh_counters
 from config.plugins.pbh import serialize_pbh_counters
 from . import plugins
 from . import stp
-
 # This is from the aliases example:
 # https://github.com/pallets/click/blob/57c6f09611fc47ca80db0bd010f05998b3c0aa95/examples/aliases/aliases.py
 class Config(object):
@@ -127,11 +126,6 @@ def cli():
     pass
 
 #
-# 'STP'
-#
-cli.add_command(stp.spanning_tree)
-
-#
 # 'ip' group ###
 #
 
@@ -150,6 +144,9 @@ def ipv6():
     """Clear IPv6 information"""
     pass
 
+# 'STP'
+#
+cli.add_command(stp.spanning_tree)
 
 #
 # Inserting BGP functionality into cli's clear parse-chain.

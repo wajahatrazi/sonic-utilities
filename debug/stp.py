@@ -1,12 +1,10 @@
 import click
 import utilities_common.cli as clicommon
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help', '-?'])
 #
 # This group houses Spanning_tree commands and subgroups
 #
-#@click.group(cls=clicommon.AliasedGroup, default_if_no_args=False, invoke_without_command=True)
-@click.group(cls=click.Group, context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@click.group(cls=clicommon.AliasedGroup, default_if_no_args=False, invoke_without_command=True)
 @click.pass_context
 def spanning_tree(ctx):
     '''debug spanning_tree commands'''
@@ -14,8 +12,7 @@ def spanning_tree(ctx):
         command = 'sudo stpctl dbg enable'
         clicommon.run_command(command)
 
-#@spanning_tree.group('dump', cls=clicommon.AliasedGroup, default_if_no_args=False, invoke_without_command=True)
-@spanning_tree.group('dump', cls=click.Group, context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
+@spanning_tree.group('dump', cls=clicommon.AliasedGroup, default_if_no_args=False, invoke_without_command=True)
 def stp_debug_dump():
     pass
 

@@ -26,7 +26,7 @@ def cli():
     """SONiC command line - 'debug' command"""
     pass
 
-#
+# Added changes for STP
 # STP
 #
 cli.add_command(stp.spanning_tree)
