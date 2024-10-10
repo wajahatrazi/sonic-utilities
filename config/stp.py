@@ -1,4 +1,4 @@
-#!/usr/sbin/env python
+# !/usr/sbin/env python
 #
 # 'spanning-tree' group ('config spanning-tree ...')
 #
@@ -104,53 +104,7 @@ STP_DEFAULT_BRIDGE_PRIORITY = 32768
 
 PVST_MAX_INSTANCES = 255
 
-
 # Tracks Global STP config
-global_stp_cfg = False
-
-def get_intf_list_in_given_vlan(config_db, vlan_name):
-    """
-    Get info from REDIS ConfigDB and get interface list for given Vlan
-    """
-    get_int_vlan_configdb_info = config_db.get_table('VLAN_MEMBER')
-    int_list = []
-    for key in get_int_vlan_configdb_info:
-        if  vlan_name == key[0]:
-            interface = key[1]
-            if interface not in int_list:
-                int_list.append(interface)
-    return int_list
-
-def enable_global_stp_params(db):
-    fvs = {'mode': 'pvst',
-           'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
-           'forward_delay': STP_DEFAULT_FORWARD_DELAY,
-           'hello_time': STP_DEFAULT_HELLO_INTERVAL,
-           'max_age': STP_DEFAULT_MAX_AGE,
-           'priority': STP_DEFAULT_BRIDGE_PRIORITY
-           }
-    db.set_entry('STP', "GLOBAL", fvs)
-
-def enable_stp_for_interfaces_for_vlan(db, vlan_name):
-    fvs = {'enabled': 'true',
-           'root_guard': 'false',
-           'bpdu_guard': 'false',
-           'bpdu_guard_do_disable': 'false',
-           'portfast': 'true',
-           'uplink_fast': 'false'
-           }
-    port_dict = natsorted(db.get_table('PORT'))
-    intf_list_in_given_vlan = get_intf_list_in_given_vlan(db, vlan_name)
-    for port_key in port_dict:
-        if port_key in intf_list_in_given_vlan:
-            stp_port_entry = db.get_entry('STP_PORT', port_key)
-            if len(stp_port_entry) == 0:
-                db.set_entry('STP_PORT', port_key, fvs)
-    po_ch_dict = natsorted(db.get_table('PORTCHANNEL'))
-    for po_ch_key in po_ch_dict:
-        if po_ch_key in intf_list_in_given_vlan:
-            db.set_entry('STP_PORT', po_ch_key, fvs)
-
 def get_intf_list_in_vlan_member_table(config_db):
     """
     Get info from REDIS ConfigDB and create interface to vlan mapping
@@ -338,7 +292,7 @@ def interface_enable_stp(db, interface_name):
            'root_guard': 'false',
            'bpdu_guard': 'false',
            'bpdu_guard_do_disable': 'false',
-           'portfast': 'true',
+           'portfast': 'false',
            'uplink_fast': 'false'
            }
     db.set_entry('STP_PORT', interface_name, fvs)
@@ -405,14 +359,13 @@ def is_portchannel_member_port(db, interface_name):
 
 
 def enable_stp_for_interfaces(db):
-    fvs = {
-        'enabled': 'true',
-        'root_guard': 'false',
-        'bpdu_guard': 'false',
-        'bpdu_guard_do_disable': 'false',
-        'portfast': 'true',
-        'uplink_fast': 'false'
-    }
+    fvs = {'enabled': 'true',
+           'root_guard': 'false',
+           'bpdu_guard': 'false',
+           'bpdu_guard_do_disable': 'false',
+           'portfast': 'false',
+           'uplink_fast': 'false'
+           }
     port_dict = natsorted(db.get_table('PORT'))
     intf_list_in_vlan_member_table = get_intf_list_in_vlan_member_table(db)
 
@@ -472,16 +425,16 @@ def get_global_stp_priority(db):
 
 @click.group()
 @clicommon.pass_db
-def spanning_tree(db):
+def spanning_tree(_db):
     """STP command line"""
     pass
 
 
 ###############################################
-# Global commands implementation
+# STP Global commands implementation
 ###############################################
 
-
+# cmd: STP enable
 # config spanning_tree enable <pvst|mst> (Modify & sets parameters in different tables for MST & PVST)
 # modify mode in STP GLOBAL table
 # set region name, revision, max_hop, max_age, hello_time, and forward delay in STP MST table
@@ -490,12 +443,11 @@ def spanning_tree(db):
 # set attributes in STP_PORT table
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
-@clicommon.passdb
+@clicommon.pass_db
 def spanning_tree_enable(_db, mode):
     """enable STP """
     ctx = click.get_current_context()
     db = _db.cfgdb
-    global_stp_cfg = True
     if mode == "pvst" and get_global_stp_mode(db) == "pvst":
         ctx.fail("PVST is already configured")
     fvs = {'mode': mode,
@@ -511,7 +463,7 @@ def spanning_tree_enable(_db, mode):
     enable_stp_for_vlans(db)
 
 
-
+# cmd: STP disable
 # config spanning_tree disable <pvst|mst> (Modify mode parameter for MST or PVST and Delete tables)
 # Modify mode in STP GLOBAL table to None
 # Delete tables STP_MST, STP_MST_INST, STP_MST_PORT, and STP_PORT
@@ -526,7 +478,6 @@ def stp_disable(_db, mode):
     db.delete_table('STP_VLAN')
     db.delete_table('STP_PORT')
     db.delete_table('STP_VLAN_PORT')
-    global_stp_cfg = False
 
 
 # cmd: STP global root guard timeout
@@ -542,7 +493,6 @@ def stp_global_root_guard_timeout(_db, root_guard_timeout):
     check_if_global_stp_enabled(db, ctx)
     is_valid_root_guard_timeout(ctx, root_guard_timeout)
     db.mod_entry('STP', "GLOBAL", {'rootguard_timeout': root_guard_timeout})
-
 
 
 # cmd: STP global forward delay
@@ -579,7 +529,6 @@ def stp_global_hello_interval(_db, hello_interval):
     db.mod_entry('STP', "GLOBAL", {'hello_time': hello_interval})
 
 
-
 # cmd: STP global max age
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree max_age <6-40 seconds>
@@ -597,24 +546,21 @@ def stp_global_max_age(_db, max_age):
     db.mod_entry('STP', "GLOBAL", {'max_age': max_age})
 
 
-
 # cmd: STP global max hop
 # NO GLOBAL MAX HOP FOR PVST
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree max_hops <6-40 seconds>
-@spanning_tree.command('max_hops')
-@click.argument('max_hops', metavar='<1-40>', required=True, type=int)
+@spanning_tree.command('priority')
+@click.argument('priority', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
-def stp_global_max_age(_db, max_hops):
-    """Configure STP global max_age"""
+def stp_global_priority(_db, priority):
+    """Configure STP global bridge priority"""
     ctx = click.get_current_context()
     db = _db.cfgdb
     check_if_global_stp_enabled(db, ctx)
-    is_valid_max_age(ctx, max_hops)
-    is_valid_stp_global_parameters(ctx, db, parameter_max_age, max_hops)
-    update_stp_vlan_parameter(db, parameter_max_age, max_hops)
-    db.mod_entry('STP', "GLOBAL", {'max_hops': max_hops})
-
+    is_valid_bridge_priority(ctx, priority)
+    update_stp_vlan_parameter(db, parameter_bridge_priority, priority)
+    db.mod_entry('STP', "GLOBAL", {'priority': priority})
 
 # cmd: STP global bridge priority
 # MST CONFIGURATIONS IN THE STP_MST_INST TABLE
@@ -675,6 +621,7 @@ def stp_global_revision(_db, revision):
 
 
 
+
 ###############################################
 # STP VLAN commands implementation
 ###############################################
@@ -712,12 +659,7 @@ def stp_vlan_enable(_db, vid):
         ctx.fail("STP is already enabled for " + vlan_name)
     if get_stp_enabled_vlan_count(db) >= get_max_stp_instances():
         ctx.fail("Exceeded maximum STP configurable VLAN instances")
-    # First STP vlan with global STP not enabled
-    if not is_global_stp_enabled(db):
-        enable_global_stp_params(db)
-    # Enable STP on interface for the given vlan
-    enable_stp_for_interfaces_for_vlan(db, vlan_name)
-    #check_if_global_stp_enabled(db, ctx)
+    check_if_global_stp_enabled(db, ctx)
     # when enabled for first time, create VLAN entry with
     # global values - else update only VLAN STP state
     stp_vlan_entry = db.get_entry('STP_VLAN', vlan_name)
@@ -730,7 +672,14 @@ def stp_vlan_enable(_db, vid):
                }
         db.set_entry('STP_VLAN', vlan_name, fvs)
     else:
-        ctx.fail("STP_VLAN already exists for " + vlan_name)
+        db.mod_entry('STP_VLAN', vlan_name, {'enabled': 'true'})
+    # Refresh stp_vlan_intf entry for vlan
+    for vlan, intf in db.get_table('STP_VLAN_PORT'):
+        if vlan == vlan_name:
+            vlan_intf_key = "{}|{}".format(vlan_name, intf)
+            vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
+            db.mod_entry('STP_VLAN_PORT', vlan_intf_key, vlan_intf_entry)
+
 
 @spanning_tree_vlan.command('disable')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
@@ -741,18 +690,8 @@ def stp_vlan_disable(_db, vid):
     db = _db.cfgdb
     check_if_vlan_exist_in_db(db, ctx, vid)
     vlan_name = 'Vlan{}'.format(vid)
-    db.set_entry('STP_VLAN', vlan_name, None)
-    # Remove vlan interface configs
-    for vlan, intf in db.get_table('STP_VLAN_PORT'):
-        if vlan == vlan_name:
-            vlan_intf_key = "{}|{}".format(vlan_name, intf)
-            db.set_entry('STP_VLAN_PORT', vlan_intf_key, None)
-    # Disable global params, if no vlan active in STP and
-    if not db.get_table('STP_VLAN') and not global_stp_cfg:
-        db.set_entry('STP', "GLOBAL", None)
-        db.delete_table('STP_VLAN')
-        db.delete_table('STP_PORT')
-        db.delete_table('STP_VLAN_PORT')
+    db.mod_entry('STP_VLAN', vlan_name, {'enabled': 'false'})
+
 
 @spanning_tree_vlan.command('forward_delay')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
@@ -875,7 +814,7 @@ def stp_interface_enable(_db, interface_name):
                'root_guard': 'false',
                'bpdu_guard': 'false',
                'bpdu_guard_do_disable': 'false',
-               'portfast': 'true',
+               'portfast': 'false',
                'uplink_fast': 'false'
         }
         db.set_entry('STP_PORT', interface_name, fvs)
@@ -1154,8 +1093,6 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
     is_valid_interface_path_cost(ctx, cost)
     vlan_interface = str(vlan_name) + "|" + interface_name
     db.mod_entry('STP_VLAN_PORT', vlan_interface, {'path_cost': cost})
-
-
 
 
 # Invoke main()
