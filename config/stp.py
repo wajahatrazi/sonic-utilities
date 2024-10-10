@@ -3,28 +3,32 @@
 # 'spanning-tree' group ('config spanning-tree ...')
 #
 
-# STEPS:
-# 1- FIGUREOUT COMMANDS ON EACH COMMAND FUNCTION
-# 2- START WITH GLOBAL LEVEL COMMAND (GLOBAL ENABLE COMMAND)
-# 3- WE MAY HAVE TO SET VALUES IN DIFFERENT TABLES AS PER THE HLD
-# 4- TRY AND ERROR SHOULD BE IN EACH GET, MOD & SET COMMANDS
+"""
+Existing PVST commands that are used for MST Commands:
+
+    config spanning_tree enable <pvst|mst>
+    config spanning_tree disable <pvst|mst>
+    config spanning_tree hello <value>
+    config spanning_tree max_age <value>
+    X config spanning_tree priority <value> (Bridge Priority)
+    config spanning_tree forward_delay <value>
+
+NEW MST Commands: 
+    config spanning_tree max_hop <value> (Not for PVST)
+    config spanning_tree mst region-name <region-name>
+    config spanning_tree mst revision <number>
+
+    
+    config spanning_tree mst instance <instance-id> priority <value>
+    config spanning_tree mst instance <instance-id> vlan <add|del> <vlan-id>
 
 
-# MST Commands:
-
-# EXISTING COMMAND: config spanning_tree enable <pvst|mst>
-# EXISTING COMMAND: config spanning_tree disable <pvst|mst>
-# EXISTING COMMAND: config spanning_tree max_hops <value>
-# EXISTING COMMAND: config spanning_tree hello <value>
-# EXISTING COMMAND: config spanning_tree max_age <value>
-# EXISTING COMMAND: config spanning_tree priority <value> (Bridge Priority)
-# EXISTING COMMAND: config spanning_tree forward_delay <value>
+    config spanning_tree mst instance <instance-id> interface <ifname> priority <port-priority-value>
+    config spanning_tree mst instance <instance-id> interface <ifname> cost <cost-value>
 
 
-# CREATION OF SPANNING_TREE MST GROUP
-# NEW COMMAND: config spanning_tree mst region-name <region-name>
-# NEW COMMAND: config spanning_tree mst revision <number> 
 
+"""
 
 import click
 import utilities_common.cli as clicommon
@@ -32,11 +36,13 @@ from swsscommon.swsscommon import ConfigDBConnector
 from .validated_config_db_connector import ValidatedConfigDBConnector
 from natsort import natsorted
 import logging
+# from . import mstp
+
 
 # MSTP parameters
 
 MST_MIN_HOPS = 1
-MST_MAX_HOPS = 40
+MST_max_hop = 40
 MST_DEFAULT_HOPS = 20
 
 MST_MIN_HELLO_INTERVAL = 1
@@ -78,6 +84,8 @@ MST_DEFAULT_PORT_PATH_COST = 1;
 MST_AUTO_LINK_TYPE = 'auto'
 MST_P2P_LINK_TYPE = 'p2p'
 MST_SHARED_LINK_TYPE = 'shared'
+
+# config.add_command(mstp.mst)
 
 
 # STP parameters
@@ -423,6 +431,7 @@ def get_global_stp_priority(db):
     return priority
 
 
+# config spanning_tree
 @click.group()
 @clicommon.pass_db
 def spanning_tree(_db):
@@ -441,6 +450,10 @@ def spanning_tree(_db):
 # set bridge priority, and Vlans in STP MST_INST table
 # set path cost & port priority in STP MST_PORT table
 # set attributes in STP_PORT table
+# MST will also be enabled on all interfaces and VLANs
+# At enable of pvst or mst
+# it should set all the tables such that the necessary attributes could be set
+# (Enable disable par yeh tables bhi set karayga puranay delete kar keh)
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
 @clicommon.pass_db
@@ -549,7 +562,7 @@ def stp_global_max_age(_db, max_age):
 # cmd: STP global max hop
 # NO GLOBAL MAX HOP FOR PVST
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
-# config spanning_tree max_hops <6-40 seconds>
+# config spanning_tree max_hop <6-40 seconds>
 @spanning_tree.command('priority')
 @click.argument('priority', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
@@ -562,6 +575,9 @@ def stp_global_priority(_db, priority):
     update_stp_vlan_parameter(db, parameter_bridge_priority, priority)
     db.mod_entry('STP', "GLOBAL", {'priority': priority})
 
+
+
+# Bridge priority cannot be set without Instance ID
 # cmd: STP global bridge priority
 # MST CONFIGURATIONS IN THE STP_MST_INST TABLE
 # config spanning_tree priority <0-61440>
@@ -569,7 +585,7 @@ def stp_global_priority(_db, priority):
 @click.argument('priority', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
 def stp_global_priority(_db, priority):
-    """Configure STP global bridge priority"""
+    #Configure STP global bridge priority
     ctx = click.get_current_context()
     db = _db.cfgdb
     check_if_global_stp_enabled(db, ctx)
@@ -578,15 +594,15 @@ def stp_global_priority(_db, priority):
     db.mod_entry('STP', "GLOBAL", {'priority': priority})
 
 
+
+#config spanning_tree mst
 @spanning_tree.group()
 def mst():
     """Configure MSTP region, instance, show, clear & debug commands"""
     pass
 
 
-###############################################
-# REGION commands implementation
-###############################################
+# MST REGION commands implementation
 
 # cmd: MST region-name
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
@@ -625,6 +641,7 @@ def stp_global_revision(_db, revision):
 ###############################################
 # STP VLAN commands implementation
 ###############################################
+# config spanning_tree vlan
 @spanning_tree.group('vlan')
 @clicommon.pass_db
 def spanning_tree_vlan(_db):
@@ -645,7 +662,7 @@ def check_if_stp_enabled_for_vlan(ctx, db, vlan_name):
     if not is_stp_enabled_for_vlan(db, vlan_name):
         ctx.fail("STP is not enabled for VLAN")
 
-
+#config spanning_tree vlan enable <vlan-id>
 @spanning_tree_vlan.command('enable')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @clicommon.pass_db
@@ -680,7 +697,7 @@ def stp_vlan_enable(_db, vid):
             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
             db.mod_entry('STP_VLAN_PORT', vlan_intf_key, vlan_intf_entry)
 
-
+# config spanning_tree vlan disable <vlan-id>
 @spanning_tree_vlan.command('disable')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @clicommon.pass_db
@@ -692,7 +709,7 @@ def stp_vlan_disable(_db, vid):
     vlan_name = 'Vlan{}'.format(vid)
     db.mod_entry('STP_VLAN', vlan_name, {'enabled': 'false'})
 
-
+# config spanning_tree vlan forward_delay <vlan-id> <4-30 seconds>
 @spanning_tree_vlan.command('forward_delay')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('forward_delay', metavar='<4-30 seconds>', required=True, type=int)
@@ -708,7 +725,7 @@ def stp_vlan_forward_delay(_db, vid, forward_delay):
     is_valid_stp_vlan_parameters(ctx, db, vlan_name, parameter_forward_delay, forward_delay)
     db.mod_entry('STP_VLAN', vlan_name, {'forward_delay': forward_delay})
 
-
+# config spanning_tree vlan hello <vlan-id> <1-10 seconds>
 @spanning_tree_vlan.command('hello')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('hello_interval', metavar='<1-10 seconds>', required=True, type=int)
@@ -724,7 +741,7 @@ def stp_vlan_hello_interval(_db, vid, hello_interval):
     is_valid_stp_vlan_parameters(ctx, db, vlan_name, parameter_hello_time, hello_interval)
     db.mod_entry('STP_VLAN', vlan_name, {'hello_time': hello_interval})
 
-
+# config spanning_tree vlan max_age <vlan-id> <6-40 seconds>
 @spanning_tree_vlan.command('max_age')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('max_age', metavar='<6-40 seconds>', required=True, type=int)
@@ -740,7 +757,7 @@ def stp_vlan_max_age(_db, vid, max_age):
     is_valid_stp_vlan_parameters(ctx, db, vlan_name, parameter_max_age, max_age)
     db.mod_entry('STP_VLAN', vlan_name, {'max_age': max_age})
 
-
+# config spanning_tree vlan priority <vlan-id> <0-61440>
 @spanning_tree_vlan.command('priority')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('priority', metavar='<0-61440>', required=True, type=int)
@@ -789,14 +806,16 @@ def check_if_interface_is_valid(ctx, db, interface_name):
     if not is_vlan_configured_interface(db, interface_name):
         ctx.fail(" {} has no VLAN configured - It's not a L2 interface".format(interface_name))
 
-
+# config spanning_tree interface
 @spanning_tree.group('interface')
 @clicommon.pass_db
 def spanning_tree_interface(_db):
     """Configure STP for interface"""
     pass
 
-
+# config spanning_tree interface enable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# 
 @spanning_tree_interface.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -821,7 +840,8 @@ def stp_interface_enable(_db, interface_name):
     else:
         db.mod_entry('STP_PORT', interface_name, {'enabled': 'true'})
 
-
+# config spanning_tree interface disable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -844,7 +864,7 @@ def is_valid_interface_priority(ctx, intf_priority):
     if intf_priority not in range(STP_INTERFACE_MIN_PRIORITY, STP_INTERFACE_MAX_PRIORITY + 1):
         ctx.fail("STP interface priority must be in range 0-240")
 
-
+# config spanning_tree interface priority <interface_name> <value: 0-240>
 @spanning_tree_interface.command('priority')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority', metavar='<0-240>', required=True, type=int)
@@ -880,6 +900,7 @@ def is_valid_interface_path_cost(ctx, intf_path_cost):
         ctx.fail("STP interface path cost must be in range 1-200000000")
 
 
+# config spanning_tree interface cost <interface_name> <value: 1-200000000>
 @spanning_tree_interface.command('cost')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
@@ -912,7 +933,8 @@ def spanning_tree_interface_root_guard(_db):
     """Configure STP root guard for interface"""
     pass
 
-
+# config spanning_tree interface root_guard enable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_root_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -924,7 +946,8 @@ def stp_interface_root_guard_enable(_db, interface_name):
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true'})
 
-
+# config spanning_tree interface root_guard disable <interface_name>
+# mst CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_root_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -937,7 +960,8 @@ def stp_interface_root_guard_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'false'})
 
 
-# STP interface bpdu guard
+
+# config spanning_tree interface bpdu_guard
 @spanning_tree_interface.group('bpdu_guard')
 @clicommon.pass_db
 def spanning_tree_interface_bpdu_guard(_db):
@@ -945,6 +969,8 @@ def spanning_tree_interface_bpdu_guard(_db):
     pass
 
 
+# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
+# MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_bpdu_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
@@ -965,6 +991,8 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
+# config spanning_tree interface bpdu_guard disable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -977,14 +1005,18 @@ def stp_interface_bpdu_guard_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
-# STP interface portfast
+# config spanning_tree interface portfast
+# Only for PVST
 @spanning_tree_interface.group('portfast')
 @clicommon.pass_db
 def spanning_tree_interface_portfast(_db):
     """Configure STP portfast for interface"""
     pass
 
-
+# config spanning_tree interface portfast enable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# It should the mode attribute in the STP global table
+# If the mode is MST, then it should tell that the mode if MST, and not allow to configure portfast
 @spanning_tree_interface_portfast.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -996,7 +1028,10 @@ def stp_interface_portfast_enable(_db, interface_name):
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'portfast': 'true'})
 
-
+# config spanning_tree interface portfast disable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# It should the mode attribute in the STP global table
+# If the mode is MST, then it should tell that the mode if mst, and this cannot be done.
 @spanning_tree_interface_portfast.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1009,14 +1044,61 @@ def stp_interface_portfast_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'portfast': 'false'})
 
 
+
+
+# config spanning_tree interface edgeport
+# Only for MST
+@spanning_tree_interface.group('edgeport')
+@clicommon.pass_db
+def spanning_tree_interface_edgeport(_db):
+    """Configure STP edgeport for interface"""
+    pass
+
+
+# config spanning_tree interface edgeport enable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# It should the mode attribute in the STP global table
+# If the mode is PVST, then it should tell that the mode if PVST, and not allow to configure edgeport
+@spanning_tree_interface_edgeport.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_edgeport_enable(_db, interface_name):
+    """Enable STP edgeport for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'edgeport': 'true'})
+
+# config spanning_tree interface edgeport disable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+# It should the mode attribute in the STP global table
+# If the mode is PVST, then it should tell that the mode if PVST, and this cannot be done.
+@spanning_tree_interface_edgeport.command('disable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_edgeport_disable(_db, interface_name):
+    """Disable STP edgeport for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'edgeport': 'false'})
+
+
+
+
+
 # STP interface root uplink_fast
+# config spanning_tree interface uplink_fast
 @spanning_tree_interface.group('uplink_fast')
 @clicommon.pass_db
 def spanning_tree_interface_uplink_fast(_db):
     """Configure STP uplink fast for interface"""
     pass
 
-
+# config spanning_tree interface uplink_fast enable <interface_name>
+# Not for MST
 @spanning_tree_interface_uplink_fast.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1028,7 +1110,8 @@ def stp_interface_uplink_fast_enable(_db, interface_name):
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'uplink_fast': 'true'})
 
-
+# config spanning_tree interface uplink_fast disable <interface_name>
+# Not for MST
 @spanning_tree_interface_uplink_fast.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1041,9 +1124,15 @@ def stp_interface_uplink_fast_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'uplink_fast': 'false'})
 
 
+
+
+
+
 ###############################################
 # STP interface per VLAN commands implementation
 ###############################################
+
+# config spanning_tree vlan interface
 @spanning_tree_vlan.group('interface')
 @clicommon.pass_db
 def spanning_tree_vlan_interface(_db):
@@ -1056,7 +1145,7 @@ def is_valid_vlan_interface_priority(ctx, priority):
     if priority not in range(STP_INTERFACE_MIN_PRIORITY, STP_INTERFACE_MAX_PRIORITY + 1):
         ctx.fail("STP per vlan port priority must be in range 0-240")
 
-
+# config spanning_tree vlan interface priority <Vlan> <interface_name> <value: 0-240>
 @spanning_tree_vlan_interface.command('priority')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('interface_name', metavar='<interface_name>', required=True)
