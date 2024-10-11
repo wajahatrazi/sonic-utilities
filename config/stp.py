@@ -4,7 +4,11 @@
 #
 
 """
-Existing PVST commands that are used for MST Commands:
+- There will be mode check in each command to check if the mode is PVST or MST
+- For PVST, priority can be set in global table but for MST, priority is associated with instance ID and will be set in the MST INSTANCE TABLE
+
+
+***Existing PVST commands that are used for MST Commands***
 
     config spanning_tree enable <pvst|mst>
     config spanning_tree disable <pvst|mst>
@@ -13,20 +17,41 @@ Existing PVST commands that are used for MST Commands:
     X config spanning_tree priority <value> (Bridge Priority)
     config spanning_tree forward_delay <value>
 
-NEW MST Commands: 
-    config spanning_tree max_hop <value> (Not for PVST)
+    INTERFACE GROUP:
+    config spanning_tree interface enable <ifname>
+    config spanning_tree interface disable <ifname>
+
+    config spanning_tree interface edgeport enable <ifname>
+    config spanning_tree interface edgeport disable <ifname>
+
+    config spanning_tree interface bpdu_guard enable <ifname>
+    config spanning_tree interface bpdu_guard disable <ifname>
+
+    config spanning_tree interface root_guard enable <ifname>
+    config spanning_tree interface root_guard disable <ifname>
+
+    config spanning_tree interface priority <ifname> <port-priority-value>
+
+    config spanning_tree interface cost <ifname> <cost-value>
+    
+    
+***NEW MST Commands***
+    config spanning_tree max_hops <value> (Not for PVST)
+
+    MST GROUP:
     config spanning_tree mst region-name <region-name>
     config spanning_tree mst revision <number>
-
     
     config spanning_tree mst instance <instance-id> priority <value>
     config spanning_tree mst instance <instance-id> vlan <add|del> <vlan-id>
 
-
     config spanning_tree mst instance <instance-id> interface <ifname> priority <port-priority-value>
     config spanning_tree mst instance <instance-id> interface <ifname> cost <cost-value>
 
-
+    INTERFACE GROUP:
+    config spanning_tree interface link_type point-to-point <interface_name>
+    config spanning_tree interface link_type shared <interface_name>
+    config spanning_tree interface link_type auto <interface_name>
 
 """
 
@@ -36,13 +61,12 @@ from swsscommon.swsscommon import ConfigDBConnector
 from .validated_config_db_connector import ValidatedConfigDBConnector
 from natsort import natsorted
 import logging
-# from . import mstp
 
 
 # MSTP parameters
 
 MST_MIN_HOPS = 1
-MST_max_hop = 40
+MST_MAX_HOPS = 40
 MST_DEFAULT_HOPS = 20
 
 MST_MIN_HELLO_INTERVAL = 1
@@ -84,8 +108,6 @@ MST_DEFAULT_PORT_PATH_COST = 1;
 MST_AUTO_LINK_TYPE = 'auto'
 MST_P2P_LINK_TYPE = 'p2p'
 MST_SHARED_LINK_TYPE = 'shared'
-
-# config.add_command(mstp.mst)
 
 
 # STP parameters
@@ -446,7 +468,7 @@ def spanning_tree(_db):
 # cmd: STP enable
 # config spanning_tree enable <pvst|mst> (Modify & sets parameters in different tables for MST & PVST)
 # modify mode in STP GLOBAL table
-# set region name, revision, max_hop, max_age, hello_time, and forward delay in STP MST table
+# set region name, revision, max_hops, max_age, hello_time, and forward delay in STP MST table
 # set bridge priority, and Vlans in STP MST_INST table
 # set path cost & port priority in STP MST_PORT table
 # set attributes in STP_PORT table
@@ -562,7 +584,7 @@ def stp_global_max_age(_db, max_age):
 # cmd: STP global max hop
 # NO GLOBAL MAX HOP FOR PVST
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
-# config spanning_tree max_hop <6-40 seconds>
+# config spanning_tree max_hops <6-40 seconds>
 @spanning_tree.command('priority')
 @click.argument('priority', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
@@ -815,7 +837,7 @@ def spanning_tree_interface(_db):
 
 # config spanning_tree interface enable <interface_name>
 # MST CONFIGURATION IN THE STP_PORT TABLE
-# 
+# It will have a check for global stp mode to figure out for which mode is it working?
 @spanning_tree_interface.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1054,7 +1076,6 @@ def spanning_tree_interface_edgeport(_db):
     """Configure STP edgeport for interface"""
     pass
 
-
 # config spanning_tree interface edgeport enable <interface_name>
 # MST CONFIGURATION IN THE STP_PORT TABLE
 # It should the mode attribute in the STP global table
@@ -1091,6 +1112,8 @@ def stp_interface_edgeport_disable(_db, interface_name):
 
 # STP interface root uplink_fast
 # config spanning_tree interface uplink_fast
+# Only for PVST
+# It should also check if the mode is PVST, else not configure
 @spanning_tree_interface.group('uplink_fast')
 @clicommon.pass_db
 def spanning_tree_interface_uplink_fast(_db):
@@ -1124,8 +1147,48 @@ def stp_interface_uplink_fast_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'uplink_fast': 'false'})
 
 
+# config spanning_tree interface link_type   
+@spanning_tree_interface.group('link_type')
+@clicommon.pass_db
+def spanning_tree_interface_link_type(_db):
+    """Configure STP link type for interface"""
+    pass
 
+# config spanning_tree interface link_type point-to-point <interface_name>
+@spanning_tree_interface_link_type.command('point-to-point')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_link_type_point_to_point(_db, interface_name):
+    """Configure STP link type as point-to-point for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'link_type': 'point-to-point'})
 
+# config spanning_tree interface link_type shared <interface_name>
+@spanning_tree_interface_link_type.command('shared')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_link_type_shared(_db, interface_name):
+    """Configure STP link type as shared for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'link_type': 'shared'})
+
+# config spanning_tree interface link_type auto <interface_name>
+@spanning_tree_interface_link_type.command('auto')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_link_type_auto(_db, interface_name):
+    """Configure STP link type as auto for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'link_type': 'auto'})
 
 
 ###############################################
@@ -1165,6 +1228,7 @@ def stp_vlan_interface_priority(_db, vid, interface_name, priority):
     db.mod_entry('STP_VLAN_PORT', vlan_interface, {'priority': priority})
 
 
+# config spanning_tree vlan interface cost <Vlan> <interface_name> <value: 1-200000000>
 @spanning_tree_vlan_interface.command('cost')
 @click.argument('vid', metavar='<Vlan>', required=True, type=int)
 @click.argument('interface_name', metavar='<interface_name>', required=True)
