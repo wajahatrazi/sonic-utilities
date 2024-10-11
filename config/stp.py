@@ -10,19 +10,19 @@
 
 ***Existing PVST commands that are used for MST Commands***
 
-    config spanning_tree enable <pvst|mst>
-    config spanning_tree disable <pvst|mst>
-    config spanning_tree hello <value>
-    config spanning_tree max_age <value>
-    X config spanning_tree priority <value> (Bridge Priority)
-    config spanning_tree forward_delay <value>
+    config spanning_tree enable <pvst|mst> #enable pvst or mst
+    config spanning_tree disable <pvst|mst> #disable pvst or mst
+
+    config spanning_tree hello <value> #set hello time pvst or mst
+
+    config spanning_tree max_age <value> #set max age pvst or mst
+
+    config spanning_tree forward_delay <value> #set forward delay pvst or mst
+
 
     INTERFACE GROUP:
-    config spanning_tree interface enable <ifname>
-    config spanning_tree interface disable <ifname>
-
-    config spanning_tree interface edgeport enable <ifname>
-    config spanning_tree interface edgeport disable <ifname>
+    config spanning_tree interface enable <ifname> #enable pvst or mst on interface
+    config spanning_tree interface disable <ifname> #disable pvst or mst on interface
 
     config spanning_tree interface bpdu_guard enable <ifname>
     config spanning_tree interface bpdu_guard disable <ifname>
@@ -42,13 +42,18 @@
     config spanning_tree mst region-name <region-name>
     config spanning_tree mst revision <number>
     
-    config spanning_tree mst instance <instance-id> priority <value>
-    config spanning_tree mst instance <instance-id> vlan <add|del> <vlan-id>
+    config spanning_tree mst instance <instance-id> priority <bridge-priority-value>
+
+    config spanning_tree mst instance <instance-id> vlan add <vlan-id>
+    config spanning_tree mst instance <instance-id> vlan del <vlan-id>
 
     config spanning_tree mst instance <instance-id> interface <ifname> priority <port-priority-value>
     config spanning_tree mst instance <instance-id> interface <ifname> cost <cost-value>
 
     INTERFACE GROUP:
+    config spanning_tree interface edgeport enable <ifname> #enable edgeport on interface for mst
+    config spanning_tree interface edgeport disable <ifname> #disable edgeport on interface for mst
+
     config spanning_tree interface link_type point-to-point <interface_name>
     config spanning_tree interface link_type shared <interface_name>
     config spanning_tree interface link_type auto <interface_name>
