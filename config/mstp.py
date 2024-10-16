@@ -302,11 +302,6 @@ def enable(ctx):
         #set_stp_mst_instance_values(ctx, config_db) #STP_MST_INST: CONFIGURATIONS PER MST INSTANCE
         #set_stp_mst_port_values(ctx, config_db) #STP_MST_PORT TABLE: INTERFACE DETAILS PER MST INSTANCE
 
-        x = 1
-
-        while x < 2:
-            x = x + 1
-
 
         enable_mst_for_vlans(ctx, config_db) # ENABLING MST FOR VLANS
 

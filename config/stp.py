@@ -471,22 +471,60 @@ def spanning_tree(_db):
 ###############################################
 
 # cmd: STP enable
-# config spanning_tree enable <pvst|mst> (Modify & sets parameters in different tables for MST & PVST)
-# modify mode in STP GLOBAL table
-# set region name, revision, max_hops, max_age, hello_time, and forward delay in STP MST table
-# set bridge priority, and Vlans in STP MST_INST table
-# set path cost & port priority in STP MST_PORT table
-# set attributes in STP_PORT table
-# MST will also be enabled on all interfaces and VLANs
-# At enable of pvst or mst
-# it should set all the tables such that the necessary attributes could be set
-# (Enable disable par yeh tables bhi set karayga puranay delete kar keh)
+# Modify & sets parameters in different tables for MST & PVST
+# config spanning_tree enable <pvst|mst>
 @spanning_tree.command('enable')
-@click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
+@click.argument('mode', metavar='<pvst|mst>', required=True, type=click.Choice(["pvst", "mst"]))
 @clicommon.pass_db
 def spanning_tree_enable(_db, mode):
-    """enable STP """
+    
     ctx = click.get_current_context()
+
+
+    # get current context
+
+    # connects with config_db
+
+    # Checks mode in the STP global table
+
+    # if mode == pvst and get_global_stp_mode(db) == pvst
+        # ctx failed pvst is already configured
+
+    # else if mode == pvst and get_global_stp_mode(db) == mst
+        # ctx failed mst is already configured
+        # disable mst first and then enable pvst
+
+    # else if mode == mst and get_global_stp_mode(db) == pvst
+        # ctx failed pvst is already configured
+        # disable pvst first and then enable mst
+
+    # else if mode == mst and get_global_stp_mode(db) == mst
+        # ctx failed mst is already configured
+
+    
+    # if mode == pvst
+        # all pvst attributes will be set
+
+    # else if mode == mst
+        # all mst attributes will be set
+            
+            # modify mode in STP GLOBAL table
+
+            # Set MST on all port and set attributes in STP_PORT table
+
+            # Set MST on VLANs and map them to Instances in STP_MST_INST table
+
+                # Set bridge priority, for Vlans in STP MST_INST table
+
+            # set path cost & port priority in STP MST_PORT table
+
+            # set region name, revision, max_hops, max_age, hello_time, and forward delay in STP MST table
+              
+
+
+
+    """enable STP """
+    
     db = _db.cfgdb
     if mode == "pvst" and get_global_stp_mode(db) == "pvst":
         ctx.fail("PVST is already configured")
