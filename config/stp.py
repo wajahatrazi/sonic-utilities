@@ -68,7 +68,7 @@ from natsort import natsorted
 import logging
 
 
-# MSTP parameters
+# MSTP parameters 
 
 MST_MIN_HOPS = 1
 MST_MAX_HOPS = 40
@@ -490,13 +490,15 @@ def spanning_tree_enable(_db, mode):
     db = _db.cfgdb
     if mode == "pvst" and get_global_stp_mode(db) == "pvst":
         ctx.fail("PVST is already configured")
-    fvs = {'mode': mode,
-           'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
-           'forward_delay': STP_DEFAULT_FORWARD_DELAY,
-           'hello_time': STP_DEFAULT_HELLO_INTERVAL,
-           'max_age': STP_DEFAULT_MAX_AGE,
-           'priority': STP_DEFAULT_BRIDGE_PRIORITY
-           }
+    fvs = {
+        'mode': mode,
+        'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
+        'forward_delay': STP_DEFAULT_FORWARD_DELAY,
+        'hello_time': STP_DEFAULT_HELLO_INTERVAL,
+        'max_age': STP_DEFAULT_MAX_AGE,
+        'priority': STP_DEFAULT_BRIDGE_PRIORITY
+    }
+        
     db.set_entry('STP', "GLOBAL", fvs)
     # Enable STP for VLAN by default
     enable_stp_for_interfaces(db)
