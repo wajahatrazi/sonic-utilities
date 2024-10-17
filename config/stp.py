@@ -283,21 +283,31 @@ def check_if_vlan_exist_in_db(db, ctx, vid):
 
 
 def enable_stp_for_vlans(db):
+    
+    ctx = click.get_current_context()
+    
     vlan_count = 0
+    
     fvs = {'enabled': 'true',
            'forward_delay': get_global_stp_forward_delay(db),
            'hello_time': get_global_stp_hello_time(db),
            'max_age': get_global_stp_max_age(db),
            'priority': get_global_stp_priority(db)
-           }
+    }
+
     vlan_dict = natsorted(db.get_table('VLAN'))
+
     max_stp_instances = get_max_stp_instances()
+    
     for vlan_key in vlan_dict:
         if vlan_count >= max_stp_instances:
             logging.warning("Exceeded maximum STP configurable VLAN instances for {}".format(vlan_key))
             break
-        db.set_entry('STP_VLAN', vlan_key, fvs)
-        vlan_count += 1
+        try:
+            db.set_entry('STP_VLAN', vlan_key, fvs)
+            vlan_count += 1
+        except ValueError as e:
+            ctx.fail("Error in enabling STP for VLANs: {}".format(e))
 
 
 def get_stp_enabled_vlan_count(db):
@@ -394,24 +404,38 @@ def is_portchannel_member_port(db, interface_name):
 
 
 def enable_stp_for_interfaces(db):
-    fvs = {'enabled': 'true',
-           'root_guard': 'false',
-           'bpdu_guard': 'false',
-           'bpdu_guard_do_disable': 'false',
-           'portfast': 'false',
-           'uplink_fast': 'false'
-           }
+
+    ctx = click.get_current_context()
+
+    fvs = {
+        'enabled': 'true',
+        'root_guard': 'false',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do_disable': 'false',
+        'portfast': 'false',
+        'uplink_fast': 'false'
+    }
+    
     port_dict = natsorted(db.get_table('PORT'))
+
     intf_list_in_vlan_member_table = get_intf_list_in_vlan_member_table(db)
 
     for port_key in port_dict:
         if port_key in intf_list_in_vlan_member_table:
-            db.set_entry('STP_PORT', port_key, fvs)
+            try:
+                db.set_entry('STP_PORT', port_key, fvs)
+            except ValueError as e:
+                ctx.fail("Error in enabling STP for Ports: {}".format(e))
 
     po_ch_dict = natsorted(db.get_table('PORTCHANNEL'))
     for po_ch_key in po_ch_dict:
         if po_ch_key in intf_list_in_vlan_member_table:
-            db.set_entry('STP_PORT', po_ch_key, fvs)
+            try:
+                db.set_entry('STP_PORT', po_ch_key, fvs)
+            except ValueError as e:
+                ctx.fail("Error in enabling STP for PortChannels: {}".format(e))
+
+
 
 
 def is_global_stp_enabled(db):
@@ -429,8 +453,14 @@ def check_if_global_stp_enabled(db, ctx):
 
 
 def get_global_stp_mode(db):
-    stp_entry = db.get_entry('STP', "GLOBAL")
-    mode = stp_entry.get("mode")
+    ctx = click.get_current_context()
+    try:
+        db.connect()
+        stp_entry = db.get_entry('STP', "GLOBAL")
+        mode = stp_entry.get("mode")
+    except ValueError as e:
+        ctx.fail("Error: {} in getting global stp mode".format(e))
+           
     return mode
 
 
@@ -471,76 +501,67 @@ def spanning_tree(_db):
 ###############################################
 
 # cmd: STP enable
-# Modify & sets parameters in different tables for MST & PVST
+# Modifies & sets parameters in different tables for MST & PVST
 # config spanning_tree enable <pvst|mst>
 @spanning_tree.command('enable')
 @click.argument('mode', metavar='<pvst|mst>', required=True, type=click.Choice(["pvst", "mst"]))
 @clicommon.pass_db
 def spanning_tree_enable(_db, mode):
-    
+
     ctx = click.get_current_context()
 
-
-    # get current context
-
-    # connects with config_db
-
-    # Checks mode in the STP global table
-
-    # if mode == pvst and get_global_stp_mode(db) == pvst
-        # ctx failed pvst is already configured
-
-    # else if mode == pvst and get_global_stp_mode(db) == mst
-        # ctx failed mst is already configured
-        # disable mst first and then enable pvst
-
-    # else if mode == mst and get_global_stp_mode(db) == pvst
-        # ctx failed pvst is already configured
-        # disable pvst first and then enable mst
-
-    # else if mode == mst and get_global_stp_mode(db) == mst
-        # ctx failed mst is already configured
-
+    db = ValidatedConfigDBConnector(_db.cfgdb)
+    db.connect()
+    ctx.obj = {'db': db}
     
-    # if mode == pvst
-        # all pvst attributes will be set
+    current_mode = get_global_stp_mode(db)
 
-    # else if mode == mst
-        # all mst attributes will be set
-            
-            # modify mode in STP GLOBAL table
-
-            # Set MST on all port and set attributes in STP_PORT table
-
-            # Set MST on VLANs and map them to Instances in STP_MST_INST table
-
-                # Set bridge priority, for Vlans in STP MST_INST table
-
-            # set path cost & port priority in STP MST_PORT table
-
-            # set region name, revision, max_hops, max_age, hello_time, and forward delay in STP MST table
-              
-
-
-
-    """enable STP """
-    
-    db = _db.cfgdb
-    if mode == "pvst" and get_global_stp_mode(db) == "pvst":
+    if mode == "pvst" and current_mode == "pvst":
         ctx.fail("PVST is already configured")
-    fvs = {
-        'mode': mode,
-        'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
-        'forward_delay': STP_DEFAULT_FORWARD_DELAY,
-        'hello_time': STP_DEFAULT_HELLO_INTERVAL,
-        'max_age': STP_DEFAULT_MAX_AGE,
-        'priority': STP_DEFAULT_BRIDGE_PRIORITY
-    }
-        
-    db.set_entry('STP', "GLOBAL", fvs)
-    # Enable STP for VLAN by default
-    enable_stp_for_interfaces(db)
-    enable_stp_for_vlans(db)
+    elif mode == "mst" and current_mode == "mst":
+        ctx.fail("MST is already configured")
+    elif mode == "pvst" and current_mode == "mst":
+        ctx.fail("MST is already configured. Disable MST first and then enable PVST.")
+    elif mode == "mst" and current_mode == "pvst":
+        ctx.fail("PVST is already configured. Disable PVST first and then enable MST.")
+    else:
+        if mode == "pvst":
+            fvs = {
+                'mode': mode,
+                'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
+                'forward_delay': STP_DEFAULT_FORWARD_DELAY,
+                'hello_time': STP_DEFAULT_HELLO_INTERVAL,
+                'max_age': STP_DEFAULT_MAX_AGE,
+                'priority': STP_DEFAULT_BRIDGE_PRIORITY
+            }
+            try:
+                db.set_entry('STP', "GLOBAL", fvs)
+            except ValueError as e:
+                ctx.fail("Error: {}".format(e))
+
+            enable_stp_for_interfaces(db)
+            enable_stp_for_vlans(db)
+
+        elif mode == "mst":
+            fvs = {
+                'mode': mode,
+                'rootguard_timeout': MST_DEFAULT_ROOT_GUARD_TIMEOUT,
+                'forward_delay': MST_DEFAULT_FORWARD_DELAY,
+                'hello_time': MST_DEFAULT_HELLO_INTERVAL,
+                'max_age': MST_DEFAULT_MAX_AGE,
+                'priority': MST_DEFAULT_BRIDGE_PRIORITY,
+                'max_hops': MST_DEFAULT_HOPS,
+                'revision': MST_DEFAULT_REVISION,
+                'name': 'default'
+            }
+            db.set_entry('STP', "GLOBAL", fvs)
+            # Enable MST for interfaces and VLANs
+            
+            # set stp_mst parameters
+            # Create a mst instance 0 & map all vlans to it on all ports
+            
+            # enable_stp_for_interfaces(db)
+            # enable_stp_for_vlans(db)
 
 
 # cmd: STP disable

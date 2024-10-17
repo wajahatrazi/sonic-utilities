@@ -277,6 +277,25 @@ def spanning_tree():
 def mst():
     pass
 
+"""
+def del_table_key(table, entry, key):
+    config_db = ValidatedConfigDBConnector(ConfigDBConnector())
+    config_db.connect()
+    data = config_db.get_entry(table, entry)
+    if data:
+        if key in data:
+            del data[key]
+        try:
+            config_db.set_entry(table, entry, data)
+        except (ValueError, JsonPatchConflict) as e:
+            ctx = click.get_current_context()
+            ctx.fail("Invalid ConfigDB. Error: {}".format(e))
+
+config_db = ValidatedConfigDBConnector(db.cfgdb)
+
+"""
+
+
 # CONFIG SPANNING_TREE MST ENABLE
 @mst.command('enable')
 @click.pass_context
@@ -376,13 +395,13 @@ def del_table_key(table, entry, key):
             ctx = click.get_current_context()
             ctx.fail("Invalid ConfigDB. Error: {}".format(e))
 
-
+config_db = ValidatedConfigDBConnector(db.cfgdb)
 
 @console.command('enable')
 @clicommon.pass_db
 def enable_console_switch(db):
     #Enable console switch
-    config_db = ValidatedConfigDBConnector(db.cfgdb)
+    
 
     table = "CONSOLE_SWITCH"
     dataKey1 = 'console_mgmt'
