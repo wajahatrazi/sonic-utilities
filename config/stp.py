@@ -283,7 +283,7 @@ def check_if_vlan_exist_in_db(db, ctx, vid):
 
 
 def enable_stp_for_vlans(db):
-    
+    db.connect()
     ctx = click.get_current_context()
     
     vlan_count = 0
@@ -403,8 +403,10 @@ def is_portchannel_member_port(db, interface_name):
         return False
 
 
+
 def enable_stp_for_interfaces(db):
 
+    db.connect()
     ctx = click.get_current_context()
 
     fvs = {
@@ -437,7 +439,6 @@ def enable_stp_for_interfaces(db):
 
 
 
-
 def is_global_stp_enabled(db):
     stp_entry = db.get_entry('STP', "GLOBAL")
     mode = stp_entry.get("mode")
@@ -447,9 +448,11 @@ def is_global_stp_enabled(db):
         return False
 
 
+
 def check_if_global_stp_enabled(db, ctx):
     if not is_global_stp_enabled(db):
         ctx.fail("Global STP is not enabled - first configure STP mode")
+
 
 
 def get_global_stp_mode(db):
@@ -460,32 +463,54 @@ def get_global_stp_mode(db):
         mode = stp_entry.get("mode")
     except ValueError as e:
         ctx.fail("Error: {} in getting global stp mode".format(e))
-           
+    
     return mode
 
 
+
 def get_global_stp_forward_delay(db):
-    stp_entry = db.get_entry('STP', "GLOBAL")
-    forward_delay = stp_entry.get("forward_delay")
-    return forward_delay
+    ctx = click.get_current_context()
+    try:
+        db.connect()
+        stp_entry = db.get_entry('STP', "GLOBAL")
+        forward_delay = stp_entry.get("forward_delay")
+        return forward_delay
+    except ValueError as e:
+        ctx.fail("Error: {} in getting global stp forward delay".format(e))
+
 
 
 def get_global_stp_hello_time(db):
-    stp_entry = db.get_entry('STP', "GLOBAL")
-    hello_time = stp_entry.get("hello_time")
-    return hello_time
+    ctx = click.get_current_context()
+    try:
+        db.connect()
+        stp_entry = db.get_entry('STP', "GLOBAL")
+        hello_time = stp_entry.get("hello_time")
+        return hello_time
+    except ValueError as e:
+        ctx.fail("Error: {} in getting global stp hello time".format(e))
 
 
 def get_global_stp_max_age(db):
-    stp_entry = db.get_entry('STP', "GLOBAL")
-    max_age = stp_entry.get("max_age")
-    return max_age
+    ctx = click.get_current_context()
+    try:
+        db.connect()
+        stp_entry = db.get_entry('STP', "GLOBAL")
+        max_age = stp_entry.get("max_age")
+        return max_age
+    except ValueError as e:
+        ctx.fail("Error: {} in getting global stp max age".format(e))
 
 
 def get_global_stp_priority(db):
-    stp_entry = db.get_entry('STP', "GLOBAL")
-    priority = stp_entry.get("priority")
-    return priority
+    ctx = click.get_current_context()
+    try:
+        db.connect()
+        stp_entry = db.get_entry('STP', "GLOBAL")
+        priority = stp_entry.get("priority")
+        return priority
+    except ValueError as e:
+        ctx.fail("Error: {} in getting global stp priority".format(e))
 
 
 # config spanning_tree
@@ -555,13 +580,21 @@ def spanning_tree_enable(_db, mode):
                 'name': 'default'
             }
             db.set_entry('STP', "GLOBAL", fvs)
+
+            """
+            Get POrt table of VLAN
+            for loop at instances 0 - 63 & set vlan instances for 
+
+            """
+
+            # 
             # Enable MST for interfaces and VLANs
             
             # set stp_mst parameters
             # Create a mst instance 0 & map all vlans to it on all ports
             
-            # enable_stp_for_interfaces(db)
-            # enable_stp_for_vlans(db)
+            # enable_mstp_for_interfaces(db)
+            # enable_mstp_for_vlans(db)
 
 
 # cmd: STP disable
