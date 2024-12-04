@@ -424,6 +424,63 @@ def get_global_stp_priority(db):
     return priority
 
 
+def get_bridge_mac_address(db):
+    """Retrieve the bridge MAC address from the CONFIG_DB"""
+    device_metadata = db.get_entry('DEVICE_METADATA', 'localhost')
+    bridge_mac_address = device_metadata.get('mac')
+    return bridge_mac_address
+
+
+def do_vlan_to_instance0(db):
+    """Get VLAN list and create MST instance 0"""
+    vlan_list = db.get_table('VLAN').keys()
+    if vlan_list:
+        vlan_list_str = ','.join(vlan_list)
+        mst_inst_fvs = {
+            'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY,
+            'vlan_list': vlan_list_str
+        }
+        db.set_entry('STP_MST_INST', 'MST_INSTANCE|0', mst_inst_fvs)
+
+def enable_mst_for_interfaces(db):
+    fvs = {
+        'enabled': 'true',
+        'root_guard': 'false',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do_disable': 'false',
+        'portfast': 'false',
+        'uplink_fast': 'false',
+        'edge_port': 'false',
+        'link_type': MST_AUTO_LINK_TYPE,
+        'path_cost': MST_DEFAULT_PORT_PATH_COST,
+        'priority': MST_DEFAULT_PORT_PRIORITY
+        }
+    port_dict = natsorted(db.get_table('PORT'))
+    intf_list_in_vlan_member_table = get_intf_list_in_vlan_member_table(db)
+
+    for port_key in port_dict:
+        if port_key in intf_list_in_vlan_member_table:
+            db.set_entry('STP_MST_PORT', f"MST_INSTANCE|0|{port_key}", fvs)
+
+    po_ch_dict = natsorted(db.get_table('PORTCHANNEL'))
+    for po_ch_key in po_ch_dict:
+        if po_ch_key in intf_list_in_vlan_member_table:
+            db.set_entry('STP_MST_PORT', f"MST_INSTANCE|0|{po_ch_key}", fvs)
+
+
+def disable_global_pvst(db):
+    db.set_entry('STP', "GLOBAL", None)
+    db.delete_table('STP_VLAN')
+    db.delete_table('STP_PORT')
+    db.delete_table('STP_VLAN_PORT')
+
+def disable_global_mst(db):
+    db.set_entry('STP', "GLOBAL", None)
+    db.delete_table('STP_MST')
+    db.delete_table('STP_MST_INST')
+    db.delete_table('STP_MST_PORT')
+    db.delete_table('STP_PORT')
+
 @click.group()
 @clicommon.pass_db
 def spanning_tree(_db):
@@ -445,19 +502,52 @@ def spanning_tree_enable(_db, mode):
     """enable STP """
     ctx = click.get_current_context()
     db = _db.cfgdb
-    if mode == "pvst" and get_global_stp_mode(db) == "pvst":
+    current_mode = get_global_stp_mode(db)
+
+    if mode == "pvst" and current_mode == "pvst":
         ctx.fail("PVST is already configured")
-    fvs = {'mode': mode,
-           'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
-           'forward_delay': STP_DEFAULT_FORWARD_DELAY,
-           'hello_time': STP_DEFAULT_HELLO_INTERVAL,
-           'max_age': STP_DEFAULT_MAX_AGE,
-           'priority': STP_DEFAULT_BRIDGE_PRIORITY
-           }
-    db.set_entry('STP', "GLOBAL", fvs)
-    # Enable STP for VLAN by default
-    enable_stp_for_interfaces(db)
-    enable_stp_for_vlans(db)
+    elif mode == "mst" and current_mode == "mst":
+        ctx.fail("MST is already configured")
+
+    if mode == "pvst":
+        disable_global_mst(db)
+
+        fvs = {'mode': mode,
+            'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
+            'forward_delay': STP_DEFAULT_FORWARD_DELAY,
+            'hello_time': STP_DEFAULT_HELLO_INTERVAL,
+            'max_age': STP_DEFAULT_MAX_AGE,
+            'priority': STP_DEFAULT_BRIDGE_PRIORITY
+            }
+        db.set_entry('STP', "GLOBAL", fvs)
+        
+        enable_stp_for_interfaces(db)
+        enable_stp_for_vlans(db) # Enable STP for VLAN by default
+    
+    elif mode == "mst":
+        disable_global_pvst(db)
+
+        fvs = {'mode': mode,
+               }
+        db.mod_entry('STP', "GLOBAL", fvs)
+
+        bridge_mac = get_bridge_mac_address(db)
+        if not bridge_mac:
+            ctx.fail("Bridge MAC address not found in DEVICE_METADATA table")
+
+        # Setting MSTP parameters in the STP_MST_TABLE
+        mst_fvs = {
+            'name': bridge_mac,
+            'revision': MST_DEFAULT_REVISION,
+            'max_hop': MST_DEFAULT_HOPS,
+            'max_age': MST_DEFAULT_MAX_AGE,
+            'hello_time': MST_DEFAULT_HELLO_INTERVAL,
+            'forward_delay': MST_DEFAULT_FORWARD_DELAY
+        }
+        db.set_entry('STP_MST', "GLOBAL", mst_fvs)
+
+        do_vlan_to_instance0(db) # VLANs to Instance 0 mapping as part of global configuration
+        enable_mst_for_interfaces(db)
 
 
 # cmd: STP disable
@@ -465,18 +555,25 @@ def spanning_tree_enable(_db, mode):
 # Modify mode in STP GLOBAL table to None
 # Delete tables STP_MST, STP_MST_INST, STP_MST_PORT, and STP_PORT
 @spanning_tree.command('disable')
-@click.argument('mode', metavar='<pvst>', required=True, type=click.Choice(["pvst"]))
+@click.argument('mode', metavar='<pvst|mst>', required=True, type=click.Choice(["pvst","mst"]))
 @clicommon.pass_db
 def stp_disable(_db, mode):
     """disable STP """
+    ctx = click.get_current_context()
     db = _db.cfgdb
-    db.set_entry('STP', "GLOBAL", None)
-    # Disable STP for all VLANs and interfaces
-    db.delete_table('STP_VLAN')
-    db.delete_table('STP_PORT')
-    db.delete_table('STP_VLAN_PORT')
-    if get_global_stp_mode(db) == "pvst":
-        print("Error PVST disable failed")
+    current_mode = get_global_stp_mode(db)
+
+    if not current_mode or current_mode == "none":
+        ctx.fail("STP is not configured")
+    elif mode != current_mode and current_mode!= "none":
+        ctx.fail(f"{mode.upper()} is not currently configured mode")
+
+    if mode == "pvst" and current_mode == "pvst":
+        disable_global_pvst(db)
+        print("PVST is disabled")
+    elif mode == "mst" and current_mode == "mst":
+        disable_global_mst(db)
+        print("MST is disabled")        
 
 
 # cmd: STP global root guard timeout
