@@ -567,7 +567,6 @@ def spanning_tree_enable(_db, mode):
         #do_vlan_to_instance0(db) # VLANs to Instance 0 mapping as part of global configuration
         enable_mst_for_interfaces(db)
 
-
 # cmd: STP disable
 # config spanning_tree disable <pvst|mst> (Modify mode parameter for MST or PVST and Delete tables)
 # Modify mode in STP GLOBAL table to None
@@ -764,6 +763,48 @@ def stp_global_revision(_db, revision):
     check_if_global_stp_enabled(db, ctx)
     #if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
     if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
+        ctx.fail("STP revision number must be in range 0-65535")
+    db.mod_entry('STP', "GLOBAL", {'revision': revision})
+
+
+
+#config spanning_tree mst
+@spanning_tree.group()
+def mst():
+    """Configure MSTP region, instance, show, clear & debug commands"""
+    pass
+
+
+# MST REGION commands implementation
+
+# cmd: MST region-name
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree mst region-name <name>
+@mst.command('region-name')
+@click.argument('region_name', metavar='<name>', required=True, case_sensitive=True)
+@clicommon.pass_db
+def stp_mst_region_name(_db, region_name):
+    """Configure MSTP region name"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    if len(region_name) >= 32:
+        ctx.fail("Region name must be less than 32 characters")
+    db.mod_entry('STP', "GLOBAL", {'name': region_name})
+
+
+# cmd: MST Global revision number
+# MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
+# config spanning_tree mst revision <0-65535>
+@mst.command('revision')
+@click.argument('revision', metavar='<0-65535>', required=True, type=int)
+@clicommon.pass_db
+def stp_global_revision(_db, revision):
+    """Configure STP global revision number"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
         ctx.fail("STP revision number must be in range 0-65535")
     db.mod_entry('STP', "GLOBAL", {'revision': revision})
 
