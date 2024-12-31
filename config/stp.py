@@ -740,7 +740,7 @@ def mst():
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree mst region-name <name>
 @mst.command('region-name')
-@click.argument('region_name', metavar='<name>', required=True, case_sensitive=True)
+@click.argument('region_name', metavar='<name>', required=True)
 @clicommon.pass_db
 def stp_mst_region_name(_db, region_name):
     """Configure MSTP region name"""
