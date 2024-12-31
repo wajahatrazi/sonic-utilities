@@ -79,8 +79,9 @@ def test_is_valid_forward_delay():
         pytest.fail("Unexpected failure on valid forward delay")
 
     # Invalid case
-    with pytest.raises(SystemExit):
-        is_valid_forward_delay(mock_ctx, 31)
+    mock_ctx.fail = MagicMock()  # Mocking the fail method to prevent actual exit
+    is_valid_forward_delay(mock_ctx, 31)
+    mock_ctx.fail.assert_called_once_with("STP forward delay value must be in range 4-30")
 
 
 def test_is_valid_stp_vlan_parameters():
