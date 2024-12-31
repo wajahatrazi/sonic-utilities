@@ -64,8 +64,9 @@ def test_is_valid_root_guard_timeout():
         pytest.fail("Unexpected failure on valid root guard timeout")
 
     # Invalid case
-    with pytest.raises(SystemExit):
-        is_valid_root_guard_timeout(mock_ctx, 700)
+    mock_ctx.fail = MagicMock()  # Mocking the fail method to prevent actual exit
+    is_valid_root_guard_timeout(mock_ctx, 700)
+    mock_ctx.fail.assert_called_once_with("STP root guard timeout must be in range 5-600")
 
 
 def test_is_valid_forward_delay():
