@@ -99,9 +99,12 @@ def test_is_valid_stp_vlan_parameters():
     except SystemExit:
         pytest.fail("Unexpected failure on valid STP VLAN parameters")
 
-    # Invalid  case
-    with pytest.raises(SystemExit):
-        is_valid_stp_vlan_parameters(mock_ctx, mock_db, "Vlan10", "max_age", 50)
+    # Invalid case
+    mock_ctx.fail = MagicMock()  # Mocking the fail method to prevent actual exit
+    is_valid_stp_vlan_parameters(mock_ctx, mock_db, "Vlan10", "max_age", 50)
+    mock_ctx.fail.assert_called_once_with(
+        "2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met for VLAN"
+    )
 
 
 def test_enable_stp_for_vlans():
