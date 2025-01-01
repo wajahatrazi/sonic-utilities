@@ -158,17 +158,11 @@ def test_disable_global_mst():
 
 
 def test_validate_params():
-    mock_ctx = MagicMock()
-
     # Valid parameter
-    try:
-        validate_params(mock_ctx, "bridge_priority", 32768)
-    except SystemExit:
-        pytest.fail("Unexpected failure on valid parameter")
+    assert validate_params(15, 20, 5) is True  # This should pass as the values meet the condition
 
     # Invalid parameter
-    with pytest.raises(SystemExit):
-        validate_params(mock_ctx, "bridge_priority", 99999)
+    assert validate_params(15, 50, 5) is False  # This should fail as the condition is not met
 
 
 def test_get_bridge_mac_address():
