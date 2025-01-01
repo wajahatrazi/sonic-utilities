@@ -167,7 +167,7 @@ def test_validate_params():
 
 def test_get_bridge_mac_address():
     mock_db = MagicMock()
-    mock_db.get_entry.return_value = {"mac_address": "00:11:22:33:44:55"}
+    mock_db.get_entry.return_value = {"mac": "00:11:22:33:44:55"}  # Updated key
 
     result = get_bridge_mac_address(mock_db)
 
