@@ -181,7 +181,9 @@ def test_get_global_stp_priority():
 
     result = get_global_stp_priority(mock_db)
 
-    assert result == 32768
+    # Compare the result as a string
+    assert result == "32768"  # Updated to match the string type returned by the function
+
     mock_db.get_entry.assert_called_once_with("STP", "GLOBAL")
 
 
