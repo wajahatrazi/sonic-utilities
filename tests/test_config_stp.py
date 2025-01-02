@@ -13,7 +13,7 @@ from config.stp import (
     MST_DEFAULT_PORT_PRIORITY,
     validate_params,
     is_valid_stp_vlan_parameters,
-    # is_valid_stp_global_parameters,
+    is_valid_stp_global_parameters,
     # update_stp_vlan_parameter,
     # check_if_vlan_exist_in_db,
     enable_stp_for_vlans,
@@ -29,8 +29,8 @@ from config.stp import (
     # is_portchannel_member_port,
     # enable_stp_for_interfaces,
     is_global_stp_enabled,
-    # check_if_global_stp_enabled,
-    # get_global_stp_mode,
+    check_if_global_stp_enabled,
+    get_global_stp_mode,
     # get_global_stp_forward_delay,
     # get_global_stp_hello_time,
     # get_global_stp_max_age,
@@ -233,3 +233,112 @@ def test_enable_mst_for_interfaces():
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet0', expected_fvs)
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|PortChannel1', expected_fvs)
     assert mock_db.set_entry.call_count == 2
+
+
+def test_check_if_global_stp_enabled():
+    # Create mock objects for db and ctx
+    mock_db = MagicMock()
+    mock_ctx = MagicMock()
+
+    # Case 1: Global STP is enabled
+    with patch('path_to_your_module.is_global_stp_enabled', return_value=True):
+        try:
+            check_if_global_stp_enabled(mock_db, mock_ctx)
+        except SystemExit:
+            pytest.fail("Unexpected failure when global STP is enabled")
+        mock_ctx.fail.assert_not_called()
+
+    # Case 2: Global STP is not enabled
+    with patch('path_to_your_module.is_global_stp_enabled', return_value=False):
+        with pytest.raises(SystemExit):
+            check_if_global_stp_enabled(mock_db, mock_ctx)
+        mock_ctx.fail.assert_called_once_with("Global STP is not enabled - first configure STP mode")
+
+def test_is_valid_stp_global_parameters():
+    # Create mock objects for db and ctx
+    mock_db = MagicMock()
+    mock_ctx = MagicMock()
+
+    # Mock STP global entry in db
+    mock_db.get_entry.return_value = {
+        "forward_delay": "15",
+        "max_age": "20",
+        "hello_time": "2",
+    }
+
+    # Patch validate_params to control its behavior
+    with patch('path_to_your_module.validate_params') as mock_validate_params:
+        # Case 1: Valid forward_delay
+        mock_validate_params.return_value = True
+        is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "15")
+        mock_validate_params.assert_called_once_with("15", "20", "2")
+        mock_ctx.fail.assert_not_called()
+        mock_validate_params.reset_mock()
+
+        # Case 2: Invalid forward_delay
+        mock_validate_params.return_value = False
+        with pytest.raises(SystemExit):
+            is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "10")
+        mock_validate_params.assert_called_once_with("10", "20", "2")
+        mock_ctx.fail.assert_called_once_with("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met")
+        mock_ctx.fail.reset_mock()
+        mock_validate_params.reset_mock()
+
+        # Case 3: Valid max_age
+        mock_validate_params.return_value = True
+        is_valid_stp_global_parameters(mock_ctx, mock_db, "max_age", "20")
+        mock_validate_params.assert_called_once_with("15", "20", "2")
+        mock_ctx.fail.assert_not_called()
+        mock_validate_params.reset_mock()
+
+        # Case 4: Invalid max_age
+        mock_validate_params.return_value = False
+        with pytest.raises(SystemExit):
+            is_valid_stp_global_parameters(mock_ctx, mock_db, "max_age", "25")
+        mock_validate_params.assert_called_once_with("15", "25", "2")
+        mock_ctx.fail.assert_called_once_with("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met")
+        mock_ctx.fail.reset_mock()
+        mock_validate_params.reset_mock()
+
+        # Case 5: Valid hello_time
+        mock_validate_params.return_value = True
+        is_valid_stp_global_parameters(mock_ctx, mock_db, "hello_time", "2")
+        mock_validate_params.assert_called_once_with("15", "20", "2")
+        mock_ctx.fail.assert_not_called()
+        mock_validate_params.reset_mock()
+
+        # Case 6: Invalid hello_time
+        mock_validate_params.return_value = False
+        with pytest.raises(SystemExit):
+            is_valid_stp_global_parameters(mock_ctx, mock_db, "hello_time", "5")
+        mock_validate_params.assert_called_once_with("15", "20", "5")
+        mock_ctx.fail.assert_called_once_with("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met")
+
+def test_get_global_stp_mode():
+    # Create a mock database
+    mock_db = MagicMock()
+
+    # Mock different scenarios for the STP global entry
+    # Case 1: Mode is set to a valid value
+    mock_db.get_entry.return_value = {"mode": "mst"}
+    result = get_global_stp_mode(mock_db)
+    assert result == "mst"
+    mock_db.get_entry.assert_called_once_with("STP", "GLOBAL")
+
+    # Reset mock_db
+    mock_db.get_entry.reset_mock()
+
+    # Case 2: Mode is set to "none"
+    mock_db.get_entry.return_value = {"mode": "none"}
+    result = get_global_stp_mode(mock_db)
+    assert result == "none"
+    mock_db.get_entry.assert_called_once_with("STP", "GLOBAL")
+
+    # Reset mock_db
+    mock_db.get_entry.reset_mock()
+
+    # Case 3: Mode is missing
+    mock_db.get_entry.return_value = {}
+    result = get_global_stp_mode(mock_db)
+    assert result is None
+    mock_db.get_entry.assert_called_once_with("STP", "GLOBAL")
