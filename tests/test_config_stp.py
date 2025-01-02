@@ -241,12 +241,12 @@ def test_check_if_global_stp_enabled():
     mock_ctx = MagicMock()
 
     # Case 1: Global STP is enabled
-    with patch('path_to_your_module.is_global_stp_enabled', return_value=True):
+    with patch('config.stp.is_global_stp_enabled', return_value=True):
         check_if_global_stp_enabled(mock_db, mock_ctx)
         mock_ctx.fail.assert_not_called()  # Fail should not be called when STP is enabled
 
     # Case 2: Global STP is not enabled
-    with patch('path_to_your_module.is_global_stp_enabled', return_value=False):
+    with patch('config.stp.is_global_stp_enabled', return_value=False):
         check_if_global_stp_enabled(mock_db, mock_ctx)
         mock_ctx.fail.assert_called_once_with("Global STP is not enabled - first configure STP mode")
 
@@ -264,7 +264,7 @@ def test_is_valid_stp_global_parameters():
     }
 
     # Patch validate_params to control its behavior
-    with patch('path_to_your_module.validate_params') as mock_validate_params:
+    with patch('config.stp.validate_params') as mock_validate_params:
         mock_validate_params.return_value = True  # Simulate valid parameters
 
         # Call the function with valid parameters
