@@ -34,7 +34,7 @@ from config.stp import (
     get_global_stp_priority,
     get_bridge_mac_address,
     # do_vlan_to_instance0,
-    # enable_mst_for_interfaces,
+    enable_mst_for_interfaces,
     disable_global_pvst,
     disable_global_mst
 )
@@ -198,3 +198,40 @@ def test_get_vlan_list_for_interface():
 
     assert result == ["Vlan10", "Vlan20"]
     mock_db.get_table.assert_called_once_with("VLAN_MEMBER")
+
+
+def test_enable_mst_for_interfaces():
+    # Create a mock database
+    mock_db = MagicMock()
+
+    # Mock the return value of db.get_table for 'PORT'
+    mock_db.get_table.side_effect = lambda table: {
+        'PORT': {'Ethernet0': {}, 'Ethernet1': {}},
+        'PORTCHANNEL': {'PortChannel1': {}}
+    }.get(table, {})
+
+    # Mock the return value of get_intf_list_in_vlan_member_table
+    with patch('path_to_your_module.get_intf_list_in_vlan_member_table', return_value=['Ethernet0', 'PortChannel1']):
+        enable_mst_for_interfaces(mock_db)
+
+    # Expected field-value pairs
+    expected_fvs = {
+        'enabled': 'true',
+        'root_guard': 'false',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do_disable': 'false',
+        'portfast': 'false',
+        'uplink_fast': 'false',
+        'edge_port': 'false',
+        'link_type': MST_AUTO_LINK_TYPE,
+        'path_cost': MST_DEFAULT_PORT_PATH_COST,
+        'priority': MST_DEFAULT_PORT_PRIORITY,
+    }
+
+    # Assert correct calls were made to set_entry for valid interfaces
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet0', expected_fvs)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|PortChannel1', expected_fvs)
+
+    # Ensure that set_entry was not called for interfaces not in VLAN member table
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet1', expected_fvs)
+    assert mock_db.set_entry.call_count == 2  # Only valid interfaces should be processed
