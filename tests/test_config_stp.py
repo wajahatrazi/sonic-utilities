@@ -239,7 +239,7 @@ def test_check_if_global_stp_enabled():
     # Create mock objects for db and ctx
     mock_db = MagicMock()
     mock_ctx = MagicMock()
-    
+
     # Case 1: Global STP is enabled
     with patch('path_to_your_module.is_global_stp_enabled', return_value=True):
         check_if_global_stp_enabled(mock_db, mock_ctx)
@@ -255,26 +255,28 @@ def test_is_valid_stp_global_parameters():
     # Create mock objects for db and ctx
     mock_db = MagicMock()
     mock_ctx = MagicMock()
-    
+
     # Mock STP global entry in db
     mock_db.get_entry.return_value = {
         "forward_delay": "15",
         "max_age": "20",
         "hello_time": "2",
     }
-    
+
     # Patch validate_params to control its behavior
     with patch('path_to_your_module.validate_params') as mock_validate_params:
         mock_validate_params.return_value = True  # Simulate valid parameters
-        
-        # Call the function
-        result = is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "15")
-        mock_validate_params.assert_called_once_with("15", "20", "2")
-        mock_ctx.fail.assert_not_called()  # Fail should not be called when parameters are valid
 
-        # Case with invalid parameters
-        mock_validate_params.return_value = False  # Simulate invalid parameters
-        result = is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "15")
+        # Call the function with valid parameters
+        is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "15")
+        mock_validate_params.assert_called_once_with("15", "20", "2")
+        mock_ctx.fail.assert_not_called()  # fail should not be called for valid parameters
+
+        # Simulate invalid parameters
+        mock_validate_params.return_value = False
+
+        # Call the function with invalid parameters
+        is_valid_stp_global_parameters(mock_ctx, mock_db, "forward_delay", "15")
         mock_ctx.fail.assert_called_once_with("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met")
 
 
@@ -336,4 +338,3 @@ def test_get_global_stp_max_age():
 
     assert result == 20
     mock_db.get_entry.assert_called_once_with('STP', 'GLOBAL')
-
