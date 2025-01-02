@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 # from click import Context
 from config.stp import (
     get_intf_list_in_vlan_member_table,
@@ -8,6 +8,9 @@ from config.stp import (
     # is_valid_hello_interval,
     # is_valid_max_age,
     # is_valid_bridge_priority,
+    MST_AUTO_LINK_TYPE,
+    MST_DEFAULT_PORT_PATH_COST,
+    MST_DEFAULT_PORT_PRIORITY,
     validate_params,
     is_valid_stp_vlan_parameters,
     # is_valid_stp_global_parameters,
