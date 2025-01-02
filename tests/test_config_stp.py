@@ -207,17 +207,16 @@ def test_enable_mst_for_interfaces():
     # Create a mock database
     mock_db = MagicMock()
 
-    # Mock the return value of db.get_table for 'PORT'
+    # Mock the return value of db.get_table for 'PORT' and 'PORTCHANNEL'
     mock_db.get_table.side_effect = lambda table: {
         'PORT': {'Ethernet0': {}, 'Ethernet1': {}},
         'PORTCHANNEL': {'PortChannel1': {}}
     }.get(table, {})
 
     # Mock the return value of get_intf_list_in_vlan_member_table
-    with patch('path_to_your_module.get_intf_list_in_vlan_member_table', return_value=['Ethernet0', 'PortChannel1']):
+    with patch('config.stp.get_intf_list_in_vlan_member_table', return_value=['Ethernet0', 'PortChannel1']):
         enable_mst_for_interfaces(mock_db)
 
-    # Expected field-value pairs
     expected_fvs = {
         'enabled': 'true',
         'root_guard': 'false',
@@ -231,10 +230,6 @@ def test_enable_mst_for_interfaces():
         'priority': MST_DEFAULT_PORT_PRIORITY,
     }
 
-    # Assert correct calls were made to set_entry for valid interfaces
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet0', expected_fvs)
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|PortChannel1', expected_fvs)
-
-    # Ensure that set_entry was not called for interfaces not in VLAN member table
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet1', expected_fvs)
-    assert mock_db.set_entry.call_count == 2  # Only valid interfaces should be processed
+    assert mock_db.set_entry.call_count == 2
