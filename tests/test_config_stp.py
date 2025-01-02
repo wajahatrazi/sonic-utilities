@@ -254,6 +254,7 @@ def test_check_if_global_stp_enabled():
             check_if_global_stp_enabled(mock_db, mock_ctx)
         mock_ctx.fail.assert_called_once_with("Global STP is not enabled - first configure STP mode")
 
+
 def test_is_valid_stp_global_parameters():
     # Create mock objects for db and ctx
     mock_db = MagicMock()
@@ -313,6 +314,7 @@ def test_is_valid_stp_global_parameters():
             is_valid_stp_global_parameters(mock_ctx, mock_db, "hello_time", "5")
         mock_validate_params.assert_called_once_with("15", "20", "5")
         mock_ctx.fail.assert_called_once_with("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met")
+
 
 def test_get_global_stp_mode():
     # Create a mock database
