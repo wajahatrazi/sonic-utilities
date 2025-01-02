@@ -487,7 +487,6 @@ def enable_mst_for_interfaces(db):
             db.set_entry('STP_MST_PORT', f"STP_MST_PORT|MST_INSTANCE|0|{port_key}", fvs_mst_port)
             db.set_entry('STP_PORT', f"STP_PORT|{port_key}", fvs_port)
 
-
     po_ch_dict = natsorted(db.get_table('PORTCHANNEL'))
     for po_ch_key in po_ch_dict:
         if po_ch_key in intf_list_in_vlan_member_table:
