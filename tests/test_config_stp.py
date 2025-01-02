@@ -5,6 +5,7 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
+    stp_global_root_guard_timeout,
     # is_valid_hello_interval,
     # is_valid_max_age,
     # is_valid_bridge_priority,
