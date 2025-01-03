@@ -223,7 +223,7 @@ def test_enable_mst_for_interfaces():
         'priority': MST_DEFAULT_PORT_PRIORITY
     }
 
-    # Assert that set_entry was called for Ethernet0 and PortChannel1 (as expected)
+    # Assert that set_entry was called for the interfaces in intf_list_in_vlan_member_table
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs)
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs)
     mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|Ethernet0', expected_fvs)
