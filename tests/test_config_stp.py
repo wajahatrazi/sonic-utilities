@@ -11,7 +11,7 @@ from config.stp import (
     stp_global_max_age,
     stp_global_max_hops,
     stp_mst_region_name,
-     stp_global_revision,
+    stp_global_revision,
     # stp_global_root_guard_timeout,
     is_valid_hello_interval,
     stp_disable,
@@ -165,6 +165,7 @@ STP_MIN_FORWARD_DELAY = 4
 STP_MAX_FORWARD_DELAY = 30
 STP_DEFAULT_FORWARD_DELAY = 15
 
+
 # Test for stp_global_forward_delay function
 @pytest.fixture
 def mock_db():
@@ -176,13 +177,13 @@ def mock_db():
 
 def test_stp_global_forward_delay(mock_db):
     forward_delay = 10  # Example valid forward delay
-    
+
     # Mock necessary function calls
     with patch('config.stp.check_if_global_stp_enabled') as mock_check_enabled, \
          patch('config.stp.is_valid_forward_delay') as mock_is_valid_forward_delay, \
          patch('config.stp.is_valid_stp_global_parameters') as mock_is_valid_stp_global_parameters, \
          patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter:
-        
+
         # Call the function with mock DB
         stp_global_forward_delay(mock_db, forward_delay)
 
@@ -191,11 +192,15 @@ def test_stp_global_forward_delay(mock_db):
 
         # Ensure the validity checks are called
         mock_is_valid_forward_delay.assert_called_once_with(mock_db.ctx, forward_delay)
-        mock_is_valid_stp_global_parameters.assert_called_once_with(mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay)
-        
+        mock_is_valid_stp_global_parameters.assert_called_once_with(
+            mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay
+        )
+
         # Check that update_stp_vlan_parameter is called
-        mock_update_stp_vlan_parameter.assert_called_once_with(mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay)
-        
+        mock_update_stp_vlan_parameter.assert_called_once_with(
+            mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay
+        )
+
         # Verify that the STP global entry is modified with the correct forward_delay
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP', "GLOBAL", {'forward_delay': forward_delay})
 
@@ -205,21 +210,14 @@ def test_invalid_forward_delay(mock_db):
 
     with patch('config.stp.check_if_global_stp_enabled') as mock_check_enabled, \
          patch('config.stp.is_valid_forward_delay') as mock_is_valid_forward_delay:
-        
+
         # Expecting an exception due to invalid forward delay
         with pytest.raises(Exception):
             stp_global_forward_delay(mock_db, forward_delay)
-            
+
         # Check that the check_if_global_stp_enabled was called
         mock_check_enabled.assert_called_once_with(mock_db.cfgdb, mock_db.ctx)
         mock_is_valid_forward_delay.assert_called_once_with(mock_db.ctx, forward_delay)
-
-
-@pytest.fixture
-def mock_db():
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    return mock_db
 
 
 def test_spanning_tree_enable_pvst(mock_db):
@@ -242,8 +240,30 @@ def test_spanning_tree_enable_pvst(mock_db):
                 'max_age': 20,
                 'priority': 32768
             })
-            mock_db.cfgdb.set_entry.assert_any_call('STP_PORT', 'Ethernet0', {'enabled': 'true', 'root_guard': 'false', 'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'})
-            mock_db.cfgdb.set_entry.assert_any_call('STP_PORT', 'Ethernet1', {'enabled': 'true', 'root_guard': 'false', 'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'})
+            mock_db.cfgdb.set_entry.assert_any_call(
+                'STP_PORT', 'Ethernet0',
+                {
+                    'enabled': 'true',
+                    'root_guard': 'false',
+                    'bpdu_guard': 'false',
+                    'bpdu_guard_do_disable': 'false',
+                    'portfast': 'false',
+                    'uplink_fast': 'false'
+                }
+            )
+
+            mock_db.cfgdb.set_entry.assert_any_call(
+                'STP_PORT', 'Ethernet1',
+                {
+                    'enabled': 'true',
+                    'root_guard': 'false',
+                    'bpdu_guard': 'false',
+                    'bpdu_guard_do_disable': 'false',
+                    'portfast': 'false',
+                    'uplink_fast': 'false'
+                }
+            )
+
 
 def test_spanning_tree_enable_mst(mock_db):
     """Test the case when MST is enabled"""
@@ -261,6 +281,7 @@ def test_spanning_tree_enable_mst(mock_db):
             mock_db.cfgdb.set_entry.assert_any_call('STP_MST', 'STP_MST|MST_INSTANCE:INSTANCE0', {'bridge_priority': 32768})
             mock_db.cfgdb.set_entry.assert_any_call('STP_PORT', 'Ethernet0', {'enabled': 'true', 'root_guard': 'false', 'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'})
             mock_db.cfgdb.set_entry.assert_any_call('STP_PORT', 'Ethernet1', {'enabled': 'true', 'root_guard': 'false', 'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'})
+
 
 def test_disable_global_mst():
     mock_db = MagicMock()
@@ -307,7 +328,6 @@ def test_get_global_stp_priority():
 def test_stp_disable():
     # Create a mock database
     mock_db = MagicMock()
-    ctx = click.get_current_context()
 
     # Test when STP is not configured (current_mode is None or 'none')
     with patch('config.stp.get_global_stp_mode', return_value=None):
@@ -594,31 +614,24 @@ def test_get_global_stp_max_age():
     mock_db.get_entry.assert_called_once_with('STP', 'GLOBAL')
 
 
-@pytest.fixture
-def mock_db():
-    # Create a mock database object
-    db = MagicMock()
-    db.cfgdb = MagicMock()
-    return db
-
 def test_stp_global_hello_interval(mock_db):
     runner = CliRunner()
-    
+
     # Mocking the 'get_global_stp_mode' function to return "pvst"
     with patch('config.stp.get_global_stp_mode', return_value="pvst"):
         # Mocking the necessary validation functions
         with patch('config.stp.is_valid_hello_interval'), \
              patch('config.stp.is_valid_stp_global_parameters'), \
              patch('config.stp.update_stp_vlan_parameter'), \
-             patch('config.stp.db.mod_entry') as mock_mod_entry:
-            
+             patch('config.stp.db.mod_entry'):
+
             # Run the command with a valid hello interval (5)
             result = runner.invoke(stp_global_hello_interval, ['5'], obj=mock_db)
-            
+
             # Assertions
             assert result.exit_code == 0
             mock_db.cfgdb.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 5})
-            
+
             # Ensure the validation functions are called with the expected arguments
             stp_global_hello_interval.is_valid_hello_interval.assert_called_with(mock_db, 5)
             stp_global_hello_interval.is_valid_stp_global_parameters.assert_called_with(mock_db, "hello_time", 5)
@@ -626,14 +639,10 @@ def test_stp_global_hello_interval(mock_db):
 
 
 @pytest.fixture
-def mock_db():
-    mock_db = MagicMock()
-    return mock_db
-
-@pytest.fixture
 def mock_ctx():
     mock_ctx = MagicMock()
     return mock_ctx
+
 
 # Test for the 'stp_global_max_age' function
 def test_stp_global_max_age_pvst(mock_db, mock_ctx):
@@ -652,15 +661,16 @@ def test_stp_global_max_age_pvst(mock_db, mock_ctx):
          patch('config.stp.is_valid_max_age'), \
          patch('config.stp.is_valid_stp_global_parameters'), \
          patch('config.stp.update_stp_vlan_parameter'), \
-         patch('config.stp.db.mod_entry') as mod_entry:
-        
+         patch('config.stp.db.mod_entry'):
+
         # Run the function
         stp_global_max_age(mock_db, max_age)
-        
+
         # Assertions
         mock_db.mod_entry.assert_called_once_with('STP', 'GLOBAL', {'max_age': max_age})
         # Ensure that other functions were called
         mock_ctx.fail.assert_not_called()
+
 
 def test_stp_global_max_age_mst(mock_db, mock_ctx):
     # Prepare inputs
@@ -677,15 +687,16 @@ def test_stp_global_max_age_mst(mock_db, mock_ctx):
          patch('config.stp.check_if_global_stp_enabled'), \
          patch('config.stp.is_valid_max_age'), \
          patch('config.stp.is_valid_stp_global_parameters'), \
-         patch('config.stp.db.mod_entry') as mod_entry:
-        
+         patch('config.stp.db.mod_entry'):  # No need for "as mod_entry" if not used
+
         # Run the function
         stp_global_max_age(mock_db, max_age)
-        
+
         # Assertions
         mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'max_age': max_age})
         # Ensure that other functions were called
         mock_ctx.fail.assert_not_called()
+
 
 def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
     # Prepare inputs
@@ -703,21 +714,13 @@ def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
          patch('config.stp.is_valid_max_age'), \
          patch('config.stp.is_valid_stp_global_parameters'), \
          patch('config.stp.db.mod_entry'):
-        
+
         # Run the function and check for failure in context
         stp_global_max_age(mock_db, max_age)
-        
+
         # Assert that ctx.fail was called due to invalid mode
         mock_ctx.fail.assert_called_once_with("Invalid STP mode configured")
 
-
-@pytest.fixture
-def mock_db():
-    """Fixture to mock the DB."""
-    mock_db = MagicMock()
-    mock_db.cfgdb.get_entry.return_value = {"mode": "mst"}  # Simulating MST mode
-    mock_db.cfgdb.get_table.return_value = {"STP_MST": {}}  # Simulating STP_MST table
-    return mock_db
 
 def test_stp_global_max_hops_valid_range(mock_db):
     """Test the scenario where max_hops is within the valid range."""
@@ -728,6 +731,7 @@ def test_stp_global_max_hops_valid_range(mock_db):
     mock_db.cfgdb.mod_entry.assert_called_with('STP_MST', "GLOBAL", {'max_hops': 20})
     assert result.exit_code == 0  # No error exit code
 
+
 def test_stp_global_max_hops_invalid_range(mock_db):
     """Test the scenario where max_hops is outside the valid range."""
     runner = CliRunner()
@@ -737,11 +741,12 @@ def test_stp_global_max_hops_invalid_range(mock_db):
     assert "STP max hops must be in range 1-40" in result.output
     assert result.exit_code != 0  # Error exit code
 
+
 def test_stp_global_max_hops_invalid_mode(mock_db):
     """Test the scenario where the mode is PVST, and max_hops is not supported."""
     # Simulate PVST mode
     mock_db.cfgdb.get_entry.return_value = {"mode": "pvst"}
-    
+
     runner = CliRunner()
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)  # Test max_hops for PVST
 
@@ -768,6 +773,7 @@ def test_stp_mst_region_name(mock_db, mock_get_global_stp_mode):
     assert result.exit_code == 0  # The command should succeed
     mock_db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'name': region_name})
 
+
 @patch('config.stp.get_global_stp_mode')
 @patch('config.stp.db')
 def test_stp_mst_region_name_invalid_length(mock_db, mock_get_global_stp_mode):
@@ -784,6 +790,7 @@ def test_stp_mst_region_name_invalid_length(mock_db, mock_get_global_stp_mode):
     # Verify the failure result
     assert result.exit_code != 0  # The command should fail
     assert "Region name must be less than 32 characters" in result.output
+
 
 @patch('config.stp.get_global_stp_mode')
 @patch('config.stp.db')
@@ -806,8 +813,7 @@ def test_stp_mst_region_name_pvst_mode(mock_db, mock_get_global_stp_mode):
 def test_stp_global_revision_valid(_db):
     # Mocking db object and necessary functions
     db = MagicMock()
-    ctx = MagicMock()
-    
+
     # Mock the global STP mode as MST
     db.cfgdb.get_entry.return_value = "mst"  # Simulate MST mode
     db.cfgdb.mod_entry = MagicMock()
@@ -826,7 +832,7 @@ def test_stp_global_revision_invalid_range(_db):
     # Mocking db object and necessary functions
     db = MagicMock()
     ctx = MagicMock()
-    
+
     # Mock the global STP mode as MST
     db.cfgdb.get_entry.return_value = "mst"  # Simulate MST mode
 
@@ -844,7 +850,7 @@ def test_stp_global_revision_pvst_mode(_db):
     # Mocking db object and necessary functions
     db = MagicMock()
     ctx = MagicMock()
-    
+
     # Mock the global STP mode as PVST
     db.cfgdb.get_entry.return_value = "pvst"  # Simulate PVST mode
 
@@ -856,5 +862,3 @@ def test_stp_global_revision_pvst_mode(_db):
 
     # Check that the failure message is raised for PVST mode
     ctx.fail.assert_called_once_with("Configuration not supported for PVST")
-
-
