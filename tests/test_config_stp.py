@@ -279,8 +279,8 @@ def test_spanning_tree_enable_mst(mock_db):
             # Assert that the correct entries are set in the database
             mock_db.cfgdb.mod_entry.assert_any_call('STP', "GLOBAL", {'mode': 'mst'})
             mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_MST', 
-                'STP_MST|MST_INSTANCE:INSTANCE0', 
+                'STP_MST',
+                'STP_MST|MST_INSTANCE:INSTANCE0',
                 {'bridge_priority': 32768}
             )
             mock_db.cfgdb.set_entry.assert_any_call(
@@ -296,14 +296,14 @@ def test_spanning_tree_enable_mst(mock_db):
                 }
             )
             mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_PORT', 
-                'Ethernet1', 
+                'STP_PORT',
+                'Ethernet1',
                 {
-                    'enabled': 'true', 
-                    'root_guard': 'false', 
-                    'bpdu_guard': 'false', 
-                    'bpdu_guard_do_disable': 'false', 
-                    'portfast': 'false', 
+                    'enabled': 'true',
+                    'root_guard': 'false',
+                    'bpdu_guard': 'false',
+                    'bpdu_guard_do_disable': 'false',
+                    'portfast': 'false',
                     'uplink_fast': 'false'
                 }
             )
