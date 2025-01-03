@@ -569,7 +569,7 @@ def spanning_tree_enable(_db, mode):
                'priority': STP_DEFAULT_BRIDGE_PRIORITY
                }
         db.set_entry('STP', "GLOBAL", fvs)
-        #db.set_entry('STP', "STP|GLOBAL", fvs)
+        # db.set_entry('STP', "STP|GLOBAL", fvs)
 
         enable_stp_for_interfaces(db)
         enable_stp_for_vlans(db)  # Enable STP for VLAN by default
@@ -669,7 +669,7 @@ def stp_global_forward_delay(_db, forward_delay):
         is_valid_forward_delay(ctx, forward_delay)
         is_valid_stp_global_parameters(ctx, db)
         db.mod_entry('STP_MST', "GLOBAL", {'forward_delay': forward_delay})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'forward_delay': forward_delay})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'forward_delay': forward_delay})
         # update_mst_instance_parameters(ctx, db, 'forward_delay', forward_delay)
 
 
@@ -695,7 +695,7 @@ def stp_global_hello_interval(_db, hello_interval):
     elif current_mode == "mst":
         is_valid_stp_global_parameters(ctx, db, "hello_time", hello_interval)
         db.mod_entry('STP_MST', "GLOBAL", {'hello_time': hello_interval})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
         # update_mst_instance_parameters(ctx, db, 'hello_time', hello_interval)
     else:
         ctx.fail("Invalid STP mode configured")
@@ -724,7 +724,7 @@ def stp_global_max_age(_db, max_age):
         is_valid_max_age(ctx, max_age)
         is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
         db.mod_entry('STP_MST', "GLOBAL", {'max_age': max_age})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_age': max_age})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_age': max_age})
         # update_mst_instance_parameters(ctx, db, 'max_age', max_age)
 
 
@@ -748,7 +748,7 @@ def stp_global_max_hops(_db, max_hops):
         if max_hops not in range(MST_MIN_HOPS, MST_MAX_HOPS + 1):
             ctx.fail("STP max hops must be in range 1-40")
         db.mod_entry('STP_MST', "GLOBAL", {'max_hops': max_hops})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_hops': max_hops})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_hops': max_hops})
         # update_mst_instance_parameters(ctx, db, 'max_hops', max_hops)
 
 
@@ -801,7 +801,7 @@ def stp_mst_region_name(_db, region_name):
         if len(region_name) >= 32:
             ctx.fail("Region name must be less than 32 characters")
         db.mod_entry('STP_MST', "GLOBAL", {'name': region_name})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'name': region_name})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'name': region_name})
 
 
 # K_TESTCASE
@@ -825,7 +825,7 @@ def stp_global_revision(_db, revision):
         if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
             ctx.fail("STP revision number must be in range 0-65535")
         db.mod_entry('STP_MST', "GLOBAL", {'revision': revision})
-        #db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'revision': revision})
+        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'revision': revision})
 
 
 ###############################################
