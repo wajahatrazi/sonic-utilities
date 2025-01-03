@@ -9,7 +9,7 @@ from config.stp import (
     # is_valid_hello_interval,
     # is_valid_max_age,
     # is_valid_bridge_priority,
-    # MST_AUTO_LINK_TYPE,
+    MST_AUTO_LINK_TYPE,
     MST_DEFAULT_PORT_PATH_COST,
     MST_DEFAULT_PORT_PRIORITY,
     validate_params,
@@ -218,16 +218,28 @@ def test_enable_mst_for_interfaces():
     with patch('config.stp.get_intf_list_in_vlan_member_table', return_value=['Ethernet0', 'PortChannel1']):
         enable_mst_for_interfaces(mock_db)
 
-    expected_fvs = {
+    # Corrected expected values for 'STP_PORT'
+    expected_fvs_port = {
+        'edge_port': 'false',
+        'link_type': MST_AUTO_LINK_TYPE,
+        'enabled': 'true',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do': 'false',
+        'root_guard': 'false',
+        'path_cost': MST_DEFAULT_PORT_PATH_COST,
+        'priority': MST_DEFAULT_PORT_PRIORITY
+    }
+
+    expected_fvs_mst_port = {
         'path_cost': MST_DEFAULT_PORT_PATH_COST,
         'priority': MST_DEFAULT_PORT_PRIORITY
     }
 
     # Assert that set_entry was called for the interfaces in intf_list_in_vlan_member_table
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs)
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs)
-    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|Ethernet0', expected_fvs)
-    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|PortChannel1', expected_fvs)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs_mst_port)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs_mst_port)
+    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|Ethernet0', expected_fvs_port)
+    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|PortChannel1', expected_fvs_port)
 
     # Ensure the correct number of calls were made to set_entry
     assert mock_db.set_entry.call_count == 4
