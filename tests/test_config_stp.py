@@ -219,20 +219,12 @@ def test_enable_mst_for_interfaces():
         enable_mst_for_interfaces(mock_db)
 
     expected_fvs = {
-        'enabled': 'true',
-        'root_guard': 'false',
-        'bpdu_guard': 'false',
-        'bpdu_guard_do_disable': 'false',
-        'portfast': 'false',
-        'uplink_fast': 'false',
-        'edge_port': 'false',
-        'link_type': MST_AUTO_LINK_TYPE,
         'path_cost': MST_DEFAULT_PORT_PATH_COST,
-        'priority': MST_DEFAULT_PORT_PRIORITY,
+        'priority': MST_DEFAULT_PORT_PRIORITY
     }
 
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet0', expected_fvs)
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|PortChannel1', expected_fvs)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs)
     assert mock_db.set_entry.call_count == 2
 
 
