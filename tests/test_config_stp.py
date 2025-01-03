@@ -223,9 +223,14 @@ def test_enable_mst_for_interfaces():
         'priority': MST_DEFAULT_PORT_PRIORITY
     }
 
+    # Assert that set_entry was called for Ethernet0 and PortChannel1 (as expected)
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs)
     mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs)
-    assert mock_db.set_entry.call_count == 2
+    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|Ethernet0', expected_fvs)
+    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|PortChannel1', expected_fvs)
+
+    # Ensure the correct number of calls were made to set_entry
+    assert mock_db.set_entry.call_count == 4
 
 
 def test_check_if_global_stp_enabled():
