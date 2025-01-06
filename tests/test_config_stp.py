@@ -190,11 +190,14 @@ def test_stp_global_forward_delay(mock_db):
         # Create a CliRunner instance to invoke the CLI command
         runner = CliRunner()
 
-        # Run the command using CliRunner and pass the mock_db and forward_delay
-        result = runner.invoke(stp_global_forward_delay, ['--forward_delay', str(forward_delay)], obj=mock_db)
-
-        # Check that the command executed successfully
-        assert result.exit_code == 0
+        try:
+            # Run the command using CliRunner and pass the mock_db and forward_delay
+            result = runner.invoke(stp_global_forward_delay, ['--forward_delay', str(forward_delay)], obj=mock_db)
+            # Check that the command executed successfully
+            assert result.exit_code == 0
+        except SystemExit as e:
+            print(f"SystemExit: {e}")
+            assert e.code == 0  # This ensures the exit code is 0 on success
 
         # Assertions for the mocked calls
         mock_check_enabled.assert_called_once_with(mock_db.cfgdb, mock_db.ctx)
