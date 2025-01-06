@@ -836,7 +836,7 @@ def test_stp_mst_region_name_pvst_mode(mock_db, mock_get_global_stp_mode):
     assert "Configuration not supported for PVST" in result.output
 
 
-def test_stp_global_revision_valid(_db):
+def test_stp_global_revision_valid(mock_db):
     # Mocking db object and necessary functions
     db = MagicMock()
 
@@ -848,13 +848,13 @@ def test_stp_global_revision_valid(_db):
     revision = 5000
 
     # Calling the function with valid input
-    stp_global_revision(_db, revision)
+    stp_global_revision(mock_db, revision)
 
     # Verify that the revision number is updated in the db
     db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'revision': revision})
 
 
-def test_stp_global_revision_invalid_range(_db):
+def test_stp_global_revision_invalid_range(mock_db):
     # Mocking db object and necessary functions
     db = MagicMock()
     ctx = MagicMock()
@@ -866,13 +866,13 @@ def test_stp_global_revision_invalid_range(_db):
     revision = 70000  # Outside the valid range of 0-65535
 
     # Call the function and assert failure
-    stp_global_revision(_db, revision)
+    stp_global_revision(mock_db, revision)
 
     # Check that the failure message is raised
     ctx.fail.assert_called_once_with("STP revision number must be in range 0-65535")
 
 
-def test_stp_global_revision_pvst_mode(_db):
+def test_stp_global_revision_pvst_mode(mock_db):
     # Mocking db object and necessary functions
     db = MagicMock()
     ctx = MagicMock()
@@ -884,7 +884,7 @@ def test_stp_global_revision_pvst_mode(_db):
     revision = 1000
 
     # Call the function and assert failure
-    stp_global_revision(_db, revision)
+    stp_global_revision(mock_db, revision)
 
     # Check that the failure message is raised for PVST mode
     ctx.fail.assert_called_once_with("Configuration not supported for PVST")
