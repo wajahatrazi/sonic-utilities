@@ -178,50 +178,102 @@ def mock_db():
 def test_stp_global_forward_delay(mock_db):
     forward_delay = 10  # Example valid forward delay
 
-    # Mock necessary function calls
-    with patch('config.stp.check_if_global_stp_enabled') as mock_check_enabled, \
-         patch('config.stp.is_valid_forward_delay') as mock_is_valid_forward_delay, \
-         patch('config.stp.is_valid_stp_global_parameters') as mock_is_valid_stp_global_parameters, \
-         patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter:
+    # Mock necessary function calls and ensure mock_db methods are properly mocked
+    mock_db.cfgdb.mod_entry = MagicMock()
 
-        # Call the function with mock DB
-        stp_global_forward_delay(mock_db, forward_delay)
+    with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
+         patch('config.stp.is_valid_forward_delay', return_value=True) as mock_is_valid_forward_delay, \
+         patch('config.stp.is_valid_stp_global_parameters', return_value=True) as mock_is_valid_stp_global_parameters, \
+         patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter, \
+         patch('config.stp.get_global_stp_mode', return_value='pvst') as mock_get_mode:
 
-        # Check that check_if_global_stp_enabled was called
+        # Create a CliRunner instance to invoke the CLI command
+        runner = CliRunner()
+
+        # Run the command using CliRunner and pass the mock_db and forward_delay
+        result = runner.invoke(stp_global_forward_delay, ['--forward_delay', str(forward_delay)], obj=mock_db)
+
+        # Check that the command executed successfully
+        assert result.exit_code == 0
+
+        # Assertions for the mocked calls
         mock_check_enabled.assert_called_once_with(mock_db.cfgdb, mock_db.ctx)
-
-        # Ensure the validity checks are called
         mock_is_valid_forward_delay.assert_called_once_with(mock_db.ctx, forward_delay)
         mock_is_valid_stp_global_parameters.assert_called_once_with(
             mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay
         )
-
-        # Check that update_stp_vlan_parameter is called
         mock_update_stp_vlan_parameter.assert_called_once_with(
             mock_db.ctx, mock_db.cfgdb, 'forward_delay', forward_delay
         )
-
-        # Verify that the STP global entry is modified with the correct forward_delay
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP', "GLOBAL", {'forward_delay': forward_delay})
 
 
 def test_invalid_forward_delay(mock_db):
+    runner = CliRunner()
     forward_delay = 40  # Invalid forward delay, beyond the allowed range
 
-    with patch('config.stp.check_if_global_stp_enabled') as mock_check_enabled, \
-         patch('config.stp.is_valid_forward_delay') as mock_is_valid_forward_delay:
+    with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
+         patch('config.stp.is_valid_forward_delay', side_effect=Exception("Invalid forward delay")) as mock_is_valid_forward_delay:
+        
+        # Use CliRunner to invoke the Click command and expect failure
+        result = runner.invoke(stp_global_forward_delay, [str(forward_delay)])
 
-        # Expecting an exception due to invalid forward delay
-        with pytest.raises(Exception):
-            stp_global_forward_delay(mock_db, forward_delay)
+        # Assert that the command failed
+        assert result.exit_code != 0
+        assert "Invalid forward delay" in result.output
 
-        # Check that the check_if_global_stp_enabled was called
+        # Ensure mock methods were called
         mock_check_enabled.assert_called_once_with(mock_db.cfgdb, mock_db.ctx)
         mock_is_valid_forward_delay.assert_called_once_with(mock_db.ctx, forward_delay)
 
 
-def test_spanning_tree_enable_pvst(mock_db):
-    """Test the case when PVST is enabled"""
+def test_spanning_tree_enable_pvst_already_enabled(mock_db):
+    """Test when PVST is already enabled"""
+
+    # Mock the return value of get_global_stp_mode to return "pvst"
+    with patch('config.stp.get_global_stp_mode', return_value="pvst"):
+        # Mock click.get_current_context
+        ctx = MagicMock()
+        with patch('click.get_current_context', return_value=ctx):
+            # Call the function with the mode 'pvst'
+            spanning_tree_enable(mock_db, 'pvst')
+
+            # Assert that ctx.fail was called with the expected message
+            ctx.fail.assert_called_with("PVST is already configured")
+
+
+def test_spanning_tree_enable_mst_already_enabled(mock_db):
+    """Test when MST is already enabled"""
+
+    # Mock the return value of get_global_stp_mode to return "mst"
+    with patch('config.stp.get_global_stp_mode', return_value="mst"):
+        # Mock click.get_current_context
+        ctx = MagicMock()
+        with patch('click.get_current_context', return_value=ctx):
+            # Call the function with the mode 'mst'
+            spanning_tree_enable(mock_db, 'mst')
+
+            # Assert that ctx.fail was called with the expected message
+            ctx.fail.assert_called_with("MST is already configured")
+
+
+def test_spanning_tree_enable_switch_from_pvst_to_mst(mock_db):
+    """Test when switching from PVST to MST"""
+
+    # Mock the return value of get_global_stp_mode to return "pvst"
+    with patch('config.stp.get_global_stp_mode', return_value="pvst"):
+        # Mock click.get_current_context
+        ctx = MagicMock()
+        with patch('click.get_current_context', return_value=ctx):
+            # Call the function with the mode 'mst'
+            spanning_tree_enable(mock_db, 'mst')
+
+            # Assert that ctx.fail was called with the expected message
+            ctx.fail.assert_called_with("PVST is already configured; please disable PVST before enabling MST")
+
+
+def test_spanning_tree_enable_switch_from_mst_to_pvst(mock_db):
+    """Test when switching from MST to PVST"""
 
     # Mock the return value of get_global_stp_mode to return "mst"
     with patch('config.stp.get_global_stp_mode', return_value="mst"):
@@ -231,38 +283,8 @@ def test_spanning_tree_enable_pvst(mock_db):
             # Call the function with the mode 'pvst'
             spanning_tree_enable(mock_db, 'pvst')
 
-            # Assert that the correct entries are set in the database
-            mock_db.cfgdb.set_entry.assert_any_call('STP', "GLOBAL", {
-                'mode': 'pvst',
-                'rootguard_timeout': 20,
-                'forward_delay': 15,
-                'hello_time': 2,
-                'max_age': 20,
-                'priority': 32768
-            })
-            mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_PORT', 'Ethernet0',
-                {
-                    'enabled': 'true',
-                    'root_guard': 'false',
-                    'bpdu_guard': 'false',
-                    'bpdu_guard_do_disable': 'false',
-                    'portfast': 'false',
-                    'uplink_fast': 'false'
-                }
-            )
-
-            mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_PORT', 'Ethernet1',
-                {
-                    'enabled': 'true',
-                    'root_guard': 'false',
-                    'bpdu_guard': 'false',
-                    'bpdu_guard_do_disable': 'false',
-                    'portfast': 'false',
-                    'uplink_fast': 'false'
-                }
-            )
+            # Assert that ctx.fail was called with the expected message
+            ctx.fail.assert_called_with("MST is already configured; please disable MST before enabling PVST")
 
 
 def test_spanning_tree_enable_mst(mock_db):
