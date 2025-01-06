@@ -184,8 +184,7 @@ def test_stp_global_forward_delay(mock_db):
     with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
          patch('config.stp.is_valid_forward_delay', return_value=True) as mock_is_valid_forward_delay, \
          patch('config.stp.is_valid_stp_global_parameters', return_value=True) as mock_is_valid_stp_global_parameters, \
-         patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter, \
-         patch('config.stp.get_global_stp_mode', return_value='pvst') as mock_get_mode:
+         patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter:
 
         # Create a CliRunner instance to invoke the CLI command
         runner = CliRunner()
@@ -213,8 +212,9 @@ def test_invalid_forward_delay(mock_db):
     forward_delay = 40  # Invalid forward delay, beyond the allowed range
 
     with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
-         patch('config.stp.is_valid_forward_delay', side_effect=Exception("Invalid forward delay")) as mock_is_valid_forward_delay:
-        
+        patch('config.stp.is_valid_forward_delay',
+              side_effect=Exception("Invalid forward delay")) as mock_is_valid_forward_delay:
+
         # Use CliRunner to invoke the Click command and expect failure
         result = runner.invoke(stp_global_forward_delay, [str(forward_delay)])
 
