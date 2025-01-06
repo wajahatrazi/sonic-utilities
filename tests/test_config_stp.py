@@ -186,13 +186,14 @@ def test_stp_global_forward_delay(mock_db):
          patch('config.stp.is_valid_stp_global_parameters', return_value=True) as mock_is_valid_stp_global_parameters, \
          patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter, \
          patch('config.stp.get_global_stp_mode', return_value='pvst'):  # Ensure current mode is 'pvst'
-
+        
         # Create a CliRunner instance to invoke the CLI command
         runner = CliRunner()
 
         try:
             # Run the command using CliRunner and pass the mock_db and forward_delay
             result = runner.invoke(stp_global_forward_delay, ['--forward_delay', str(forward_delay)], obj=mock_db)
+
             # Check that the command executed successfully
             assert result.exit_code == 0
         except SystemExit as e:
