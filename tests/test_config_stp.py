@@ -10,7 +10,7 @@ from config.stp import (
     # spanning_tree_enable,
     # stp_global_max_age,
     stp_global_max_hops,
-    # stp_mst_region_name,
+    stp_mst_region_name,
     # stp_global_revision,
     # stp_global_root_guard_timeout,
     is_valid_hello_interval,
@@ -67,6 +67,37 @@ def test_get_intf_list_in_vlan_member_table():
 
     assert result == expected_interfaces
     mock_db.get_table.assert_called_once_with('VLAN_MEMBER')
+
+def test_stp_mst_region_name():
+    mock_db = MagicMock()
+    mock_db.cfgdb.mod_entry = MagicMock()
+
+    region_name = "TestRegion"  # Example valid region name
+    invalid_region_name = "A" * 33  # Example invalid region name exceeding 32 characters
+
+    with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
+         patch('config.stp.get_global_stp_mode', return_value='mst'):  # Ensure current mode is 'mst'
+
+        runner = CliRunner()
+
+        # Test valid region name
+        result_valid = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
+        assert result_valid.exit_code == 0
+        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'name': region_name})
+
+        # Reset mock to check separate calls
+        mock_db.cfgdb.mod_entry.reset_mock()
+
+        # Test invalid region name
+        result_invalid = runner.invoke(stp_mst_region_name, [invalid_region_name], obj=mock_db)
+        assert result_invalid.exit_code != 0
+        assert "Region name must be less than 32 characters" in result_invalid.output
+
+        # Test unsupported mode (pvst)
+        with patch('config.stp.get_global_stp_mode', return_value='pvst'):
+            result_pvst = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
+            assert result_pvst.exit_code != 0
+            assert "Configuration not supported for PVST" in result_pvst.output
 
 
 def test_is_valid_root_guard_timeout():
