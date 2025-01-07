@@ -553,7 +553,7 @@ def spanning_tree_enable(_db, mode):
                'priority': STP_DEFAULT_BRIDGE_PRIORITY
                }
         db.set_entry('STP', "GLOBAL", fvs)
- 
+
         enable_stp_for_interfaces(db)
         enable_stp_for_vlans(db)  # Enable STP for VLAN by default
 
@@ -563,7 +563,7 @@ def spanning_tree_enable(_db, mode):
         fvs = {'mode': mode
                }
         db.set_entry('STP', "GLOBAL", fvs)
-        
+
         enable_mst_for_interfaces(db)
         enable_mst_instance0(db)
 
@@ -616,7 +616,7 @@ def stp_global_root_guard_timeout(_db, root_guard_timeout):
         is_valid_root_guard_timeout(ctx, root_guard_timeout)
         db.mod_entry('STP', "GLOBAL", {'rootguard_timeout': root_guard_timeout})
     else:
-        ctx.fail("Invalid Configuration for STP")
+        ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
 # K_TESTCASE
@@ -634,7 +634,7 @@ def stp_global_forward_delay(_db, forward_delay):
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
-    
+
     if current_mode == "pvst":
         is_valid_forward_delay(ctx, forward_delay)
         is_valid_stp_global_parameters(ctx, db, "forward_delay", forward_delay)
@@ -646,8 +646,9 @@ def stp_global_forward_delay(_db, forward_delay):
         db.mod_entry('STP_MST', "GLOBAL", {'forward_delay': forward_delay})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'forward_delay': forward_delay})
         # update_mst_instance_parameters(ctx, db, 'forward_delay', forward_delay)
+
     else:
-        ctx.fail("Invalid STP mode configuration")
+        ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
 # K_TESTCASE
@@ -663,7 +664,7 @@ def stp_global_hello_interval(_db, hello_interval):
     db = _db.cfgdb
 
     check_if_global_stp_enabled(db, ctx)
-    
+
     current_mode = get_global_stp_mode(db)
 
     if current_mode == "pvst":
@@ -671,13 +672,15 @@ def stp_global_hello_interval(_db, hello_interval):
         is_valid_stp_global_parameters(ctx, db, "hello_time", hello_interval)
         update_stp_vlan_parameter(ctx, db, "hello_time", hello_interval)
         db.mod_entry('STP', "GLOBAL", {'hello_time': hello_interval})
+
     elif current_mode == "mst":
         is_valid_hello_interval(ctx, hello_interval)
         db.mod_entry('STP_MST', "GLOBAL", {'hello_time': hello_interval})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
         # update_mst_instance_parameters(ctx, db, 'hello_time', hello_interval)
+    
     else:
-        ctx.fail("Invalid STP mode configured")
+        ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
 # K_TESTCASE
@@ -701,13 +704,15 @@ def stp_global_max_age(_db, max_age):
         is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
         update_stp_vlan_parameter(ctx, db, "max_age", max_age)
         db.mod_entry('STP', "GLOBAL", {'max_age': max_age})
+    
     elif current_mode == "mst":
         is_valid_max_age(ctx, max_age)
         db.mod_entry('STP_MST', "GLOBAL", {'max_age': max_age})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_age': max_age})
         # update_mst_instance_parameters(ctx, db, 'max_age', max_age)
+   
     else:
-        ctx.fail("Invalid STP mode configured")
+        ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
 # K_TESTCASE
@@ -724,12 +729,12 @@ def stp_global_max_hops(_db, max_hops):
     db = _db.cfgdb
 
     check_if_global_stp_enabled(db, ctx)
-    
+
     current_mode = get_global_stp_mode(db)
-    
+
     if current_mode == "pvst":
         ctx.fail("Max hops not supported for PVST")
-    
+
     elif current_mode == "mst":
         if max_hops not in range(MST_MIN_HOPS, MST_MAX_HOPS + 1):
             ctx.fail("STP max hops must be in range 1-40")
@@ -755,7 +760,7 @@ def stp_global_priority(_db, priority):
     check_if_global_stp_enabled(db, ctx)
     
     current_mode = get_global_stp_mode(db)
-    
+
     if current_mode == "pvst":
         is_valid_bridge_priority(ctx, priority)
         update_stp_vlan_parameter(ctx, db, "priority", priority)
@@ -819,7 +824,7 @@ def stp_global_revision(_db, revision):
     
     if current_mode == "pvst":
         ctx.fail("Configuration not supported for PVST")
-    
+
     elif current_mode == "mst":
         # if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
         if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
