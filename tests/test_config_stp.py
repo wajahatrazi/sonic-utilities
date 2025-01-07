@@ -166,7 +166,7 @@ STP_MAX_FORWARD_DELAY = 30
 STP_DEFAULT_FORWARD_DELAY = 15
 
 
-# Test for stp_global_forward_delay function
+# Test  for stp_global_forward_delay function
 @pytest.fixture
 def mock_db():
     mock_db = MagicMock()
@@ -183,7 +183,6 @@ def mock_db():
 
 #     with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
 #          patch('config.stp.is_valid_forward_delay', return_value=True) as mock_is_valid_forward_delay, \
-#          patch('config.stp.is_valid_stp_global_parameters', return_value=True) as mock_is_valid_stp_global_parameters, \
 #          patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan_parameter, \
 #          patch('config.stp.get_global_stp_mode', return_value='pvst'):  # Ensure current mode is 'pvst'
 
