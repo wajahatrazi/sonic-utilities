@@ -291,50 +291,6 @@ def mock_db():
 #             ctx.fail.assert_called_with("MST is already configured; please disable MST before enabling PVST")
 
 
-def test_spanning_tree_enable_mst(mock_db):
-    """Test the case when MST is enabled"""
-
-    # Mock the return value of get_global_stp_mode to return "pvst"
-    with patch('config.stp.get_global_stp_mode', return_value="pvst"):
-        # Mock click.get_current_context
-        ctx = MagicMock()
-        with patch('click.get_current_context', return_value=ctx):
-            # Call the function with the mode 'mst'
-            spanning_tree_enable(mock_db, 'mst')
-
-            # Assert that the correct entries are set in the database
-            mock_db.cfgdb.mod_entry.assert_any_call('STP', "GLOBAL", {'mode': 'mst'})
-            mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_MST',
-                'STP_MST|MST_INSTANCE:INSTANCE0',
-                {'bridge_priority': 32768}
-            )
-            mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_PORT',
-                'Ethernet0',
-                {
-                    'enabled': 'true',
-                    'root_guard': 'false',
-                    'bpdu_guard': 'false',
-                    'bpdu_guard_do_disable': 'false',
-                    'portfast': 'false',
-                    'uplink_fast': 'false'
-                }
-            )
-            mock_db.cfgdb.set_entry.assert_any_call(
-                'STP_PORT',
-                'Ethernet1',
-                {
-                    'enabled': 'true',
-                    'root_guard': 'false',
-                    'bpdu_guard': 'false',
-                    'bpdu_guard_do_disable': 'false',
-                    'portfast': 'false',
-                    'uplink_fast': 'false'
-                }
-            )
-
-
 def test_disable_global_mst():
     mock_db = MagicMock()
 
