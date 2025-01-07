@@ -808,8 +808,8 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-@patch('config.stp.get_global_stp_mode')  # Mock the global mode getter
-@patch('config.stp.db')  # Mock the db object
+# @patch('config.stp.get_global_stp_mode')  # Mock the global mode getter
+# @patch('config.stp.db')  # Mock the db object
 # def test_stp_mst_region_name(mock_db, mock_get_global_stp_mode):
 #     # Setup mocks
 #     mock_get_global_stp_mode.return_value = "mst"  # Simulate MST mode
@@ -827,8 +827,8 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 #     mock_db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'name': region_name})
 
 
-@patch('config.stp.get_global_stp_mode')
-@patch('config.stp.db')
+# @patch('config.stp.get_global_stp_mode')
+# @patch('config.stp.db')
 # def test_stp_mst_region_name_invalid_length(mock_db, mock_get_global_stp_mode):
 #     # Setup mocks
 #     mock_get_global_stp_mode.return_value = "mst"
@@ -845,8 +845,8 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 #     assert "Region name must be less than 32 characters" in result.output
 
 
-@patch('config.stp.get_global_stp_mode')
-@patch('config.stp.db')
+# @patch('config.stp.get_global_stp_mode')
+# @patch('config.stp.db')
 # def test_stp_mst_region_name_pvst_mode(mock_db, mock_get_global_stp_mode):
 #     # Setup mocks
 #     mock_get_global_stp_mode.return_value = "pvst"  # Simulate PVST mode
