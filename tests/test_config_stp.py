@@ -7,7 +7,7 @@ from config.stp import (
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
     # stp_global_hello_interval,
-    spanning_tree_enable,
+    # spanning_tree_enable,
     # stp_global_max_age,
     stp_global_max_hops,
     # stp_mst_region_name,
