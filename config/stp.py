@@ -678,7 +678,7 @@ def stp_global_hello_interval(_db, hello_interval):
         db.mod_entry('STP_MST', "GLOBAL", {'hello_time': hello_interval})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
         # update_mst_instance_parameters(ctx, db, 'hello_time', hello_interval)
-    
+
     else:
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
@@ -704,13 +704,13 @@ def stp_global_max_age(_db, max_age):
         is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
         update_stp_vlan_parameter(ctx, db, "max_age", max_age)
         db.mod_entry('STP', "GLOBAL", {'max_age': max_age})
-    
+
     elif current_mode == "mst":
         is_valid_max_age(ctx, max_age)
         db.mod_entry('STP_MST', "GLOBAL", {'max_age': max_age})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_age': max_age})
         # update_mst_instance_parameters(ctx, db, 'max_age', max_age)
-   
+
     else:
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
