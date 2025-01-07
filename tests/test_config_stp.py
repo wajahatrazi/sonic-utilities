@@ -68,6 +68,7 @@ def test_get_intf_list_in_vlan_member_table():
     assert result == expected_interfaces
     mock_db.get_table.assert_called_once_with('VLAN_MEMBER')
 
+
 def test_stp_mst_region_name():
     mock_db = MagicMock()
     mock_db.cfgdb.mod_entry = MagicMock()
@@ -75,8 +76,8 @@ def test_stp_mst_region_name():
     region_name = "TestRegion"  # Example valid region name
     invalid_region_name = "A" * 33  # Example invalid region name exceeding 32 characters
 
-    with patch('config.stp.check_if_global_stp_enabled', return_value=True) as mock_check_enabled, \
-         patch('config.stp.get_global_stp_mode', return_value='mst'):  # Ensure current mode is 'mst'
+    with patch('config.stp.check_if_global_stp_enabled', return_value=True), \
+         patch('config.stp.get_global_stp_mode', return_value='mst'):
 
         runner = CliRunner()
 
