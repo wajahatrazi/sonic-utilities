@@ -72,9 +72,9 @@ MST_MIN_HOPS = 1
 MST_MAX_HOPS = 40
 MST_DEFAULT_HOPS = 20
 
-MST_MIN_HELLO_INTERVAL = 1
-MST_MAX_HELLO_INTERVAL = 10
-MST_DEFAULT_HELLO_INTERVAL = 2
+MST_MIN_HELLO_TIME = 1
+MST_MAX_HELLO_TIME = 10
+MST_DEFAULT_HELLO_TIME = 2
 
 MST_MIN_MAX_AGE = 6
 MST_MAX_MAX_AGE = 40
@@ -456,7 +456,7 @@ def enable_mst_instance0(db):
         'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY
     }
     instance_id = 0
-    db.set_entry('STP_MST', f"STP_MST|MST_INSTANCE:INSTANCE{instance_id}", mst_inst_fvs)
+    db.set_entry('STP_MST_INST', f"MST_INSTANCE:INSTANCE{instance_id}", mst_inst_fvs)
 
 
 # K_TESTCASE
@@ -470,8 +470,6 @@ def enable_mst_for_interfaces(db):
         'root_guard': 'false',
         'path_cost': MST_DEFAULT_PORT_PATH_COST,
         'priority': MST_DEFAULT_PORT_PRIORITY
-        # 'portfast': 'false',
-        # 'uplink_fast': 'false',
         }
 
     fvs_mst_port = {
@@ -484,14 +482,14 @@ def enable_mst_for_interfaces(db):
 
     for port_key in port_dict:
         if port_key in intf_list_in_vlan_member_table:
-            db.set_entry('STP_MST_PORT', f"STP_MST_PORT|MST_INSTANCE|0|{port_key}", fvs_mst_port)
-            db.set_entry('STP_PORT', f"STP_PORT|{port_key}", fvs_port)
+            db.set_entry('STP_MST_PORT', f"MST_INSTANCE|0|{port_key}", fvs_mst_port)
+            db.set_entry('STP_PORT', port_key, fvs_port)
 
     po_ch_dict = natsorted(db.get_table('PORTCHANNEL'))
     for po_ch_key in po_ch_dict:
         if po_ch_key in intf_list_in_vlan_member_table:
-            db.set_entry('STP_MST_PORT', f"STP_MST_PORT|MST_INSTANCE|0|{po_ch_key}", fvs_mst_port)
-            db.set_entry('STP_PORT', f"STP_PORT|{po_ch_key}", fvs_port)
+            db.set_entry('STP_MST_PORT', f"MST_INSTANCE|0|{po_ch_key}", fvs_mst_port)
+            db.set_entry('STP_PORT', po_ch_key, fvs_port)
 
 
 # K_TESTCASE
@@ -510,20 +508,6 @@ def disable_global_mst(db):
     db.delete_table('STP_MST_PORT')
     db.delete_table('STP_PORT')
 
-
-# def update_mst_instance_parameters(ctx, db, param_type, new_value):
-#    """Update MST instance parameters in the STP_MST_INST table"""
-#
-#    allowed_params = {"max_hops", "max_age", "hello_time", "forward_delay"}
-#    if param_type not in allowed_params:
-#        ctx.fail("Invalid parameter")
-
-#    db.mod_entry('STP_MST', "GLOBAL", {param_type: new_value})
-
-    # mst_inst_table = db.get_table('STP_MST_INST')
-    # for key in mst_inst_table.keys():
-    #    if key.startswith('MST_INSTANCE'):
-    #        db.mod_entry('STP_MST_INST', key, {param_type: new_value})
 
 @click.group()
 @clicommon.pass_db
@@ -569,34 +553,17 @@ def spanning_tree_enable(_db, mode):
                'priority': STP_DEFAULT_BRIDGE_PRIORITY
                }
         db.set_entry('STP', "GLOBAL", fvs)
-        # db.set_entry('STP', "STP|GLOBAL", fvs)
-
+ 
         enable_stp_for_interfaces(db)
         enable_stp_for_vlans(db)  # Enable STP for VLAN by default
 
     elif mode == "mst":
         # disable_global_pvst(db)
 
-        fvs = {'mode': mode,
+        fvs = {'mode': mode
                }
-        db.mod_entry('STP', "GLOBAL", fvs)
-        # db.mod_entry('STP', "STP|GLOBAL", fvs)
-
-        # bridge_mac = get_bridge_mac_address(db)
-        # if not bridge_mac:
-        #    ctx.fail("Bridge MAC address not found in DEVICE_METADATA table")
-
-        # Setting MSTP parameters in the STP_MST_TABLE
-        # mst_fvs = {
-        #    'name': bridge_mac,
-        #    'revision': MST_DEFAULT_REVISION,
-        #    'max_hop': MST_DEFAULT_HOPS,
-        #    'max_age': MST_DEFAULT_MAX_AGE,
-        #    'hello_time': MST_DEFAULT_HELLO_INTERVAL,
-        #    'forward_delay': MST_DEFAULT_FORWARD_DELAY
-        # }
-        # db.set_entry('STP_MST', "GLOBAL", mst_fvs)
-
+        db.set_entry('STP', "GLOBAL", fvs)
+        
         enable_mst_for_interfaces(db)
         enable_mst_instance0(db)
 
@@ -637,14 +604,19 @@ def stp_global_root_guard_timeout(_db, root_guard_timeout):
     """Configure STP global root guard timeout value"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
+
     if current_mode == "mst":
         ctx.fail("Root guard timeout not supported for MST")
+
     elif current_mode == "pvst":
         is_valid_root_guard_timeout(ctx, root_guard_timeout)
         db.mod_entry('STP', "GLOBAL", {'rootguard_timeout': root_guard_timeout})
+    else:
+        ctx.fail("Invalid Configuration for STP")
 
 
 # K_TESTCASE
@@ -658,19 +630,24 @@ def stp_global_forward_delay(_db, forward_delay):
     """Configure STP global forward delay"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
+
     current_mode = get_global_stp_mode(db)
+    
     if current_mode == "pvst":
         is_valid_forward_delay(ctx, forward_delay)
         is_valid_stp_global_parameters(ctx, db, "forward_delay", forward_delay)
         update_stp_vlan_parameter(ctx, db, "forward_delay", forward_delay)
         db.mod_entry('STP', "GLOBAL", {'forward_delay': forward_delay})
+
     elif current_mode == "mst":
         is_valid_forward_delay(ctx, forward_delay)
-        is_valid_stp_global_parameters(ctx, db)
         db.mod_entry('STP_MST', "GLOBAL", {'forward_delay': forward_delay})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'forward_delay': forward_delay})
         # update_mst_instance_parameters(ctx, db, 'forward_delay', forward_delay)
+    else:
+        ctx.fail("Invalid STP mode configuration")
 
 
 # K_TESTCASE
@@ -684,16 +661,18 @@ def stp_global_hello_interval(_db, hello_interval):
     """Configure STP global hello interval"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
-    is_valid_hello_interval(ctx, hello_interval)
+    
     current_mode = get_global_stp_mode(db)
 
     if current_mode == "pvst":
+        is_valid_hello_interval(ctx, hello_interval)
         is_valid_stp_global_parameters(ctx, db, "hello_time", hello_interval)
         update_stp_vlan_parameter(ctx, db, "hello_time", hello_interval)
         db.mod_entry('STP', "GLOBAL", {'hello_time': hello_interval})
     elif current_mode == "mst":
-        is_valid_stp_global_parameters(ctx, db, "hello_time", hello_interval)
+        is_valid_hello_interval(ctx, hello_interval)
         db.mod_entry('STP_MST', "GLOBAL", {'hello_time': hello_interval})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
         # update_mst_instance_parameters(ctx, db, 'hello_time', hello_interval)
@@ -712,20 +691,23 @@ def stp_global_max_age(_db, max_age):
     """Configure STP global max_age"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
+    check_if_global_stp_enabled(db, ctx)
+
     current_mode = get_global_stp_mode(db)
+    
     if current_mode == "pvst":
-        check_if_global_stp_enabled(db, ctx)
         is_valid_max_age(ctx, max_age)
         is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
         update_stp_vlan_parameter(ctx, db, "max_age", max_age)
         db.mod_entry('STP', "GLOBAL", {'max_age': max_age})
     elif current_mode == "mst":
-        check_if_global_stp_enabled(db, ctx)
         is_valid_max_age(ctx, max_age)
-        is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
         db.mod_entry('STP_MST', "GLOBAL", {'max_age': max_age})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_age': max_age})
         # update_mst_instance_parameters(ctx, db, 'max_age', max_age)
+    else:
+        ctx.fail("Invalid STP mode configured")
 
 
 # K_TESTCASE
@@ -740,16 +722,22 @@ def stp_global_max_hops(_db, max_hops):
     """Configure STP global max_hops"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
+    
     current_mode = get_global_stp_mode(db)
+    
     if current_mode == "pvst":
         ctx.fail("Max hops not supported for PVST")
-    if current_mode == "mst":
+    
+    elif current_mode == "mst":
         if max_hops not in range(MST_MIN_HOPS, MST_MAX_HOPS + 1):
             ctx.fail("STP max hops must be in range 1-40")
         db.mod_entry('STP_MST', "GLOBAL", {'max_hops': max_hops})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_hops': max_hops})
         # update_mst_instance_parameters(ctx, db, 'max_hops', max_hops)
+    else:
+        ctx.fail("Invalid STP mode configured")
 
 
 # Bridge priority cannot be set without Instance ID
@@ -763,14 +751,21 @@ def stp_global_priority(_db, priority):
     """Configure STP global bridge priority"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
+    
     current_mode = get_global_stp_mode(db)
+    
     if current_mode == "pvst":
         is_valid_bridge_priority(ctx, priority)
         update_stp_vlan_parameter(ctx, db, "priority", priority)
         db.mod_entry('STP', "GLOBAL", {'priority': priority})
+
     elif current_mode == "mst":
-        ctx.fail("Bridge priority cannot be set for MST")
+        ctx.fail("Bridge priority cannot be set for MST with this command without Instance ID")
+
+    else:
+        ctx.fail("Invalid STP mode configured")
 
 
 # config spanning_tree mst
@@ -795,13 +790,15 @@ def stp_mst_region_name(_db, region_name):
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
+
     if current_mode == "pvst":
         ctx.fail("Configuration not supported for PVST")
+
     elif current_mode == "mst":
         if len(region_name) >= 32:
             ctx.fail("Region name must be less than 32 characters")
+
         db.mod_entry('STP_MST', "GLOBAL", {'name': region_name})
-        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'name': region_name})
 
 
 # K_TESTCASE
@@ -815,15 +812,19 @@ def stp_global_revision(_db, revision):
     """Configure STP global revision number"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
+    
     if current_mode == "pvst":
         ctx.fail("Configuration not supported for PVST")
+    
     elif current_mode == "mst":
         # if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
         if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
             ctx.fail("STP revision number must be in range 0-65535")
+        
         db.mod_entry('STP_MST', "GLOBAL", {'revision': revision})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'revision': revision})
 

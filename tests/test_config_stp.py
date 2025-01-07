@@ -82,7 +82,7 @@ def test_stp_mst_region_name():
         runner = CliRunner()
 
         # Test valid region name
-        result_valid = runner.invoke(stp_mst_region_name, [region_name], obj={'cfgdb': mock_db.cfgdb})
+        result_valid = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
         assert result_valid.exit_code == 0
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'name': region_name})
 
@@ -90,13 +90,13 @@ def test_stp_mst_region_name():
         mock_db.cfgdb.mod_entry.reset_mock()
 
         # Test invalid region name
-        result_invalid = runner.invoke(stp_mst_region_name, [invalid_region_name], obj={'cfgdb': mock_db.cfgdb})
+        result_invalid = runner.invoke(stp_mst_region_name, [invalid_region_name], obj=mock_db)
         assert result_invalid.exit_code != 0
         assert "Region name must be less than 32 characters" in result_invalid.output
 
         # Test unsupported mode (pvst)
         with patch('config.stp.get_global_stp_mode', return_value='pvst'):
-            result_pvst = runner.invoke(stp_mst_region_name, [region_name], obj={'cfgdb': mock_db.cfgdb})
+            result_pvst = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
             assert result_pvst.exit_code != 0
             assert "Configuration not supported for PVST" in result_pvst.output
 
