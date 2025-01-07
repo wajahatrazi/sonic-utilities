@@ -698,7 +698,7 @@ def stp_global_max_age(_db, max_age):
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
-    
+
     if current_mode == "pvst":
         is_valid_max_age(ctx, max_age)
         is_valid_stp_global_parameters(ctx, db, "max_age", max_age)
@@ -758,7 +758,7 @@ def stp_global_priority(_db, priority):
     db = _db.cfgdb
 
     check_if_global_stp_enabled(db, ctx)
-    
+
     current_mode = get_global_stp_mode(db)
 
     if current_mode == "pvst":
@@ -821,7 +821,7 @@ def stp_global_revision(_db, revision):
     check_if_global_stp_enabled(db, ctx)
 
     current_mode = get_global_stp_mode(db)
-    
+
     if current_mode == "pvst":
         ctx.fail("Configuration not supported for PVST")
 
@@ -829,7 +829,7 @@ def stp_global_revision(_db, revision):
         # if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
         if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
             ctx.fail("STP revision number must be in range 0-65535")
-        
+
         db.mod_entry('STP_MST', "GLOBAL", {'revision': revision})
         # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'revision': revision})
 
