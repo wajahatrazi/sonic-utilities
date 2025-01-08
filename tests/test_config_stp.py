@@ -103,8 +103,8 @@ def test_get_intf_list_in_vlan_member_table():
 @pytest.fixture
 def patch_functions():
     # Patch external function calls inside the function
-    with patch('your_module.check_if_global_stp_enabled', return_value=True), \
-         patch('your_module.get_global_stp_mode', return_value='mst'):
+    with patch('config.stp.check_if_global_stp_enabled', return_value=True), \
+         patch('config.stp.get_global_stp_mode', return_value='mst'):
         yield
 
 
@@ -141,7 +141,7 @@ def test_stp_mst_region_name_invalid(mock_db, patch_functions):
 
 def test_stp_mst_region_name_pvst(mock_db, patch_functions):
     # Patch the get_global_stp_mode function to return 'pvst'
-    with patch('your_module.get_global_stp_mode', return_value='pvst'):
+    with patch('config.stp.get_global_stp_mode', return_value='pvst'):
         # Create the runner for the CLI
         runner = CliRunner()
 
