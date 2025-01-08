@@ -71,7 +71,7 @@ def test_get_intf_list_in_vlan_member_table():
 
 def test_stp_mst_region_name():
     mock_db = MagicMock()
-    mock_db.cfgdb.mod_entry = MagicMock()
+    mock_db.mod_entry = MagicMock()  # Fix the mock to reflect the actual function usage
 
     region_name = "TestRegion"  # Example valid region name
     invalid_region_name = "A" * 33  # Example invalid region name exceeding 32 characters
@@ -84,10 +84,10 @@ def test_stp_mst_region_name():
         # Test valid region name
         result_valid = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
         assert result_valid.exit_code == 0
-        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'name': region_name})
+        mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'name': region_name})
 
         # Reset mock to check separate calls
-        mock_db.cfgdb.mod_entry.reset_mock()
+        mock_db.mod_entry.reset_mock()
 
         # Test invalid region name
         result_invalid = runner.invoke(stp_mst_region_name, [invalid_region_name], obj=mock_db)
