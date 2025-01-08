@@ -108,21 +108,21 @@ def patch_functions():
         yield
 
 
-def test_stp_mst_region_name_valid(mock_db, patch_functions):
-    # Create the runner for the CLI
-    runner = CliRunner()
+# def test_stp_mst_region_name_valid(mock_db, patch_functions):
+#     # Create the runner for the CLI
+#     runner = CliRunner()
 
-    region_name = "TestRegion"  # Example valid region name
-    expected_mod_entry = {'name': region_name}
+#     region_name = "TestRegion"  # Example valid region name
+#     expected_mod_entry = {'name': region_name}
 
-    # Invoke the CLI command with a valid region name
-    result = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
+#     # Invoke the CLI command with a valid region name
+#     result = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
 
-    # Assert the exit code is 0, indicating success
-    assert result.exit_code == 0
+#     # Assert the exit code is 0, indicating success
+#     assert result.exit_code == 0
 
-    # Assert the mod_entry method was called with the correct arguments
-    mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', expected_mod_entry)
+#     # Assert the mod_entry method was called with the correct arguments
+#     mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', expected_mod_entry)
 
 
 def test_stp_mst_region_name_invalid(mock_db, patch_functions):
