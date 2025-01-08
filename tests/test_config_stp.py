@@ -55,6 +55,37 @@ from config.stp import (
 )
 
 
+@pytest.fixture
+def mock_db():
+    # Create the mock database
+    mock_db = MagicMock()
+
+    # Mock cfgdb as itself to mimic behavior
+    mock_db.cfgdb = mock_db
+    
+    # Mock for get_entry with a default side_effect
+    def get_entry_side_effect(table, entry):
+        # Define common mock responses based on table and entry
+        if table == 'STP' and entry == 'GLOBAL':
+            return {'mode': 'mst'}  # Default mode (adjust as necessary)
+        if table == 'STP_MST' and entry == 'GLOBAL':
+            return {'name': 'TestRegion'}  # Mock response for MST region name
+        return {}
+
+    # Set the side effect for get_entry
+    mock_db.cfgdb.get_entry.side_effect = get_entry_side_effect
+
+    # Mock mod_entry method (commonly used for modifications)
+    mock_db.cfgdb.mod_entry = MagicMock()
+
+    # You can add more mocked methods as needed, depending on your functions
+    # Example:
+    # mock_db.cfgdb.set_entry = MagicMock()
+    
+    # Return the mock_db object, ready for testing
+    return mock_db
+
+
 def test_get_intf_list_in_vlan_member_table():
     mock_db = MagicMock()
     mock_db.get_table.return_value = {
@@ -69,37 +100,59 @@ def test_get_intf_list_in_vlan_member_table():
     mock_db.get_table.assert_called_once_with('VLAN_MEMBER')
 
 
-def test_stp_mst_region_name():
-    mock_db = MagicMock()
-    mock_db.mod_entry = MagicMock()
-    mock_db.cfgdb = mock_db  # Mimic cfgdb behavior by referencing itself
+@pytest.fixture
+def patch_functions():
+    # Patch external function calls inside the function
+    with patch('your_module.check_if_global_stp_enabled', return_value=True), \
+         patch('your_module.get_global_stp_mode', return_value='mst'):
+        yield
+
+
+def test_stp_mst_region_name_valid(mock_db, patch_functions):
+    # Create the runner for the CLI
+    runner = CliRunner()
 
     region_name = "TestRegion"  # Example valid region name
-    invalid_region_name = "A" * 33  # Example invalid region name exceeding 32 characters
+    expected_mod_entry = {'name': region_name}
 
-    with patch('config.stp.check_if_global_stp_enabled', return_value=True), \
-         patch('config.stp.get_global_stp_mode', return_value='mst'):
+    # Invoke the CLI command with a valid region name
+    result = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
 
+    # Assert the exit code is 0, indicating success
+    assert result.exit_code == 0
+
+    # Assert the mod_entry method was called with the correct arguments
+    mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', expected_mod_entry)
+
+
+def test_stp_mst_region_name_invalid(mock_db, patch_functions):
+    # Create the runner for the CLI
+    runner = CliRunner()
+
+    region_name = "A" * 33  # Example invalid region name (more than 32 characters)
+
+    # Invoke the CLI command with an invalid region name
+    result = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
+
+    # Assert the exit code is non-zero, indicating failure
+    assert result.exit_code != 0
+    assert "Region name must be less than 32 characters" in result.output
+
+
+def test_stp_mst_region_name_pvst(mock_db, patch_functions):
+    # Patch the get_global_stp_mode function to return 'pvst'
+    with patch('your_module.get_global_stp_mode', return_value='pvst'):
+        # Create the runner for the CLI
         runner = CliRunner()
 
-        # Test valid region name
-        result_valid = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
-        assert result_valid.exit_code == 0
-        mock_db.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'name': region_name})
+        region_name = "TestRegion"  # Example region name
 
-        # Reset mock to check separate calls
-        mock_db.mod_entry.reset_mock()
+        # Invoke the CLI command with region name
+        result = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
 
-        # Test invalid region name
-        result_invalid = runner.invoke(stp_mst_region_name, [invalid_region_name], obj=mock_db)
-        assert result_invalid.exit_code != 0
-        assert "Region name must be less than 32 characters" in result_invalid.output
-
-        # Test unsupported mode (pvst)
-        with patch('config.stp.get_global_stp_mode', return_value='pvst'):
-            result_pvst = runner.invoke(stp_mst_region_name, [region_name], obj=mock_db)
-            assert result_pvst.exit_code != 0
-            assert "Configuration not supported for PVST" in result_pvst.output
+        # Assert the exit code is non-zero, indicating failure for PVST mode
+        assert result.exit_code != 0
+        assert "Configuration not supported for PVST" in result.output
 
 
 def test_is_valid_root_guard_timeout():
@@ -197,15 +250,6 @@ def test_disable_global_pvst():
 STP_MIN_FORWARD_DELAY = 4
 STP_MAX_FORWARD_DELAY = 30
 STP_DEFAULT_FORWARD_DELAY = 15
-
-
-# Test  for stp_global_forward_delay function
-@pytest.fixture
-def mock_db():
-    mock_db = MagicMock()
-    # Mocking the current global mode as 'pvst'
-    mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {'mode': 'pvst'} if table == 'STP' else {}
-    return mock_db
 
 
 # def test_stp_global_forward_delay(mock_db):
@@ -793,61 +837,6 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     # Check if the function fails with the correct error message
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
-
-
-# @patch('config.stp.get_global_stp_mode')  # Mock the global mode getter
-# @patch('config.stp.db')  # Mock the db object
-# def test_stp_mst_region_name(mock_db, mock_get_global_stp_mode):
-#     # Setup mocks
-#     mock_get_global_stp_mode.return_value = "mst"  # Simulate MST mode
-
-#     # Prepare input arguments
-#     region_name = "TestRegion"  # Valid region name
-#     mock_db.mod_entry = MagicMock()  # Mock the method to update the db
-
-#     # Simulate the command execution
-#     runner = CliRunner()
-#     result = runner.invoke(stp_mst_region_name, ['TestRegion'], obj={'cfgdb': mock_db})
-
-#     # Verify the outcome
-#     assert result.exit_code == 0  # The command should succeed
-#     mock_db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'name': region_name})
-
-
-# @patch('config.stp.get_global_stp_mode')
-# @patch('config.stp.db')
-# def test_stp_mst_region_name_invalid_length(mock_db, mock_get_global_stp_mode):
-#     # Setup mocks
-#     mock_get_global_stp_mode.return_value = "mst"
-
-#     # Prepare input for region name with length >= 32
-#     invalid_region_name = "A" * 32  # Invalid region name (length 32)
-
-#     # Simulate the command execution
-#     runner = CliRunner()
-#     result = runner.invoke(stp_mst_region_name, [invalid_region_name], obj={'cfgdb': mock_db})
-
-#     # Verify the failure result
-#     assert result.exit_code != 0  # The command should fail
-#     assert "Region name must be less than 32 characters" in result.output
-
-
-# @patch('config.stp.get_global_stp_mode')
-# @patch('config.stp.db')
-# def test_stp_mst_region_name_pvst_mode(mock_db, mock_get_global_stp_mode):
-#     # Setup mocks
-#     mock_get_global_stp_mode.return_value = "pvst"  # Simulate PVST mode
-
-#     # Prepare input for region name
-#     region_name = "TestRegion"
-
-#     # Simulate the command execution
-#     runner = CliRunner()
-#     result = runner.invoke(stp_mst_region_name, [region_name], obj={'cfgdb': mock_db})
-
-#     # Verify the failure result
-#     assert result.exit_code != 0  # The command should fail
-#     assert "Configuration not supported for PVST" in result.output
 
 
 # def test_stp_global_revision_valid(mock_db):
