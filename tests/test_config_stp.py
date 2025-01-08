@@ -62,7 +62,7 @@ def mock_db():
 
     # Mock cfgdb as itself to mimic behavior
     mock_db.cfgdb = mock_db
-    
+
     # Mock for get_entry with a default side_effect
     def get_entry_side_effect(table, entry):
         # Define common mock responses based on table and entry
@@ -81,7 +81,7 @@ def mock_db():
     # You can add more mocked methods as needed, depending on your functions
     # Example:
     # mock_db.cfgdb.set_entry = MagicMock()
-    
+
     # Return the mock_db object, ready for testing
     return mock_db
 
