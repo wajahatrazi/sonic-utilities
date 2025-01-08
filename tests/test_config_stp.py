@@ -406,7 +406,7 @@ def test_get_vlan_list_for_interface():
     mock_db.get_table.assert_called_once_with("VLAN_MEMBER")
 
 
-ddef test_enable_mst_for_interfaces():
+def test_enable_mst_for_interfaces():
     # Create a mock database
     mock_db = MagicMock()
 
