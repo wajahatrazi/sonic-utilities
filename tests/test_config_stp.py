@@ -71,7 +71,8 @@ def test_get_intf_list_in_vlan_member_table():
 
 def test_stp_mst_region_name():
     mock_db = MagicMock()
-    mock_db.mod_entry = MagicMock()  # Fix the mock to reflect the actual function usage
+    mock_db.mod_entry = MagicMock()
+    mock_db.cfgdb = mock_db  # Mimic cfgdb behavior by referencing itself
 
     region_name = "TestRegion"  # Example valid region name
     invalid_region_name = "A" * 33  # Example invalid region name exceeding 32 characters
@@ -405,7 +406,7 @@ def test_get_vlan_list_for_interface():
     mock_db.get_table.assert_called_once_with("VLAN_MEMBER")
 
 
-def test_enable_mst_for_interfaces():
+ddef test_enable_mst_for_interfaces():
     # Create a mock database
     mock_db = MagicMock()
 
@@ -419,7 +420,6 @@ def test_enable_mst_for_interfaces():
     with patch('config.stp.get_intf_list_in_vlan_member_table', return_value=['Ethernet0', 'PortChannel1']):
         enable_mst_for_interfaces(mock_db)
 
-    # Corrected expected values for 'STP_PORT'
     expected_fvs_port = {
         'edge_port': 'false',
         'link_type': MST_AUTO_LINK_TYPE,
@@ -436,11 +436,11 @@ def test_enable_mst_for_interfaces():
         'priority': MST_DEFAULT_PORT_PRIORITY
     }
 
-    # Assert that set_entry was called for the interfaces in intf_list_in_vlan_member_table
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|Ethernet0', expected_fvs_mst_port)
-    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'STP_MST_PORT|MST_INSTANCE|0|PortChannel1', expected_fvs_mst_port)
-    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|Ethernet0', expected_fvs_port)
-    mock_db.set_entry.assert_any_call('STP_PORT', 'STP_PORT|PortChannel1', expected_fvs_port)
+    # Assert that set_entry was called with the correct key names
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|Ethernet0', expected_fvs_mst_port)
+    mock_db.set_entry.assert_any_call('STP_MST_PORT', 'MST_INSTANCE|0|PortChannel1', expected_fvs_mst_port)
+    mock_db.set_entry.assert_any_call('STP_PORT', 'Ethernet0', expected_fvs_port)
+    mock_db.set_entry.assert_any_call('STP_PORT', 'PortChannel1', expected_fvs_port)
 
     # Ensure the correct number of calls were made to set_entry
     assert mock_db.set_entry.call_count == 4
