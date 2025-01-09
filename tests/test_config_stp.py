@@ -15,7 +15,7 @@ from config.stp import (
     stp_global_revision,
     # stp_global_root_guard_timeout,
     is_valid_hello_interval,
-    # stp_disable,
+    stp_disable,
     # is_valid_max_age,
     # is_valid_bridge_priority,
     enable_mst_instance0,
@@ -135,6 +135,48 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         # Assert the exit code is non-zero, indicating failure for PVST mode
         assert result.exit_code != 0
         assert "Configuration not supported for PVST" in result.output
+
+
+@patch('config.stp.disable_global_pvst')
+@patch('config.stp.disable_global_mst')
+@patch('config.stp.get_global_stp_mode')
+@patch('config.stp.CfgDBConnector')  # Mocking the database connection object
+def test_stp_disable(mock_cfgdb, mock_get_global_stp_mode, mock_disable_global_mst, mock_disable_global_pvst):
+    # Mock database instance
+    mock_db_instance = MagicMock()
+    mock_cfgdb.return_value = mock_db_instance
+
+    # Initialize CliRunner to invoke the command-line interface
+    runner = CliRunner()
+
+    # Test when STP is not configured
+    mock_get_global_stp_mode.return_value = "none"
+    result = runner.invoke(stp_disable, ['pvst'])
+    assert result.exit_code != 0
+    assert "STP is not configured" in result.output
+
+    # Test when trying to disable pvst but mst is the current mode
+    mock_get_global_stp_mode.return_value = "mst"
+    result = runner.invoke(stp_disable, ['pvst'])
+    assert result.exit_code != 0
+    assert "PVST is not currently configured mode" in result.output
+
+    # Test successful disable of PVST
+    mock_get_global_stp_mode.return_value = "pvst"
+    result = runner.invoke(stp_disable, ['pvst'])
+    assert result.exit_code == 0
+    mock_disable_global_pvst.assert_called_once()
+    mock_disable_global_mst.assert_not_called()
+
+    # Reset mock to avoid cross-test interference
+    mock_disable_global_pvst.reset_mock()
+
+    # Test successful disable of MST
+    mock_get_global_stp_mode.return_value = "mst"
+    result = runner.invoke(stp_disable, ['mst'])
+    assert result.exit_code == 0
+    mock_disable_global_mst.assert_called_once()
+    mock_disable_global_pvst.assert_not_called()
 
 
 @patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the function
