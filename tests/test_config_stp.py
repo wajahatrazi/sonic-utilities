@@ -137,11 +137,11 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
+@patch('swsscommon.dbconnector.CfgDBConnector')  # Adjust to the correct import path
 @patch('config.stp.disable_global_pvst')
 @patch('config.stp.disable_global_mst')
 @patch('config.stp.get_global_stp_mode')
-@patch('config.stp.CfgDBConnector')  # Mocking the database connection object
-def test_stp_disable(mock_cfgdb, mock_get_global_stp_mode, mock_disable_global_mst, mock_disable_global_pvst):
+def test_stp_disable(mock_get_global_stp_mode, mock_disable_global_mst, mock_disable_global_pvst, mock_cfgdb):
     # Mock database instance
     mock_db_instance = MagicMock()
     mock_cfgdb.return_value = mock_db_instance
