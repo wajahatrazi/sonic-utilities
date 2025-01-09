@@ -150,7 +150,10 @@ def test_stp_interface_edgeport_enable(mock_check_if_interface_is_valid, mock_ch
     stp_interface_edgeport_enable(mock_db, interface_name)
 
     # Assert the check functions are called with correct arguments
-    mock_check_if_stp_enabled_for_interface.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, interface_name)
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(
+        click.get_current_context(), mock_db.cfgdb, interface_name
+    )
+
     mock_check_if_interface_is_valid.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, interface_name)
 
     # Assert the database entry modification
