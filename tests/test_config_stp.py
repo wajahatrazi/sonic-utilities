@@ -1,4 +1,5 @@
 import pytest
+import click
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
@@ -139,7 +140,9 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
 @patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
 @patch('config.stp.check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
 @patch('config.stp._db.cfgdb')  # Mock the database interaction
-def test_stp_interface_edgeport_enable(mock_db, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
+def test_stp_interface_edgeport_enable(mock_db,
+                                       mock_check_if_interface_is_valid,
+                                       mock_check_if_stp_enabled_for_interface):
     # Mocked data
     mock_db.mod_entry = MagicMock()
 
@@ -149,11 +152,15 @@ def test_stp_interface_edgeport_enable(mock_db, mock_check_if_interface_is_valid
     stp_interface_edgeport_enable(None, interface_name)
 
     # Assert check functions were called with the correct arguments
-    mock_check_if_stp_enabled_for_interface.assert_called_once_with(click.get_current_context(), mock_db, interface_name)
-    mock_check_if_interface_is_valid.assert_called_once_with(click.get_current_context(), mock_db, interface_name)
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(
+        click.get_current_context(), mock_db, interface_name)
+    mock_check_if_interface_is_valid.assert_called_once_with(
+        click.get_current_context(), mock_db, interface_name)
 
     # Assert that the 'mod_entry' function was called to update the database
-    mock_db.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
+    mock_db.mod_entry.assert_called_once_with(
+        'STP_PORT', interface_name, {'edgeport': 'true'})
+
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
 @patch('config.stp.get_global_stp_mode')          # Mock the imported function
