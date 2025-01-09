@@ -11,7 +11,7 @@ from config.stp import (
     # stp_global_max_age,
     stp_global_max_hops,
     stp_mst_region_name,
-    # stp_global_revision,
+    stp_global_revision,
     # stp_global_root_guard_timeout,
     is_valid_hello_interval,
     # stp_disable,
@@ -839,22 +839,22 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-# def test_stp_global_revision_valid(mock_db):
-#     # Mocking db object and necessary functions
-#     db = MagicMock()
+def test_stp_global_revision_valid(mock_db):
+    # Mocking db object and necessary functions
+    db = MagicMock()
 
-#     # Mock the global STP mode as MST
-#     db.cfgdb.get_entry.return_value = "mst"  # Simulate MST mode
-#     db.cfgdb.mod_entry = MagicMock()
+    # Mock the global STP mode as MST
+    db.cfgdb.get_entry.return_value = "mst"  # Simulate MST mode
+    db.cfgdb.mod_entry = MagicMock()
 
-#     # Valid revision number
-#     revision = 5000
+    # Valid revision number
+    revision = 5000
 
-#     # Calling the function with valid input
-#     stp_global_revision(mock_db, revision)
+    # Calling the function with valid input
+    stp_global_revision(mock_db, revision)
 
-#     # Verify that the revision number is updated in the db
-#     db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'revision': revision})
+    # Verify that the revision number is updated in the db
+    db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'revision': revision})
 
 
 # def test_stp_global_revision_invalid_range(mock_db):
