@@ -137,29 +137,24 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
-@patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
-@patch('config.stp.check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
-@patch('config.stp._db.cfgdb')  # Mock the database interaction
-def test_stp_interface_edgeport_enable(mock_db,
-                                       mock_check_if_interface_is_valid,
-                                       mock_check_if_stp_enabled_for_interface):
-    # Mocked data
-    mock_db.mod_entry = MagicMock()
+@patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the function
+@patch('config.stp.check_if_interface_is_valid')  # Mock the function
+def test_stp_interface_edgeport_enable(mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
+    # Create a mock database object
+    mock_db = MagicMock()
+    mock_db.cfgdb.mod_entry = MagicMock()  # Mock the mod_entry method
 
     interface_name = 'Ethernet0'  # Example interface name
 
-    # Call the function
-    stp_interface_edgeport_enable(None, interface_name)
+    # Call the function with the mock database
+    stp_interface_edgeport_enable(mock_db, interface_name)
 
-    # Assert check functions were called with the correct arguments
-    mock_check_if_stp_enabled_for_interface.assert_called_once_with(
-        click.get_current_context(), mock_db, interface_name)
-    mock_check_if_interface_is_valid.assert_called_once_with(
-        click.get_current_context(), mock_db, interface_name)
+    # Assert the check functions are called with correct arguments
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, interface_name)
+    mock_check_if_interface_is_valid.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, interface_name)
 
-    # Assert that the 'mod_entry' function was called to update the database
-    mock_db.mod_entry.assert_called_once_with(
-        'STP_PORT', interface_name, {'edgeport': 'true'})
+    # Assert the database entry modification
+    mock_db.cfgdb.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
 
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
