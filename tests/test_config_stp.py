@@ -23,8 +23,8 @@ from config.stp import (
     MST_DEFAULT_PORT_PATH_COST,
     MST_DEFAULT_PORT_PRIORITY,
     MST_DEFAULT_BRIDGE_PRIORITY,
-    MST_MAX_REVISION,
-    MST_MIN_REVISION,
+    # MST_MAX_REVISION,
+    # MST_MIN_REVISION,
     validate_params,
     is_valid_stp_vlan_parameters,
     is_valid_stp_global_parameters,
@@ -528,4 +528,3 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     # Check if the function fails with the correct error message
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
-
