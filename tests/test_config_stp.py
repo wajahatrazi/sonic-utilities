@@ -23,6 +23,7 @@ from config.stp import (
     MST_DEFAULT_PORT_PATH_COST,
     MST_DEFAULT_PORT_PRIORITY,
     MST_DEFAULT_BRIDGE_PRIORITY,
+    stp_interface_edgeport_enable,
     # MST_MAX_REVISION,
     # MST_MIN_REVISION,
     validate_params,
@@ -134,6 +135,25 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert result.exit_code != 0
         assert "Configuration not supported for PVST" in result.output
 
+
+@patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
+@patch('config.stp.check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
+@patch('config.stp._db.cfgdb')  # Mock the database interaction
+def test_stp_interface_edgeport_enable(mock_db, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
+    # Mocked data
+    mock_db.mod_entry = MagicMock()
+
+    interface_name = 'Ethernet0'  # Example interface name
+
+    # Call the function
+    stp_interface_edgeport_enable(None, interface_name)
+
+    # Assert check functions were called with the correct arguments
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(click.get_current_context(), mock_db, interface_name)
+    mock_check_if_interface_is_valid.assert_called_once_with(click.get_current_context(), mock_db, interface_name)
+
+    # Assert that the 'mod_entry' function was called to update the database
+    mock_db.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
 @patch('config.stp.get_global_stp_mode')          # Mock the imported function
