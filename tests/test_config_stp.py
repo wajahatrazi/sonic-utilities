@@ -135,9 +135,9 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
-@patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
-@patch('config.stp.get_global_stp_mode')          # Mock the imported function
-@patch('config.stp.clicommon.pass_db')  # Mock the decorator
+@patch('your_module.check_if_global_stp_enabled')  # Mock the imported function
+@patch('your_module.get_global_stp_mode')          # Mock the imported function
+@patch('your_module.clicommon.pass_db')  # Mock the decorator
 def test_stp_global_revision_mst(mock_pass_db, mock_get_global_stp_mode, mock_check_if_global_stp_enabled):
     runner = CliRunner()
     db = MagicMock()
@@ -151,12 +151,12 @@ def test_stp_global_revision_mst(mock_pass_db, mock_get_global_stp_mode, mock_ch
     assert result.exit_code == 0, f"Failed: {result.output}"
 
     # Test with invalid revision (below range)
-    result = runner.invoke(stp_global_revision, ['-1'])
+    result = runner.invoke(stp_global_revision, ['--', '-1'])
     assert result.exit_code != 0
     assert "STP revision number must be in range 0-65535" in result.output
 
     # Test with invalid revision (above range)
-    result = runner.invoke(stp_global_revision, ['65536'])
+    result = runner.invoke(stp_global_revision, ['--', '65536'])
     assert result.exit_code != 0
     assert "STP revision number must be in range 0-65535" in result.output
 
