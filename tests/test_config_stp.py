@@ -841,7 +841,8 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 
 def test_stp_global_revision_valid(mock_db):
     # Mocking necessary database functions
-    mock_db.cfgdb.get_entry.return_value = "mst"  # Simulate MST mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_entry = MagicMock(return_value="mst")  # Simulate MST mode
     mock_db.cfgdb.mod_entry = MagicMock()
 
     # Set up Click runner for invoking the command
@@ -850,8 +851,10 @@ def test_stp_global_revision_valid(mock_db):
     # Valid revision number
     revision = 5000
 
-    # Call the Click command using the runner
-    result = runner.invoke(stp_global_revision, [str(revision)], obj=mock_db)
+    # Patch the `clicommon.pass_db` decorator to pass the mock object
+    with patch('clicommon.pass_db', lambda x: lambda *args, **kwargs: x(mock_db)):
+        # Call the Click command using the runner
+        result = runner.invoke(stp_global_revision, [str(revision)], obj=mock_db)
 
     # Check if the command executed without errors
     assert result.exit_code == 0, f"Command failed with error: {result.output}"
