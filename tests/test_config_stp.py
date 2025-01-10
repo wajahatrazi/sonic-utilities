@@ -317,6 +317,7 @@ def test_stp_global_hello_interval_pvst(mock_db_class):
     mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once()
     assert result.exit_code == 0
 
+
 @patch('spanning_tree.ConfigDBConnector')
 def test_stp_global_hello_interval_mst(mock_db_class):
     mock_db = MagicMock()
@@ -330,6 +331,7 @@ def test_stp_global_hello_interval_mst(mock_db_class):
     mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
     mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
     assert result.exit_code == 0
+
 
 @patch('spanning_tree.ConfigDBConnector')
 def test_stp_global_hello_interval_invalid_mode(mock_db_class):
