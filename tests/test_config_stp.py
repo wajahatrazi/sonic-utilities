@@ -1,6 +1,5 @@
 import pytest
 import click
-from swsscommon import swsscommon
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
