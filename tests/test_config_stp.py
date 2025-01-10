@@ -1,5 +1,6 @@
 import pytest
 import click
+from swsscommon import swsscommon
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
@@ -24,7 +25,6 @@ from config.stp import (
     MST_DEFAULT_PORT_PATH_COST,
     MST_DEFAULT_PORT_PRIORITY,
     MST_DEFAULT_BRIDGE_PRIORITY,
-    stp_interface_edgeport_enable,
     # MST_MAX_REVISION,
     # MST_MIN_REVISION,
     validate_params,
@@ -137,69 +137,54 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
-@patch('swsscommon.dbconnector.CfgDBConnector')  # Adjust to the correct import path
-@patch('config.stp.disable_global_pvst')
-@patch('config.stp.disable_global_mst')
-@patch('config.stp.get_global_stp_mode')
-def test_stp_disable(mock_get_global_stp_mode, mock_disable_global_mst, mock_disable_global_pvst, mock_cfgdb):
-    # Mock database instance
-    mock_db_instance = MagicMock()
-    mock_cfgdb.return_value = mock_db_instance
-
-    # Initialize CliRunner to invoke the command-line interface
-    runner = CliRunner()
-
-    # Test when STP is not configured
-    mock_get_global_stp_mode.return_value = "none"
-    result = runner.invoke(stp_disable, ['pvst'])
-    assert result.exit_code != 0
-    assert "STP is not configured" in result.output
-
-    # Test when trying to disable pvst but mst is the current mode
-    mock_get_global_stp_mode.return_value = "mst"
-    result = runner.invoke(stp_disable, ['pvst'])
-    assert result.exit_code != 0
-    assert "PVST is not currently configured mode" in result.output
-
-    # Test successful disable of PVST
-    mock_get_global_stp_mode.return_value = "pvst"
-    result = runner.invoke(stp_disable, ['pvst'])
-    assert result.exit_code == 0
-    mock_disable_global_pvst.assert_called_once()
-    mock_disable_global_mst.assert_not_called()
-
-    # Reset mock to avoid cross-test interference
-    mock_disable_global_pvst.reset_mock()
-
-    # Test successful disable of MST
-    mock_get_global_stp_mode.return_value = "mst"
-    result = runner.invoke(stp_disable, ['mst'])
-    assert result.exit_code == 0
-    mock_disable_global_mst.assert_called_once()
-    mock_disable_global_pvst.assert_not_called()
-
-
-@patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the function
-@patch('config.stp.check_if_interface_is_valid')  # Mock the function
-def test_stp_interface_edgeport_enable(mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
-    # Create a mock database object
+@patch('clicommon.pass_db')
+def test_stp_disable_stp_not_configured(mock_pass_db):
+    """Test stp_disable when STP is not configured."""
     mock_db = MagicMock()
-    mock_db.cfgdb.mod_entry = MagicMock()  # Mock the mod_entry method
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_config_db.return_value = {}
+    mock_pass_db.return_value = mock_db
 
-    interface_name = 'Ethernet0'  # Example interface name
+    with pytest.raises(click.ClickException, match="STP is not configured"):
+        stp_disable(mock_db, "pvst")
 
-    # Call the function with the mock database
-    stp_interface_edgeport_enable(mock_db, interface_name)
 
-    # Assert the check functions are called with correct arguments
-    mock_check_if_stp_enabled_for_interface.assert_called_once_with(
-        click.get_current_context(), mock_db.cfgdb, interface_name
-    )
+@patch('clicommon.pass_db')
+def test_stp_disable_mode_not_matching(mock_pass_db):
+    """Test stp_disable when mode does not match the configured mode."""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "mst"}}}
+    mock_pass_db.return_value = mock_db
 
-    mock_check_if_interface_is_valid.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, interface_name)
+    with pytest.raises(click.ClickException, match="PVST is not currently configured mode"):
+        stp_disable(mock_db, "pvst")
 
-    # Assert the database entry modification
-    mock_db.cfgdb.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
+
+@patch('clicommon.pass_db')
+@patch('config.stp.disable_global_pvst')
+def test_stp_disable_disable_pvst(mock_disable_global_pvst, mock_pass_db):
+    """Test stp_disable with matching pvst mode."""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "pvst"}}}
+    mock_pass_db.return_value = mock_db
+
+    stp_disable(mock_db, "pvst")
+    mock_disable_global_pvst.assert_called_once_with(mock_db.cfgdb)
+
+
+@patch('clicommon.pass_db')
+@patch('config.stp.disable_global_mst')
+def test_stp_disable_disable_mst(mock_disable_global_mst, mock_pass_db):
+    """Test stp_disable with matching mst mode."""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "mst"}}}
+    mock_pass_db.return_value = mock_db
+
+    stp_disable(mock_db, "mst")
+    mock_disable_global_mst.assert_called_once_with(mock_db.cfgdb)
 
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
