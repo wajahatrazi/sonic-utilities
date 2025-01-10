@@ -326,8 +326,18 @@ def test_stp_global_hello_interval_pvst(mock_db):
     # Assertions
     mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
     mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
-    mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, "hello_time", 2)
-    mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, "hello_time", 2)
+    mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(
+        click.get_current_context(),
+        mock_db.cfgdb,
+        "hello_time",
+        2
+    )
+    mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once_with(
+        click.get_current_context(),
+        mock_db.cfgdb,
+        "hello_time",
+        2
+    )
     mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 2})
 
     assert result.exit_code == 0  # Check if the command succeeded
