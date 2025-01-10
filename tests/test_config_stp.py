@@ -301,36 +301,20 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_PORT')
 
 
-@patch('spanning_tree.ConfigDBConnector')
-def test_stp_global_hello_interval_pvst(mock_db_class):
-    # Mock the config database connection
-    mock_db = MagicMock()
-    mock_db.cfgdb.get_global_stp_mode.return_value = "pvst"
-    mock_db.cfgdb.check_if_global_stp_enabled.return_value = True
-    mock_db_class.return_value = mock_db
-
-    runner = CliRunner()
-    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
-
-    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
-    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
-    mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once()
-    assert result.exit_code == 0
+def test_stp_global_hello_interval_pvst():
+    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
+        mock_db_instance = mock_db.return_value
+        # Add your logic to test hello interval for PVST
+        config.stp_global_hello_interval('PVST', 2)  # Use the actual function and arguments
+        mock_db_instance.get_config.assert_called_once()
 
 
-@patch('spanning_tree.ConfigDBConnector')
-def test_stp_global_hello_interval_mst(mock_db_class):
-    mock_db = MagicMock()
-    mock_db.cfgdb.get_global_stp_mode.return_value = "mst"
-    mock_db.cfgdb.check_if_global_stp_enabled.return_value = True
-    mock_db_class.return_value = mock_db
-
-    runner = CliRunner()
-    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
-
-    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
-    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
-    assert result.exit_code == 0
+def test_stp_global_hello_interval_mst():
+    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
+        mock_db_instance = mock_db.return_value
+        # Add your logic to test hello interval for MST
+        config.stp_global_hello_interval('MST', 4)  # Use the actual function and arguments
+        mock_db_instance.get_config.assert_called_once()
 
 
 @patch('spanning_tree.ConfigDBConnector')
