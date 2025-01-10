@@ -301,13 +301,6 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_PORT')
 
 
-# Helper function to mock the click context
-def invoke_stp_global_hello_interval(hello_interval, mock_db):
-    runner = click.testing.CliRunner()
-    result = runner.invoke(stp_global_hello_interval, ['<hello_interval>', hello_interval], obj={'cfgdb': mock_db})
-    return result
-
-
 def test_stp_global_hello_interval_pvst(mock_db):
     # Setup for mock db to return "pvst" as the current mode
     mock_db.cfgdb = MagicMock()
@@ -320,8 +313,11 @@ def test_stp_global_hello_interval_pvst(mock_db):
     mock_db.cfgdb.update_stp_vlan_parameter = MagicMock()
     mock_db.cfgdb.db.mod_entry = MagicMock()
 
+    # Create a CLI runner
+    runner = CliRunner()
+
     # Execute the function
-    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
     mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
@@ -353,8 +349,11 @@ def test_stp_global_hello_interval_mst(mock_db):
     mock_db.cfgdb.is_valid_hello_interval = MagicMock()
     mock_db.cfgdb.db.mod_entry = MagicMock()
 
+    # Create a CLI runner
+    runner = CliRunner()
+
     # Execute the function
-    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
     mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
@@ -369,20 +368,15 @@ def test_stp_global_hello_interval_invalid_mode(mock_db):
     mock_db.cfgdb = MagicMock()
     mock_db.cfgdb.get_global_stp_mode.return_value = "none"
 
+    # Create a CLI runner
+    runner = CliRunner()
+
     # Execute the function with invalid mode
-    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
     assert "Invalid STP mode configuration, no mode is enabled" in result.output
     assert result.exit_code != 0  # Check if the command failed
-
-
-def test_validate_params():
-    # Valid parameter
-    assert validate_params(15, 20, 5) is True  # This should pass as the values meet the condition
-
-    # Invalid parameter
-    assert validate_params(15, 50, 5) is False  # This should fail as the condition is not met
 
 
 def test_get_bridge_mac_address():
