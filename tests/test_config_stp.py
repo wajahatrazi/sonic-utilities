@@ -139,13 +139,13 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
 def test_stp_disable_correct_mode():
     with patch('stp.get_global_stp_mode', return_value="pvst"), \
          patch('stp.disable_global_pvst') as mock_pvst:
-        
+
         # Simulate invoking the command with "pvst" mode
         ctx = click.testing.CliRunner().invoke(stp_disable, ['pvst'])
-        
+
         # Assert that the function ran successfully (exit code 0)
         assert ctx.exit_code == 0
-        
+
         # Ensure that disable_global_pvst was called
         mock_pvst.assert_called_once()
 
