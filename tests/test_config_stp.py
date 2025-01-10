@@ -305,7 +305,7 @@ def test_stp_global_hello_interval_pvst():
     with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
         mock_db_instance = mock_db.return_value
         # Add your logic to test hello interval for PVST
-        config.stp_global_hello_interval('PVST', 2)  # Use the actual function and arguments
+        stp_global_hello_interval('PVST', 2)  # Use the actual function and arguments
         mock_db_instance.get_config.assert_called_once()
 
 
@@ -313,7 +313,7 @@ def test_stp_global_hello_interval_mst():
     with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
         mock_db_instance = mock_db.return_value
         # Add your logic to test hello interval for MST
-        config.stp_global_hello_interval('MST', 4)  # Use the actual function and arguments
+        stp_global_hello_interval('MST', 4)  # Use the actual function and arguments
         mock_db_instance.get_config.assert_called_once()
 
 
