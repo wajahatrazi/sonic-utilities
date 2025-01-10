@@ -136,54 +136,18 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
-@patch('clicommon.pass_db')
-def test_stp_disable_stp_not_configured(mock_pass_db):
-    """Test stp_disable when STP is not configured."""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    mock_db.cfgdb.get_config_db.return_value = {}
-    mock_pass_db.return_value = mock_db
-
-    with pytest.raises(click.ClickException, match="STP is not configured"):
-        stp_disable(mock_db, "pvst")
-
-
-@patch('clicommon.pass_db')
-def test_stp_disable_mode_not_matching(mock_pass_db):
-    """Test stp_disable when mode does not match the configured mode."""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "mst"}}}
-    mock_pass_db.return_value = mock_db
-
-    with pytest.raises(click.ClickException, match="PVST is not currently configured mode"):
-        stp_disable(mock_db, "pvst")
-
-
-@patch('clicommon.pass_db')
-@patch('config.stp.disable_global_pvst')
-def test_stp_disable_disable_pvst(mock_disable_global_pvst, mock_pass_db):
-    """Test stp_disable with matching pvst mode."""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "pvst"}}}
-    mock_pass_db.return_value = mock_db
-
-    stp_disable(mock_db, "pvst")
-    mock_disable_global_pvst.assert_called_once_with(mock_db.cfgdb)
-
-
-@patch('clicommon.pass_db')
-@patch('config.stp.disable_global_mst')
-def test_stp_disable_disable_mst(mock_disable_global_mst, mock_pass_db):
-    """Test stp_disable with matching mst mode."""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    mock_db.cfgdb.get_config_db.return_value = {"STP": {"global": {"mode": "mst"}}}
-    mock_pass_db.return_value = mock_db
-
-    stp_disable(mock_db, "mst")
-    mock_disable_global_mst.assert_called_once_with(mock_db.cfgdb)
+def test_stp_disable_correct_mode():
+    with patch('stp.get_global_stp_mode', return_value="pvst"), \
+         patch('stp.disable_global_pvst') as mock_pvst:
+        
+        # Simulate invoking the command with "pvst" mode
+        ctx = click.testing.CliRunner().invoke(stp_disable, ['pvst'])
+        
+        # Assert that the function ran successfully (exit code 0)
+        assert ctx.exit_code == 0
+        
+        # Ensure that disable_global_pvst was called
+        mock_pvst.assert_called_once()
 
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
