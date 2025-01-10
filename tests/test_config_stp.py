@@ -7,7 +7,7 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
-    # dot stp_global_hello_interval,
+    stp_global_hello_interval,
     # dot spanning_tree_enable,
     # dot stp_global_max_age,
     stp_global_max_hops,
@@ -137,8 +137,8 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
 
 
 def test_stp_disable_correct_mode():
-    with patch('stp.get_global_stp_mode', return_value="pvst"), \
-         patch('stp.disable_global_pvst') as mock_pvst:
+    with patch('config.stp.get_global_stp_mode', return_value="pvst"), \
+         patch('config.stp.disable_global_pvst') as mock_pvst:
 
         # Simulate invoking the command with "pvst" mode
         ctx = click.testing.CliRunner().invoke(stp_disable, ['pvst'])
@@ -299,6 +299,72 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_MST_INST')
     mock_db.delete_table.assert_any_call('STP_MST_PORT')
     mock_db.delete_table.assert_any_call('STP_PORT')
+
+
+# Helper function to mock the click context
+def invoke_stp_global_hello_interval(hello_interval, mock_db):
+    runner = click.testing.CliRunner()
+    result = runner.invoke(stp_global_hello_interval, ['<hello_interval>', hello_interval], obj={'cfgdb': mock_db})
+    return result
+
+
+def test_stp_global_hello_interval_pvst(mock_db):
+    # Setup for mock db to return "pvst" as the current mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "pvst"
+
+    # Mock required methods
+    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
+    mock_db.cfgdb.is_valid_hello_interval = MagicMock()
+    mock_db.cfgdb.is_valid_stp_global_parameters = MagicMock()
+    mock_db.cfgdb.update_stp_vlan_parameter = MagicMock()
+    mock_db.cfgdb.db.mod_entry = MagicMock()
+
+    # Execute the function
+    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+
+    # Assertions
+    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
+    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, "hello_time", 2)
+    mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once_with(click.get_current_context(), mock_db.cfgdb, "hello_time", 2)
+    mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 2})
+
+    assert result.exit_code == 0  # Check if the command succeeded
+
+
+def test_stp_global_hello_interval_mst(mock_db):
+    # Setup for mock db to return "mst" as the current mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "mst"
+
+    # Mock required methods
+    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
+    mock_db.cfgdb.is_valid_hello_interval = MagicMock()
+    mock_db.cfgdb.db.mod_entry = MagicMock()
+
+    # Execute the function
+    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+
+    # Assertions
+    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
+    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'hello_time': 2})
+
+    assert result.exit_code == 0  # Check if the command succeeded
+
+
+def test_stp_global_hello_interval_invalid_mode(mock_db):
+    # Setup for mock db to return an invalid mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "none"
+
+    # Execute the function with invalid mode
+    result = invoke_stp_global_hello_interval(2, mock_db)  # Example: passing hello_interval = 2 seconds
+
+    # Assertions
+    assert "Invalid STP mode configuration, no mode is enabled" in result.output
+    assert result.exit_code != 0  # Check if the command failed
 
 
 def test_validate_params():
