@@ -26,7 +26,7 @@ from config.stp import (
     MST_DEFAULT_BRIDGE_PRIORITY,
     # MST_MAX_REVISION,
     # MST_MIN_REVISION,
-    validate_params,
+    # validate_params,
     is_valid_stp_vlan_parameters,
     is_valid_stp_global_parameters,
     # update_stp_vlan_parameter,
