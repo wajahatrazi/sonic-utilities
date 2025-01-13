@@ -302,7 +302,7 @@ def test_disable_global_mst():
 
 
 def test_stp_global_hello_interval_pvst():
-    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
+    with patch('swsscommon.ConfigDBConnector', new_callable=MagicMock) as mock_db:  # Update with actual module path
         mock_db_instance = mock_db.return_value
         # Add your logic to test hello interval for PVST
         stp_global_hello_interval('PVST', 2)  # Use the actual function and arguments
@@ -310,14 +310,14 @@ def test_stp_global_hello_interval_pvst():
 
 
 def test_stp_global_hello_interval_mst():
-    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
+    with patch('swsscommon.ConfigDBConnector', new_callable=MagicMock) as mock_db:  # Update path as needed
         mock_db_instance = mock_db.return_value
-        # Add your logic to test hello interval for MST
-        stp_global_hello_interval('MST', 4)  # Use the actual function and arguments
-        mock_db_instance.get_config.assert_called_once()
+        # Logic to test hello interval for MST
+        stp_global_hello_interval('MST', 4)  # Call the actual function
+        mock_db_instance.get_config.assert_called_once()  # Ensure correct method call
 
 
-@patch('spanning_tree.ConfigDBConnector')
+@patch('config.stp.ConfigDBConnector')  # Corrected path
 def test_stp_global_hello_interval_invalid_mode(mock_db_class):
     mock_db = MagicMock()
     mock_db.cfgdb.get_global_stp_mode.return_value = "none"
