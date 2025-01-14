@@ -301,13 +301,13 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_PORT')
 
 
-def test_stp_global_hello_interval_pvst(mock_db):
+@patch('conifg.stp.check_if_global_stp_enabled', autospec=True)
+def test_stp_global_hello_interval_pvst(mock_check_if_global_stp_enabled, mock_db):
     # Setup for mock db to return "pvst" as the current mode
     mock_db.cfgdb = MagicMock()
     mock_db.cfgdb.get_global_stp_mode.return_value = "pvst"
 
     # Mock required methods
-    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
     mock_db.cfgdb.is_valid_hello_interval = MagicMock()
     mock_db.cfgdb.is_valid_stp_global_parameters = MagicMock()
     mock_db.cfgdb.update_stp_vlan_parameter = MagicMock()
@@ -320,7 +320,7 @@ def test_stp_global_hello_interval_pvst(mock_db):
     result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
-    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
+    mock_check_if_global_stp_enabled.assert_called_once_with(mock_db.cfgdb, click.get_current_context())
     mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
     mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(
         click.get_current_context(),
@@ -336,7 +336,7 @@ def test_stp_global_hello_interval_pvst(mock_db):
     )
     mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 2})
 
-    assert result.exit_code == 0  # Check if the command succeeded
+    assert result.exit_code == 0
 
 
 def test_stp_global_hello_interval_mst(mock_db):
