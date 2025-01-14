@@ -378,6 +378,7 @@ def test_stp_global_hello_interval_invalid_mode(mock_db):
     assert "Invalid STP mode configuration, no mode is enabled" in result.output
     assert result.exit_code != 0  # Check if the command failed
 
+
 def test_get_bridge_mac_address():
     mock_db = MagicMock()
     mock_db.get_entry.return_value = {"mac": "00:11:22:33:44:55"}  # Updated key
