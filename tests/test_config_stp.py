@@ -245,8 +245,11 @@ def test_stp_global_max_age():
     stp_global_max_age.is_valid_max_age = mock_is_valid_max_age
     stp_global_max_age.is_valid_stp_global_parameters = mock_is_valid_stp
 
-    # Call the function you are testing with a valid max_age
-    stp_global_max_age(ctx, 30)
+    # Set up a CliRunner to simulate the CLI invocation
+    runner = CliRunner()
+
+    # Simulate running the CLI command with the max_age argument
+    result = runner.invoke(stp_global_max_age, ['30'])
 
     # Ensure mod_entry was called with correct parameters
     mock_cfgdb.mod_entry.assert_called_with('STP', 'GLOBAL', {'max_age': 30})
@@ -257,16 +260,18 @@ def test_stp_global_max_age():
 
     # Test the behavior when current_mode is 'mst'
     mock_get_mode.return_value = "mst"  # Change the mode to 'mst'
-    stp_global_max_age(ctx, 40)
+    result = runner.invoke(stp_global_max_age, ['40'])
 
     # Ensure mod_entry was called with correct parameters in 'mst' mode
     mock_cfgdb.mod_entry.assert_called_with('STP_MST', 'GLOBAL', {'max_age': 40})
 
     # Test the behavior when current_mode is invalid
     mock_get_mode.return_value = "invalid_mode"  # Set an invalid mode
-    with MagicMock() as mock_fail:
-        stp_global_max_age(ctx, 30)  # This should trigger ctx.fail
-        mock_fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
+    result = runner.invoke(stp_global_max_age, ['30'])
+
+    # Ensure that the CLI command failed with the correct message
+    assert result.exit_code != 0
+    assert "Invalid STP mode configuration, no mode is enabled" in result.output
 
 
 def test_is_valid_stp_vlan_parameters():
