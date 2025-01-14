@@ -7,7 +7,7 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
-    stp_global_hello_interval,
+    # stp_global_hello_interval,
     # dot spanning_tree_enable,
     # dot stp_global_max_age,
     stp_global_max_hops,
