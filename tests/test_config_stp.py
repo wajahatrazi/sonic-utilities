@@ -379,7 +379,10 @@ def test_stp_global_hello_interval_invalid_mode(mock_db):
     print(f"Result output: {result.output}")  # Print output for debugging
 
     # Assertions
-    assert "Invalid STP mode configuration, no mode is enabled" in result.output  # Ensure the error message is in the output
+    assert (
+        "Invalid STP mode configuration, no mode is enabled" in result.output
+    )  # Ensure the error message is in the output
+
     assert result.exit_code != 0  # Ensure the command failed (non-zero exit code)
 
 
