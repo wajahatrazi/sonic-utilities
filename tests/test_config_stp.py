@@ -1,5 +1,6 @@
 import pytest
 import click
+from swsssdk import configdb
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
@@ -302,10 +303,9 @@ def test_disable_global_mst():
 
 
 def test_stp_global_hello_interval_pvst():
-    with patch('swsscommon.ConfigDBConnector', new_callable=MagicMock) as mock_db:  # Update with actual module path
+    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
         mock_db_instance = mock_db.return_value
-        # Add your logic to test hello interval for PVST
-        stp_global_hello_interval('PVST', 2)  # Use the actual function and arguments
+        stp_global_hello_interval('PVST', 2)
         mock_db_instance.get_config.assert_called_once()
 
 
