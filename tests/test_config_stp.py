@@ -9,7 +9,7 @@ from config.stp import (
     is_valid_forward_delay,
     stp_global_hello_interval,
     # dot spanning_tree_enable,
-    # dot stp_global_max_age,
+    stp_global_max_age,
     stp_global_max_hops,
     stp_mst_region_name,
     stp_global_revision,
@@ -220,6 +220,58 @@ def test_is_valid_forward_delay():
     mock_ctx.fail = MagicMock()  # Mocking the fail method to prevent actual exit
     is_valid_forward_delay(mock_ctx, 31)
     mock_ctx.fail.assert_called_once_with("STP forward delay value must be in range 4-30")
+
+
+# Mock utility functions
+@MagicMock.patch('config.stp.check_if_global_stp_enabled')
+@MagicMock.patch('config.stp.get_global_stp_mode')
+@MagicMock.patch('config.stp.is_valid_max_age')
+@MagicMock.patch('config.stp.is_valid_stp_global_parameters')
+@MagicMock.patch('config.stp.update_stp_vlan_parameter')
+@MagicMock.patch('utilities_common.db.MagicMock.mod_entry')
+def test_stp_global_max_age(
+    mock_mod_entry,
+    mock_update_stp_vlan_parameter,
+    mock_is_valid_stp_global_parameters,
+    mock_is_valid_max_age,
+    mock_get_global_stp_mode,
+    mock_check_if_global_stp_enabled
+):
+    runner = CliRunner()
+
+    # Setup mock database
+    db = MagicMock()  # Mocking database instead of importing Db
+
+    # Test case 1: Valid configuration for PVST mode
+    mock_get_global_stp_mode.return_value = "pvst"
+    result = runner.invoke(stp_global_max_age, ["15"], obj=db)
+
+    mock_check_if_global_stp_enabled.assert_called_once_with(db.cfgdb, MagicMock.ANY)
+    mock_is_valid_max_age.assert_called_once_with(MagicMock.ANY, 15)
+    mock_is_valid_stp_global_parameters.assert_called_once_with(MagicMock.ANY, db.cfgdb, "max_age", 15)
+    mock_update_stp_vlan_parameter.assert_called_once_with(MagicMock.ANY, db.cfgdb, "max_age", 15)
+    mock_mod_entry.assert_called_once_with('STP', "GLOBAL", {'max_age': 15})
+    assert result.exit_code == 0
+
+    # Reset mocks for next test
+    mock_mod_entry.reset_mock()
+    mock_check_if_global_stp_enabled.reset_mock()
+
+    # Test case 2: Valid configuration for MST mode
+    mock_get_global_stp_mode.return_value = "mst"
+    result = runner.invoke(stp_global_max_age, ["20"], obj=db)
+
+    mock_check_if_global_stp_enabled.assert_called_once_with(db.cfgdb, MagicMock.ANY)
+    mock_is_valid_max_age.assert_called_once_with(MagicMock.ANY, 20)
+    mock_mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 20})
+    assert result.exit_code == 0
+
+    # Test case 3: Invalid mode (no mode enabled)
+    mock_get_global_stp_mode.return_value = "none"
+    result = runner.invoke(stp_global_max_age, ["25"], obj=db)
+
+    assert "Invalid STP mode configuration" in result.output
+    assert result.exit_code != 0
 
 
 def test_is_valid_stp_vlan_parameters():
