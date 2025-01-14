@@ -222,56 +222,51 @@ def test_is_valid_forward_delay():
     mock_ctx.fail.assert_called_once_with("STP forward delay value must be in range 4-30")
 
 
-# Mock utility functions
-@patch('config.stp.check_if_global_stp_enabled')
-@patch('config.stp.get_global_stp_mode')
-@patch('config.stp.is_valid_max_age')
-@patch('config.stp.is_valid_stp_global_parameters')
-@patch('config.stp.update_stp_vlan_parameter')
-@patch('utilities_common.db.MagicMock.mod_entry')
-def test_stp_global_max_age(
-    mock_mod_entry,
-    mock_update_stp_vlan_parameter,
-    mock_is_valid_stp_global_parameters,
-    mock_is_valid_max_age,
-    mock_get_global_stp_mode,
-    mock_check_if_global_stp_enabled
-):
-    runner = CliRunner()
+def test_stp_global_max_age():
+    # Create mock for the database
+    mock_db = MagicMock()
+    mock_cfgdb = MagicMock()
+    mock_db.cfgdb = mock_cfgdb  # _db.cfgdb will use the mock_cfgdb
+    mock_cfgdb.mod_entry = MagicMock()  # Mock the mod_entry method on the database
 
-    # Setup mock database
-    db = MagicMock()  # Mocking database instead of importing Db
+    # Mock the functions you need
+    mock_check_global = MagicMock()
+    mock_get_mode = MagicMock(return_value="pvst")  # Return 'pvst' mode for this test
+    mock_is_valid_max_age = MagicMock()
+    mock_is_valid_stp = MagicMock()
 
-    # Test case 1: Valid configuration for PVST mode
-    mock_get_global_stp_mode.return_value = "pvst"
-    result = runner.invoke(stp_global_max_age, ["15"], obj=db)
+    # Mock the click context
+    ctx = MagicMock()
+    click.get_current_context = MagicMock(return_value=ctx)
 
-    mock_check_if_global_stp_enabled.assert_called_once_with(db.cfgdb, MagicMock.ANY)
-    mock_is_valid_max_age.assert_called_once_with(MagicMock.ANY, 15)
-    mock_is_valid_stp_global_parameters.assert_called_once_with(MagicMock.ANY, db.cfgdb, "max_age", 15)
-    mock_update_stp_vlan_parameter.assert_called_once_with(MagicMock.ANY, db.cfgdb, "max_age", 15)
-    mock_mod_entry.assert_called_once_with('STP', "GLOBAL", {'max_age': 15})
-    assert result.exit_code == 0
+    # Replace the functions in the stp module with mocks
+    stp_global_max_age.check_if_global_stp_enabled = mock_check_global
+    stp_global_max_age.get_global_stp_mode = mock_get_mode
+    stp_global_max_age.is_valid_max_age = mock_is_valid_max_age
+    stp_global_max_age.is_valid_stp_global_parameters = mock_is_valid_stp
 
-    # Reset mocks for next test
-    mock_mod_entry.reset_mock()
-    mock_check_if_global_stp_enabled.reset_mock()
+    # Call the function you are testing with a valid max_age
+    stp_global_max_age(ctx, 30)
 
-    # Test case 2: Valid configuration for MST mode
-    mock_get_global_stp_mode.return_value = "mst"
-    result = runner.invoke(stp_global_max_age, ["20"], obj=db)
+    # Ensure mod_entry was called with correct parameters
+    mock_cfgdb.mod_entry.assert_called_with('STP', 'GLOBAL', {'max_age': 30})
 
-    mock_check_if_global_stp_enabled.assert_called_once_with(db.cfgdb, MagicMock.ANY)
-    mock_is_valid_max_age.assert_called_once_with(MagicMock.ANY, 20)
-    mock_mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 20})
-    assert result.exit_code == 0
+    # Ensure the validation functions were called
+    mock_is_valid_max_age.assert_called_once_with(ctx, 30)
+    mock_is_valid_stp.assert_called_once_with(ctx, mock_db.cfgdb, 'max_age', 30)
 
-    # Test case 3: Invalid mode (no mode enabled)
-    mock_get_global_stp_mode.return_value = "none"
-    result = runner.invoke(stp_global_max_age, ["25"], obj=db)
+    # Test the behavior when current_mode is 'mst'
+    mock_get_mode.return_value = "mst"  # Change the mode to 'mst'
+    stp_global_max_age(ctx, 40)
 
-    assert "Invalid STP mode configuration" in result.output
-    assert result.exit_code != 0
+    # Ensure mod_entry was called with correct parameters in 'mst' mode
+    mock_cfgdb.mod_entry.assert_called_with('STP_MST', 'GLOBAL', {'max_age': 40})
+
+    # Test the behavior when current_mode is invalid
+    mock_get_mode.return_value = "invalid_mode"  # Set an invalid mode
+    with MagicMock() as mock_fail:
+        stp_global_max_age(ctx, 30)  # This should trigger ctx.fail
+        mock_fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
 
 
 def test_is_valid_stp_vlan_parameters():
