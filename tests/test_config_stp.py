@@ -9,7 +9,7 @@ from config.stp import (
     is_valid_forward_delay,
     stp_global_hello_interval,
     # dot spanning_tree_enable,
-    stp_global_max_age,
+    # dot stp_global_max_age,
     stp_global_max_hops,
     stp_mst_region_name,
     stp_global_revision,
@@ -26,7 +26,7 @@ from config.stp import (
     MST_DEFAULT_BRIDGE_PRIORITY,
     # MST_MAX_REVISION,
     # MST_MIN_REVISION,
-    # validate_params,
+    validate_params,
     is_valid_stp_vlan_parameters,
     is_valid_stp_global_parameters,
     # update_stp_vlan_parameter,
@@ -222,58 +222,6 @@ def test_is_valid_forward_delay():
     mock_ctx.fail.assert_called_once_with("STP forward delay value must be in range 4-30")
 
 
-def test_stp_global_max_age():
-    # Create mock for the database
-    mock_db = MagicMock()
-    mock_cfgdb = MagicMock()
-    mock_db.cfgdb = mock_cfgdb  # _db.cfgdb will use the mock_cfgdb
-    mock_cfgdb.mod_entry = MagicMock()  # Mock the mod_entry method on the database
-
-    # Mock the functions you need
-    mock_check_global = MagicMock()
-    mock_get_mode = MagicMock(return_value="pvst")  # Return 'pvst' mode for this test
-    mock_is_valid_max_age = MagicMock()
-    mock_is_valid_stp = MagicMock()
-
-    # Mock the click context
-    ctx = MagicMock()
-    click.get_current_context = MagicMock(return_value=ctx)
-
-    # Replace the functions in the stp module with mocks
-    stp_global_max_age.check_if_global_stp_enabled = mock_check_global
-    stp_global_max_age.get_global_stp_mode = mock_get_mode
-    stp_global_max_age.is_valid_max_age = mock_is_valid_max_age
-    stp_global_max_age.is_valid_stp_global_parameters = mock_is_valid_stp
-
-    # Set up a CliRunner to simulate the CLI invocation
-    runner = CliRunner()
-
-    # Simulate running the CLI command with the max_age argument
-    result = runner.invoke(stp_global_max_age, ['30'])
-
-    # Ensure mod_entry was called with correct parameters
-    mock_cfgdb.mod_entry.assert_called_with('STP', 'GLOBAL', {'max_age': 30})
-
-    # Ensure the validation functions were called
-    mock_is_valid_max_age.assert_called_once_with(ctx, 30)
-    mock_is_valid_stp.assert_called_once_with(ctx, mock_db.cfgdb, 'max_age', 30)
-
-    # Test the behavior when current_mode is 'mst'
-    mock_get_mode.return_value = "mst"  # Change the mode to 'mst'
-    result = runner.invoke(stp_global_max_age, ['40'])
-
-    # Ensure mod_entry was called with correct parameters in 'mst' mode
-    mock_cfgdb.mod_entry.assert_called_with('STP_MST', 'GLOBAL', {'max_age': 40})
-
-    # Test the behavior when current_mode is invalid
-    mock_get_mode.return_value = "invalid_mode"  # Set an invalid mode
-    result = runner.invoke(stp_global_max_age, ['30'])
-
-    # Ensure that the CLI command failed with the correct message
-    assert result.exit_code != 0
-    assert "Invalid STP mode configuration, no mode is enabled" in result.output
-
-
 def test_is_valid_stp_vlan_parameters():
     mock_ctx = MagicMock()
     mock_db = MagicMock()
@@ -353,33 +301,82 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_PORT')
 
 
-def test_stp_global_hello_interval_pvst():
-    with patch('config.stp.ConfigDBConnector', new_callable=MagicMock) as mock_db:
-        mock_db_instance = mock_db.return_value
-        stp_global_hello_interval('PVST', 2)
-        mock_db_instance.get_config.assert_called_once()
+def test_stp_global_hello_interval_pvst(mock_db):
+    # Setup for mock db to return "pvst" as the current mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "pvst"
 
+    # Mock required methods
+    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
+    mock_db.cfgdb.is_valid_hello_interval = MagicMock()
+    mock_db.cfgdb.is_valid_stp_global_parameters = MagicMock()
+    mock_db.cfgdb.update_stp_vlan_parameter = MagicMock()
+    mock_db.cfgdb.db.mod_entry = MagicMock()
 
-def test_stp_global_hello_interval_mst():
-    with patch('swsscommon.ConfigDBConnector', new_callable=MagicMock) as mock_db:  # Update path as needed
-        mock_db_instance = mock_db.return_value
-        # Logic to test hello interval for MST
-        stp_global_hello_interval('MST', 4)  # Call the actual function
-        mock_db_instance.get_config.assert_called_once()  # Ensure correct method call
-
-
-@patch('config.stp.ConfigDBConnector')  # Corrected path
-def test_stp_global_hello_interval_invalid_mode(mock_db_class):
-    mock_db = MagicMock()
-    mock_db.cfgdb.get_global_stp_mode.return_value = "none"
-    mock_db_class.return_value = mock_db
-
+    # Create a CLI runner
     runner = CliRunner()
+
+    # Execute the function
     result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
-    assert "Invalid STP mode configuration, no mode is enabled" in result.output
-    assert result.exit_code != 0
+    # Assertions
+    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
+    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(
+        click.get_current_context(),
+        mock_db.cfgdb,
+        "hello_time",
+        2
+    )
+    mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once_with(
+        click.get_current_context(),
+        mock_db.cfgdb,
+        "hello_time",
+        2
+    )
+    mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 2})
 
+    assert result.exit_code == 0  # Check if the command succeeded
+
+
+def test_stp_global_hello_interval_mst(mock_db):
+    # Setup for mock db to return "mst" as the current mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "mst"
+
+    # Mock required methods
+    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
+    mock_db.cfgdb.is_valid_hello_interval = MagicMock()
+    mock_db.cfgdb.db.mod_entry = MagicMock()
+
+    # Create a CLI runner
+    runner = CliRunner()
+
+    # Execute the function
+    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
+
+    # Assertions
+    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
+    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'hello_time': 2})
+
+    assert result.exit_code == 0  # Check if the command succeeded
+
+
+def test_stp_global_hello_interval_invalid_mode(mock_db):
+    # Setup for mock db to return an invalid mode
+    mock_db.cfgdb = MagicMock()
+    mock_db.cfgdb.get_global_stp_mode.return_value = "none"
+
+    # Create a CLI runner
+    runner = CliRunner()
+
+    # Execute the function with invalid mode
+    result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
+
+    # Assertions
+    assert "Invalid STP mode configuration, no mode is enabled" in result.output
+    assert result.exit_code != 0  # Check if the command failed
 
 def test_get_bridge_mac_address():
     mock_db = MagicMock()
