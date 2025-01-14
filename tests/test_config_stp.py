@@ -223,12 +223,12 @@ def test_is_valid_forward_delay():
 
 
 # Mock utility functions
-@MagicMock.patch('config.stp.check_if_global_stp_enabled')
-@MagicMock.patch('config.stp.get_global_stp_mode')
-@MagicMock.patch('config.stp.is_valid_max_age')
-@MagicMock.patch('config.stp.is_valid_stp_global_parameters')
-@MagicMock.patch('config.stp.update_stp_vlan_parameter')
-@MagicMock.patch('utilities_common.db.MagicMock.mod_entry')
+@patch('config.stp.check_if_global_stp_enabled')
+@patch('config.stp.get_global_stp_mode')
+@patch('config.stp.is_valid_max_age')
+@patch('config.stp.is_valid_stp_global_parameters')
+@patch('config.stp.update_stp_vlan_parameter')
+@patch('utilities_common.db.MagicMock.mod_entry')
 def test_stp_global_max_age(
     mock_mod_entry,
     mock_update_stp_vlan_parameter,
