@@ -301,7 +301,7 @@ def test_disable_global_mst():
     mock_db.delete_table.assert_any_call('STP_PORT')
 
 
-@patch('conifg.stp.check_if_global_stp_enabled', autospec=True)
+@patch('config.stp.check_if_global_stp_enabled', autospec=True)
 def test_stp_global_hello_interval_pvst(mock_check_if_global_stp_enabled, mock_db):
     # Setup for mock db to return "pvst" as the current mode
     mock_db.cfgdb = MagicMock()
