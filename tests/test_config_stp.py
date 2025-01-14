@@ -302,7 +302,8 @@ def test_disable_global_mst():
 
 
 @patch('config.stp.check_if_global_stp_enabled', autospec=True)
-def test_stp_global_hello_interval_pvst(mock_check_if_global_stp_enabled, mock_db):
+@patch('click.get_current_context', return_value=MagicMock())
+def test_stp_global_hello_interval_pvst(mock_get_current_context, mock_check_if_global_stp_enabled, mock_db):
     # Setup for mock db to return "pvst" as the current mode
     mock_db.cfgdb = MagicMock()
     mock_db.cfgdb.get_global_stp_mode.return_value = "pvst"
@@ -316,37 +317,37 @@ def test_stp_global_hello_interval_pvst(mock_check_if_global_stp_enabled, mock_d
     # Create a CLI runner
     runner = CliRunner()
 
-    # Execute the function
+    # Simulate passing the mock context and execute the function
     result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
-    mock_check_if_global_stp_enabled.assert_called_once_with(mock_db.cfgdb, click.get_current_context())
-    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_check_if_global_stp_enabled.assert_called_once_with(mock_db.cfgdb, mock_get_current_context.return_value)
+    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(mock_get_current_context.return_value, 2)
     mock_db.cfgdb.is_valid_stp_global_parameters.assert_called_once_with(
-        click.get_current_context(),
+        mock_get_current_context.return_value,
         mock_db.cfgdb,
         "hello_time",
         2
     )
     mock_db.cfgdb.update_stp_vlan_parameter.assert_called_once_with(
-        click.get_current_context(),
+        mock_get_current_context.return_value,
         mock_db.cfgdb,
         "hello_time",
         2
     )
     mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP', "GLOBAL", {'hello_time': 2})
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0  # Check if the command succeeded
 
 
-def test_stp_global_hello_interval_mst(mock_db):
+@patch('config.stp.check_if_global_stp_enabled', autospec=True)
+@patch('config.stp.is_valid_hello_interval', autospec=True)
+def test_stp_global_hello_interval_mst(mock_is_valid_hello_interval, mock_check_if_global_stp_enabled, mock_db):
     # Setup for mock db to return "mst" as the current mode
     mock_db.cfgdb = MagicMock()
     mock_db.cfgdb.get_global_stp_mode.return_value = "mst"
 
     # Mock required methods
-    mock_db.cfgdb.check_if_global_stp_enabled = MagicMock()
-    mock_db.cfgdb.is_valid_hello_interval = MagicMock()
     mock_db.cfgdb.db.mod_entry = MagicMock()
 
     # Create a CLI runner
@@ -356,8 +357,8 @@ def test_stp_global_hello_interval_mst(mock_db):
     result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
     # Assertions
-    mock_db.cfgdb.check_if_global_stp_enabled.assert_called_once()
-    mock_db.cfgdb.is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
+    mock_check_if_global_stp_enabled.assert_called_once_with(mock_db.cfgdb, click.get_current_context())
+    mock_is_valid_hello_interval.assert_called_once_with(click.get_current_context(), 2)
     mock_db.cfgdb.db.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'hello_time': 2})
 
     assert result.exit_code == 0  # Check if the command succeeded
@@ -374,9 +375,12 @@ def test_stp_global_hello_interval_invalid_mode(mock_db):
     # Execute the function with invalid mode
     result = runner.invoke(stp_global_hello_interval, ['2'], obj={'cfgdb': mock_db})
 
+    # Ensure the error message is in the output
+    print(f"Result output: {result.output}")  # Print output for debugging
+
     # Assertions
-    assert "Invalid STP mode configuration, no mode is enabled" in result.output
-    assert result.exit_code != 0  # Check if the command failed
+    assert "Invalid STP mode configuration, no mode is enabled" in result.output  # Ensure the error message is in the output
+    assert result.exit_code != 0  # Ensure the command failed (non-zero exit code)
 
 
 def test_get_bridge_mac_address():
