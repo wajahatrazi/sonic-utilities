@@ -214,7 +214,6 @@ class TestStpInterfaceEdgeportEnable:
         self.valid_interface = "Ethernet0"
         self.invalid_interface = "InvalidInterface"
 
-
     @patch('click.get_current_context')
     def test_successful_enable_edgeport(self, mock_context, mock_db, cli_runner):
         # Arrange
@@ -224,12 +223,11 @@ class TestStpInterfaceEdgeportEnable:
         result = stp_interface_edgeport_enable(mock_db, self.valid_interface)
         # Assert
         mock_db.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            self.valid_interface, 
+            'STP_PORT',
+            self.valid_interface,
             {'edgeport': 'true'}
         )
         assert result is None  # Assuming successful execution returns None
-
 
     @patch('click.get_current_context')
     def test_invalid_interface(self, mock_context, mock_db, cli_runner):
@@ -239,7 +237,6 @@ class TestStpInterfaceEdgeportEnable:
         # Act & Assert
         with pytest.raises(click.ClickException, match=r"Interface .* is not valid"):
             stp_interface_edgeport_enable(mock_db, self.invalid_interface)
-
 
     @patch('click.get_current_context')
     def test_stp_not_enabled(self, mock_context, mock_db, cli_runner):
@@ -253,7 +250,6 @@ class TestStpInterfaceEdgeportEnable:
         with pytest.raises(click.ClickException, match=r"STP is not enabled for interface .*"):
             stp_interface_edgeport_enable(mock_db, self.valid_interface)
 
-
     @patch('click.get_current_context')
     def test_database_error(self, mock_context, mock_db, cli_runner):
         # Arrange
@@ -264,13 +260,11 @@ class TestStpInterfaceEdgeportEnable:
         with pytest.raises(Exception, match="Database error"):
             stp_interface_edgeport_enable(mock_db, self.valid_interface)
 
-
     def test_missing_interface_argument(self, cli_runner):
         # Test CLI command without required interface argument
         result = cli_runner.invoke(stp_interface_edgeport_enable, ['enable'])
         assert result.exit_code != 0
         assert "Missing argument" in result.output
-
 
     @patch('click.get_current_context')
     def test_empty_interface_name(self, mock_context, mock_db, cli_runner):
@@ -279,14 +273,14 @@ class TestStpInterfaceEdgeportEnable:
         # Act & Assert
         with pytest.raises(click.ClickException):
             stp_interface_edgeport_enable(mock_db, "")
- 
+
 
 # Integration test example
 def test_integration_enable_edgeport(mock_db, cli_runner):
     # This test would require more setup of the actual database
     # and would test the entire flow from CLI to database modification
-    result = cli_runner.invoke(stp_interface_edgeport_enable, 
-                             ['enable', 'Ethernet0'])
+    result = cli_runner.invoke(stp_interface_edgeport_enable,
+                               ['enable', 'Ethernet0'])
     assert result.exit_code == 0
 
 
