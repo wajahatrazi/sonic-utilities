@@ -107,14 +107,10 @@ def patch_functions():
         yield
 
 
-@patch('config.stp.check_if_stp_enabled_for_interface')
-@patch('config.stp.check_if_interface_is_valid')
-@patch('config.stp.clicommon')
-@patch('config.stp._db')
-def test_stp_interface_edgeport_enable(mock_db, mock_clicommon, mock_check_valid, mock_check_stp_enabled):
+def test_stp_interface_edgeport_enable(mock_clicommon, mock_check_valid, mock_check_stp_enabled):
     # Mocking the database methods
     mock_cfgdb = MagicMock()
-    mock_db.cfgdb = mock_cfgdb
+    mock_clicommon.get_current_context.return_value.obj = MagicMock(cfgdb=mock_cfgdb)
 
     # Simulating mod_entry being called
     mock_cfgdb.mod_entry = MagicMock()
