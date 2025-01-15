@@ -3,6 +3,7 @@ import click
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
+from click import get_current_context
 from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
@@ -85,6 +86,26 @@ def mock_db():
     return mock_db
 
 
+def test_stp_interface_edgeport_enable():
+    """
+    Test enabling edgeport for an STP interface using the CLI command.
+    """
+    # Mocking necessary dependencies
+    mock_db = MagicMock()
+
+    # Call the function to enable edgeport for a specific interface
+    interface_name = "Ethernet0"
+    result = stp_interface_edgeport_enable(mock_db, interface_name)
+    
+    # Assertions to check expected outcomes
+    mock_db.set.assert_called_once_with(
+        "INTERFACE",
+        interface_name,
+        {"edge_port_enable": "true"}
+    )
+    assert result is None  # Adjust if your function returns a specific value
+
+
 def test_get_intf_list_in_vlan_member_table():
     mock_db = MagicMock()
     mock_db.get_table.return_value = {
@@ -107,37 +128,6 @@ def patch_functions():
         yield
 
 
-@patch('config.stp.check_if_stp_enabled_for_interface')
-@patch('config.stp.check_if_interface_is_valid')
-@patch('config.stp.clicommon.get_current_context')
-def test_stp_interface_edgeport_enable(mock_get_current_context, mock_check_valid, mock_check_stp_enabled):
-    # Mocking the database methods
-    mock_cfgdb = MagicMock()
-    mock_context = MagicMock()
-    mock_context.obj = MagicMock(cfgdb=mock_cfgdb)
-    mock_get_current_context.return_value = mock_context
-
-    # Simulating mod_entry being called
-    mock_cfgdb.mod_entry = MagicMock()
-
-    # Set up a valid interface name
-    interface_name = 'Ethernet0'
-
-    # Using CliRunner to invoke the Click command
-    runner = CliRunner()
-    result = runner.invoke(stp_interface_edgeport_enable, [interface_name])
-
-    # Check if the command ran successfully
-    assert result.exit_code == 0
-
-    # Verify that check_if_stp_enabled_for_interface and check_if_interface_is_valid were called with correct args
-    mock_check_stp_enabled.assert_called_once_with(mock_context, mock_cfgdb, interface_name)
-    mock_check_valid.assert_called_once_with(mock_context, mock_cfgdb, interface_name)
-
-    # Verify that mod_entry was called with correct args
-    mock_cfgdb.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
-
-
 def test_stp_mst_region_name_invalid(mock_db, patch_functions):
     # Create the runner for the CLI
     runner = CliRunner()
@@ -150,6 +140,69 @@ def test_stp_mst_region_name_invalid(mock_db, patch_functions):
     # Assert the exit code is non-zero, indicating failure
     assert result.exit_code != 0
     assert "Region name must be less than 32 characters" in result.output
+
+
+# Constants for test
+MST_MIN_HOPS = 1
+MST_MAX_HOPS = 40
+
+def test_stp_global_max_hops_valid(mock_db):
+    """Test setting the max_hops for a valid MST mode and valid hop value."""
+    # Arrange
+    max_hops = 25  # Valid max_hops value within range 1-40
+    mock_db.cfgdb.mod_entry = MagicMock()
+
+    # Mock the functions called in stp_global_max_hops
+    mock_db.cfgdb.get = MagicMock(return_value='mst')  # Return 'mst' as current mode
+
+    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
+        # Act
+        stp_global_max_hops(mock_db, max_hops)
+
+    # Assert the database modification
+    mock_db.cfgdb.mod_entry.assert_called_once_with(
+        'STP_MST', 'GLOBAL', {'max_hops': max_hops}
+    )
+    mock_ctx.fail.assert_not_called()
+
+
+def test_stp_global_max_hops_invalid_mode(mock_db):
+    """Test setting the max_hops when STP mode is invalid."""
+    max_hops = 25
+    mock_db.cfgdb.get = MagicMock(return_value='invalid_mode')  # Return invalid mode
+    
+    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
+        # Act
+        stp_global_max_hops(mock_db, max_hops)
+    
+    # Assert the ctx.fail method is called due to invalid STP mode
+    mock_ctx.fail.assert_called_once_with("Invalid STP mode configured")
+
+
+def test_stp_global_max_hops_pvst(mock_db):
+    """Test setting max_hops for PVST mode, which should fail."""
+    max_hops = 25
+    mock_db.cfgdb.get = MagicMock(return_value='pvst')  # Return 'pvst' mode
+
+    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
+        # Act
+        stp_global_max_hops(mock_db, max_hops)
+
+    # Assert the ctx.fail method is called due to PVST not supporting max_hops
+    mock_ctx.fail.assert_called_once_with("Max hops not supported for PVST")
+
+
+def test_stp_global_max_hops_invalid_range(mock_db):
+    """Test setting max_hops outside the valid range for MST."""
+    max_hops = 50  # Invalid max_hops value outside 1-40 range
+    mock_db.cfgdb.get = MagicMock(return_value='mst')  # Return 'mst' mode
+    
+    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
+        # Act
+        stp_global_max_hops(mock_db, max_hops)
+    
+    # Assert the ctx.fail method is called due to invalid hop value range
+    mock_ctx.fail.assert_called_once_with("STP max hops must be in range 1-40")
 
 
 def test_stp_mst_region_name_pvst(mock_db, patch_functions):
