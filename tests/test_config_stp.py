@@ -3,7 +3,6 @@ import click
 from unittest.mock import MagicMock, patch
 # from click import Context
 from click.testing import CliRunner
-from click import get_current_context
 from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
@@ -96,7 +95,7 @@ def test_stp_interface_edgeport_enable():
     # Call the function to enable edgeport for a specific interface
     interface_name = "Ethernet0"
     result = stp_interface_edgeport_enable(mock_db, interface_name)
-    
+
     # Assertions to check expected outcomes
     mock_db.set.assert_called_once_with(
         "INTERFACE",
@@ -146,6 +145,7 @@ def test_stp_mst_region_name_invalid(mock_db, patch_functions):
 MST_MIN_HOPS = 1
 MST_MAX_HOPS = 40
 
+
 def test_stp_global_max_hops_valid(mock_db):
     """Test setting the max_hops for a valid MST mode and valid hop value."""
     # Arrange
@@ -170,11 +170,11 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     """Test setting the max_hops when STP mode is invalid."""
     max_hops = 25
     mock_db.cfgdb.get = MagicMock(return_value='invalid_mode')  # Return invalid mode
-    
+
     with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
         # Act
         stp_global_max_hops(mock_db, max_hops)
-    
+
     # Assert the ctx.fail method is called due to invalid STP mode
     mock_ctx.fail.assert_called_once_with("Invalid STP mode configured")
 
@@ -196,11 +196,11 @@ def test_stp_global_max_hops_invalid_range(mock_db):
     """Test setting max_hops outside the valid range for MST."""
     max_hops = 50  # Invalid max_hops value outside 1-40 range
     mock_db.cfgdb.get = MagicMock(return_value='mst')  # Return 'mst' mode
-    
+
     with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
         # Act
         stp_global_max_hops(mock_db, max_hops)
-    
+
     # Assert the ctx.fail method is called due to invalid hop value range
     mock_ctx.fail.assert_called_once_with("STP max hops must be in range 1-40")
 
