@@ -106,6 +106,7 @@ def patch_functions():
          patch('config.stp.get_global_stp_mode', return_value='mst'):
         yield
 
+
 @patch('config.stp.check_if_stp_enabled_for_interface')
 @patch('config.stp.check_if_interface_is_valid')
 @patch('config.stp.clicommon')
