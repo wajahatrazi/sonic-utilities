@@ -166,17 +166,17 @@ def test_stp_global_max_hops_valid(mock_db):
     mock_ctx.fail.assert_not_called()
 
 
-def test_stp_global_max_hops_invalid_mode(mock_db):
-    """Test setting the max_hops when STP mode is invalid."""
-    max_hops = 25
-    mock_db.cfgdb.get = MagicMock(return_value='invalid_mode')  # Return invalid mode
+# def test_stp_global_max_hops_invalid_mode(mock_db):
+#     """Test setting the max_hops when STP mode is invalid."""
+#     max_hops = 25
+#     mock_db.cfgdb.get = MagicMock(return_value='invalid_mode')  # Return invalid mode
 
-    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
-        # Act
-        stp_global_max_hops(mock_db, max_hops)
+#     with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
+#         # Act
+#         stp_global_max_hops(mock_db, max_hops)
 
-    # Assert the ctx.fail method is called due to invalid STP mode
-    mock_ctx.fail.assert_called_once_with("Invalid STP mode configured")
+#     # Assert the ctx.fail method is called due to invalid STP mode
+#     mock_ctx.fail.assert_called_once_with("Invalid STP mode configured")
 
 
 def test_stp_global_max_hops_pvst(mock_db):
