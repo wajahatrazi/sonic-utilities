@@ -107,10 +107,15 @@ def patch_functions():
         yield
 
 
-def test_stp_interface_edgeport_enable(mock_clicommon, mock_check_valid, mock_check_stp_enabled):
+@patch('config.stp.check_if_stp_enabled_for_interface')
+@patch('config.stp.check_if_interface_is_valid')
+@patch('config.stp.clicommon.get_current_context')
+def test_stp_interface_edgeport_enable(mock_get_current_context, mock_check_valid, mock_check_stp_enabled):
     # Mocking the database methods
     mock_cfgdb = MagicMock()
-    mock_clicommon.get_current_context.return_value.obj = MagicMock(cfgdb=mock_cfgdb)
+    mock_context = MagicMock()
+    mock_context.obj = MagicMock(cfgdb=mock_cfgdb)
+    mock_get_current_context.return_value = mock_context
 
     # Simulating mod_entry being called
     mock_cfgdb.mod_entry = MagicMock()
@@ -126,8 +131,8 @@ def test_stp_interface_edgeport_enable(mock_clicommon, mock_check_valid, mock_ch
     assert result.exit_code == 0
 
     # Verify that check_if_stp_enabled_for_interface and check_if_interface_is_valid were called with correct args
-    mock_check_stp_enabled.assert_called_once_with(mock_clicommon.get_current_context(), mock_cfgdb, interface_name)
-    mock_check_valid.assert_called_once_with(mock_clicommon.get_current_context(), mock_cfgdb, interface_name)
+    mock_check_stp_enabled.assert_called_once_with(mock_context, mock_cfgdb, interface_name)
+    mock_check_valid.assert_called_once_with(mock_context, mock_cfgdb, interface_name)
 
     # Verify that mod_entry was called with correct args
     mock_cfgdb.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
