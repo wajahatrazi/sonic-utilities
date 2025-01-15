@@ -7,6 +7,8 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
+    check_if_stp_enabled_for_interface,
+    check_if_interface_is_valid,
     stp_interface_edgeport_enable,
     # stp_global_hello_interval,
     # dot spanning_tree_enable,
@@ -209,79 +211,172 @@ def cli_runner():
     return CliRunner()
 
 
+# class TestStpInterfaceEdgeportEnable:
+#     def setup_method(self):
+#         self.valid_interface = "Ethernet0"
+#         self.invalid_interface = "InvalidInterface"
+
+#     @patch('click.get_current_context')
+#     def test_successful_enable_edgeport(self, mock_context, mock_db, cli_runner):
+#         # Arrange
+#         mock_context.return_value = MagicMock()
+#         mock_db.cfgdb.get_entry.return_value = {"some_key": "some_value"}
+#         # Act
+#         result = stp_interface_edgeport_enable(mock_db, self.valid_interface)
+#         # Assert
+#         mock_db.mod_entry.assert_called_once_with(
+#             'STP_PORT',
+#             self.valid_interface,
+#             {'edgeport': 'true'}
+#         )
+#         assert result is None  # Assuming successful execution returns None
+
+#     @patch('click.get_current_context')
+#     def test_invalid_interface(self, mock_context, mock_db, cli_runner):
+#         # Arrange
+#         mock_context.return_value = MagicMock()
+#         mock_db.cfgdb.get_entry.return_value = {}  # Empty dict indicates invalid interface
+#         # Act & Assert
+#         with pytest.raises(click.ClickException, match=r"Interface .* is not valid"):
+#             stp_interface_edgeport_enable(mock_db, self.invalid_interface)
+
+#     @patch('click.get_current_context')
+#     def test_stp_not_enabled(self, mock_context, mock_db, cli_runner):
+#         # Arrange
+#         mock_context.return_value = MagicMock()
+#         mock_db.cfgdb.get_entry.side_effect = [
+#             {"some_key": "some_value"},  # Valid interface
+#             {}  # STP not enabled
+#         ]
+#         # Act & Assert
+#         with pytest.raises(click.ClickException, match=r"STP is not enabled for interface .*"):
+#             stp_interface_edgeport_enable(mock_db, self.valid_interface)
+
+#     @patch('click.get_current_context')
+#     def test_database_error(self, mock_context, mock_db, cli_runner):
+#         # Arrange
+#         mock_context.return_value = MagicMock()
+#         mock_db.cfgdb.get_entry.return_value = {"some_key": "some_value"}
+#         mock_db.mod_entry.side_effect = Exception("Database error")
+#         # Act & Assert
+#         with pytest.raises(Exception, match="Database error"):
+#             stp_interface_edgeport_enable(mock_db, self.valid_interface)
+
+#     def test_missing_interface_argument(self, cli_runner):
+#         # Test CLI command without required interface argument
+#         result = cli_runner.invoke(stp_interface_edgeport_enable, ['enable'])
+#         assert result.exit_code != 0
+#         assert "Missing argument" in result.output
+
+#     @patch('click.get_current_context')
+#     def test_empty_interface_name(self, mock_context, mock_db, cli_runner):
+#         # Arrange
+#         mock_context.return_value = MagicMock()
+#         # Act & Assert
+#         with pytest.raises(click.ClickException):
+#             stp_interface_edgeport_enable(mock_db, "")
+
+
+# # Integration test example
+# def test_integration_enable_edgeport(mock_db, cli_runner):
+#     # This test would require more setup of the actual database
+#     # and would test the entire flow from CLI to database modification
+#     result = cli_runner.invoke(stp_interface_edgeport_enable,
+#                                ['enable', 'Ethernet0'])
+#     assert result.exit_code == 0
+
 class TestStpInterfaceEdgeportEnable:
+    """Test cases for STP interface edgeport enable command"""
+    
     def setup_method(self):
         self.valid_interface = "Ethernet0"
         self.invalid_interface = "InvalidInterface"
-
+    
     @patch('click.get_current_context')
     def test_successful_enable_edgeport(self, mock_context, mock_db, cli_runner):
-        # Arrange
         mock_context.return_value = MagicMock()
-        mock_db.cfgdb.get_entry.return_value = {"some_key": "some_value"}
-        # Act
-        result = stp_interface_edgeport_enable(mock_db, self.valid_interface)
-        # Assert
+        mock_db.get_entry.return_value = {"some_key": "some_value"}
+        
+        # Mock the database factory
+        def get_mock_db():
+            return mock_db
+            
+        # Patch the database creation in the CLI command
+        with patch('stp.ConfigDB', side_effect=get_mock_db):
+            # Run the command using the CLI runner with the interface name as argument
+            result = cli_runner.invoke(stp_interface_edgeport_enable,
+                                     ['enable', self.valid_interface])
+        
+        # Assert the command executed successfully
+        assert result.exit_code == 0
+        
+        # Verify the database was updated correctly
         mock_db.mod_entry.assert_called_once_with(
             'STP_PORT',
             self.valid_interface,
             {'edgeport': 'true'}
         )
-        assert result is None  # Assuming successful execution returns None
 
-    @patch('click.get_current_context')
-    def test_invalid_interface(self, mock_context, mock_db, cli_runner):
-        # Arrange
-        mock_context.return_value = MagicMock()
-        mock_db.cfgdb.get_entry.return_value = {}  # Empty dict indicates invalid interface
-        # Act & Assert
+
+class TestStpHelperFunctions:
+    """Test cases for STP helper functions"""
+    
+    def test_check_if_interface_is_valid_success(self, mock_db):
+        mock_db.get_entry.return_value = {"some_key": "some_value"}
+        ctx = MagicMock()
+        check_if_interface_is_valid(ctx, mock_db, "Ethernet0")
+        mock_db.get_entry.assert_called_once_with('PORT', 'Ethernet0')
+ 
+    def test_check_if_interface_is_valid_failure(self, mock_db):
+        mock_db.get_entry.return_value = {}
+        ctx = MagicMock()
         with pytest.raises(click.ClickException, match=r"Interface .* is not valid"):
-            stp_interface_edgeport_enable(mock_db, self.invalid_interface)
-
-    @patch('click.get_current_context')
-    def test_stp_not_enabled(self, mock_context, mock_db, cli_runner):
-        # Arrange
-        mock_context.return_value = MagicMock()
-        mock_db.cfgdb.get_entry.side_effect = [
-            {"some_key": "some_value"},  # Valid interface
-            {}  # STP not enabled
-        ]
-        # Act & Assert
+            check_if_interface_is_valid(ctx, mock_db, "InvalidInterface")
+ 
+    def test_check_if_stp_enabled_success(self, mock_db):
+        mock_db.get_entry.return_value = {"enabled": "true"}
+        ctx = MagicMock()
+        check_if_stp_enabled_for_interface(ctx, mock_db, "Ethernet0")
+        mock_db.get_entry.assert_called_once_with('STP_INTF', 'Ethernet0')
+ 
+    def test_check_if_stp_enabled_failure(self, mock_db):
+        mock_db.get_entry.return_value = {}
+        ctx = MagicMock()
         with pytest.raises(click.ClickException, match=r"STP is not enabled for interface .*"):
-            stp_interface_edgeport_enable(mock_db, self.valid_interface)
+            check_if_stp_enabled_for_interface(ctx, mock_db, "Ethernet0")
 
+
+class TestStpInterfaceEdgeportEnable:
+    """Test cases for STP interface edgeport enable command"""
+    
+    def setup_method(self):
+        self.valid_interface = "Ethernet0"
+        self.invalid_interface = "InvalidInterface"
+    
     @patch('click.get_current_context')
-    def test_database_error(self, mock_context, mock_db, cli_runner):
-        # Arrange
+    def test_successful_enable_edgeport(self, mock_context, mock_db, cli_runner):
         mock_context.return_value = MagicMock()
-        mock_db.cfgdb.get_entry.return_value = {"some_key": "some_value"}
-        mock_db.mod_entry.side_effect = Exception("Database error")
-        # Act & Assert
-        with pytest.raises(Exception, match="Database error"):
-            stp_interface_edgeport_enable(mock_db, self.valid_interface)
-
-    def test_missing_interface_argument(self, cli_runner):
-        # Test CLI command without required interface argument
-        result = cli_runner.invoke(stp_interface_edgeport_enable, ['enable'])
-        assert result.exit_code != 0
-        assert "Missing argument" in result.output
-
-    @patch('click.get_current_context')
-    def test_empty_interface_name(self, mock_context, mock_db, cli_runner):
-        # Arrange
-        mock_context.return_value = MagicMock()
-        # Act & Assert
-        with pytest.raises(click.ClickException):
-            stp_interface_edgeport_enable(mock_db, "")
-
-
-# Integration test example
-def test_integration_enable_edgeport(mock_db, cli_runner):
-    # This test would require more setup of the actual database
-    # and would test the entire flow from CLI to database modification
-    result = cli_runner.invoke(stp_interface_edgeport_enable,
-                               ['enable', 'Ethernet0'])
-    assert result.exit_code == 0
+        mock_db.get_entry.return_value = {"some_key": "some_value"}
+        
+        # Mock the database factory
+        def get_mock_db():
+            return mock_db
+            
+        # Patch the database creation in the CLI command
+        with patch('stp.ConfigDB', side_effect=get_mock_db):
+            # Run the command using the CLI runner with the interface name as argument
+            result = cli_runner.invoke(stp_interface_edgeport_enable,
+                                     ['enable', self.valid_interface])
+        
+        # Assert the command executed successfully
+        assert result.exit_code == 0
+        
+        # Verify the database was updated correctly
+        mock_db.mod_entry.assert_called_once_with(
+            'STP_PORT',
+            self.valid_interface,
+            {'edgeport': 'true'}
+        )
 
 
 def test_stp_mst_region_name_pvst(mock_db, patch_functions):
