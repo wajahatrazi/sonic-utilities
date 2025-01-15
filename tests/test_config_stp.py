@@ -154,16 +154,15 @@ def test_stp_global_max_hops_valid(mock_db):
 
     # Mock the functions called in stp_global_max_hops
     mock_db.cfgdb.get = MagicMock(return_value='mst')  # Return 'mst' as current mode
+    mock_db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})  # Simulate MST mode
 
-    with patch('click.get_current_context', return_value=MagicMock()) as mock_ctx:
-        # Act
-        stp_global_max_hops(mock_db, max_hops)
+    # Act
+    stp_global_max_hops(mock_db, max_hops)
 
     # Assert the database modification
     mock_db.cfgdb.mod_entry.assert_called_once_with(
         'STP_MST', 'GLOBAL', {'max_hops': max_hops}
     )
-    mock_ctx.fail.assert_not_called()
 
 
 # def test_stp_global_max_hops_invalid_mode(mock_db):
