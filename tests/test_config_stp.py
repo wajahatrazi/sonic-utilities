@@ -7,6 +7,7 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
+    stp_interface_edgeport_enable,
     # stp_global_hello_interval,
     # dot spanning_tree_enable,
     # dot stp_global_max_age,
@@ -104,6 +105,35 @@ def patch_functions():
     with patch('config.stp.check_if_global_stp_enabled', return_value=True), \
          patch('config.stp.get_global_stp_mode', return_value='mst'):
         yield
+
+@patch('config.stp.check_if_stp_enabled_for_interface')
+@patch('config.stp.check_if_interface_is_valid')
+@patch('config.stp.clicommon')
+@patch('config.stp._db')
+def test_stp_interface_edgeport_enable(mock_db, mock_clicommon, mock_check_valid, mock_check_stp_enabled):
+    # Mocking the database methods
+    mock_cfgdb = MagicMock()
+    mock_db.cfgdb = mock_cfgdb
+
+    # Simulating mod_entry being called
+    mock_cfgdb.mod_entry = MagicMock()
+
+    # Set up a valid interface name
+    interface_name = 'Ethernet0'
+
+    # Using CliRunner to invoke the Click command
+    runner = CliRunner()
+    result = runner.invoke(stp_interface_edgeport_enable, [interface_name])
+
+    # Check if the command ran successfully
+    assert result.exit_code == 0
+
+    # Verify that check_if_stp_enabled_for_interface and check_if_interface_is_valid were called with correct args
+    mock_check_stp_enabled.assert_called_once_with(mock_clicommon.get_current_context(), mock_cfgdb, interface_name)
+    mock_check_valid.assert_called_once_with(mock_clicommon.get_current_context(), mock_cfgdb, interface_name)
+
+    # Verify that mod_entry was called with correct args
+    mock_cfgdb.mod_entry.assert_called_once_with('STP_PORT', interface_name, {'edgeport': 'true'})
 
 
 def test_stp_mst_region_name_invalid(mock_db, patch_functions):
