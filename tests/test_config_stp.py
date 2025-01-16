@@ -8,6 +8,7 @@ from config.stp import (
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
     # stp_global_hello_interval,
+    stp_interface_link_type_point_to_point,
     # dot spanning_tree_enable,
     # dot stp_global_max_age,
     stp_global_max_hops,
@@ -535,3 +536,26 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     # Check if the function fails with the correct error message
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
+
+
+@patch('check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
+@patch('check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
+@patch('db.mod_entry')  # Mock the db.mod_entry function
+def test_stp_interface_link_type_point_to_point_success(mock_mod_entry, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
+    # Arrange
+    mock_db = MagicMock()
+    mock_ctx = MagicMock()
+    interface_name = "Ethernet0"
+
+    # Mock the functions
+    mock_check_if_stp_enabled_for_interface.return_value = None
+    mock_check_if_interface_is_valid.return_value = None
+    mock_mod_entry.return_value = None
+
+    # Act
+    stp_interface_link_type_point_to_point(mock_db, interface_name)
+
+    # Assert
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(mock_ctx, mock_db, interface_name)
+    mock_check_if_interface_is_valid.assert_called_once_with(mock_ctx, mock_db, interface_name)
+    mock_mod_entry.assert_called_once_with('STP_PORT', interface_name, {'link_type': 'point-to-point'})
