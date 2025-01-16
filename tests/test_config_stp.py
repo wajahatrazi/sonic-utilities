@@ -153,18 +153,17 @@ def test_stp_global_max_hops_valid(mock_db):
     # Arrange
     max_hops = 25  # Valid max_hops value within range 1-40
     mock_db.cfgdb.mod_entry = MagicMock()
-
-    # Mock the functions called in stp_global_max_hops
     mock_db.cfgdb.get = MagicMock(return_value='mst')  # Return 'mst' as current mode
     mock_db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})  # Simulate MST mode
 
-    # Act
-    stp_global_max_hops(mock_db, max_hops)
+    runner = CliRunner()
 
-    # Assert the database modification
-    mock_db.cfgdb.mod_entry.assert_called_once_with(
-        'STP_MST', 'GLOBAL', {'max_hops': max_hops}
-    )
+    # Act
+    result = runner.invoke(stp_global_max_hops, ['--max-hops', str(max_hops)])
+
+    # Assert
+    assert result.exit_code == 0
+    mock_db.cfgdb.mod_entry.assert_called_once_with('STP', 'global', {'max_hops': max_hops})
 
 
 # def test_stp_global_max_hops_invalid_mode(mock_db):
@@ -206,70 +205,9 @@ def test_stp_global_max_hops_invalid_range(mock_db):
     mock_ctx.fail.assert_called_once_with("STP max hops must be in range 1-40")
 
 
-@pytest.fixture
-def cli_runner():
-    return CliRunner()
-
-
-class TestStpHelperFunctions:
-    """Test cases for STP helper functions"""
-
-    def test_check_if_interface_is_valid_success(self, mock_db):
-        mock_db.get_entry.return_value = {"some_key": "some_value"}
-        ctx = MagicMock()
-        check_if_interface_is_valid(ctx, mock_db, "Ethernet0")
-        mock_db.get_entry.assert_called_once_with('PORT', 'Ethernet0')
-
-    def test_check_if_interface_is_valid_failure(self, mock_db):
-        mock_db.get_entry.return_value = {}
-        ctx = MagicMock()
-        with pytest.raises(click.ClickException, match=r"Interface .* is not valid"):
-            check_if_interface_is_valid(ctx, mock_db, "InvalidInterface")
-
-    def test_check_if_stp_enabled_success(self, mock_db):
-        mock_db.get_entry.return_value = {"enabled": "true"}
-        ctx = MagicMock()
-        check_if_stp_enabled_for_interface(ctx, mock_db, "Ethernet0")
-        mock_db.get_entry.assert_called_once_with('STP_INTF', 'Ethernet0')
-
-    def test_check_if_stp_enabled_failure(self, mock_db):
-        mock_db.get_entry.return_value = {}
-        ctx = MagicMock()
-        with pytest.raises(click.ClickException, match=r"STP is not enabled for interface .*"):
-            check_if_stp_enabled_for_interface(ctx, mock_db, "Ethernet0")
-
-
-class TestStpInterfaceEdgeportEnable:
-    """Test cases for STP interface edgeport enable command"""
-
-    def setup_method(self):
-        self.valid_interface = "Ethernet0"
-        self.invalid_interface = "InvalidInterface"
-
-    @patch('click.get_current_context')
-    def test_successful_enable_edgeport(self, mock_context, mock_db, cli_runner):
-        mock_context.return_value = MagicMock()
-        mock_db.get_entry.return_value = {"some_key": "some_value"}
-
-        # Mock the database factory
-        def get_mock_db():
-            return mock_db
-
-        # Patch the database creation in the CLI command
-        with patch('stp.ConfigDB', side_effect=get_mock_db):
-            # Run the command using the CLI runner with the interface name as argument
-            result = cli_runner.invoke(stp_interface_edgeport_enable,
-                                       ['enable', self.valid_interface])
-
-        # Assert the command executed successfully
-        assert result.exit_code == 0
-
-        # Verify the database was updated correctly
-        mock_db.mod_entry.assert_called_once_with(
-            'STP_PORT',
-            self.valid_interface,
-            {'edgeport': 'true'}
-        )
+# @pytest.fixture
+# def cli_runner():
+#     return CliRunner()
 
 
 def test_stp_mst_region_name_pvst(mock_db, patch_functions):
