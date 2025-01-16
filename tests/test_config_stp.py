@@ -8,6 +8,7 @@ from config.stp import (
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
     check_if_stp_enabled_for_interface,
+    check_if_interface_is_valid,
     # stp_global_hello_interval,
     stp_interface_link_type_point_to_point,
     # dot spanning_tree_enable,
