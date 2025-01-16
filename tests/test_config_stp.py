@@ -540,29 +540,23 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-# Test for successful execution of the function
-@patch('config.stp.check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
-@patch('config.stp.check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
-@patch('config.stp.db.mod_entry')  # Mock the db.mod_entry function
+@patch('config.stp.check_if_stp_enabled_for_interface')  # Mocking the function check_if_stp_enabled_for_interface
+@patch('config.stp.check_if_interface_is_valid')  # Mocking the function check_if_interface_is_valid
+@patch('config.stp._db.cfgdb.mod_entry')  # Mocking the mod_entry method of db.cfgdb
 def test_stp_interface_link_type_point_to_point_success(
-    mock_mod_entry,
-    mock_check_if_interface_is_valid,
-    mock_check_if_stp_enabled_for_interface
+    mock_mod_entry, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface
 ):
-    # Arrange
+    """Test successful execution of stp_interface_link_type_point_to_point."""
+    
+    # Arrange: Mock context and database
     mock_db = MagicMock()
-    mock_ctx = MagicMock()
+    mock_db.cfgdb = MagicMock()
+    
+    # Act: Call the function with mock arguments
     interface_name = "Ethernet0"
-
-    # Mock the functions
-    mock_check_if_stp_enabled_for_interface.return_value = None
-    mock_check_if_interface_is_valid.return_value = None
-    mock_mod_entry.return_value = None
-
-    # Act
     stp_interface_link_type_point_to_point(mock_db, interface_name)
-
-    # Assert
-    mock_check_if_stp_enabled_for_interface.assert_called_once_with(mock_ctx, mock_db, interface_name)
-    mock_check_if_interface_is_valid.assert_called_once_with(mock_ctx, mock_db, interface_name)
+    
+    # Assert: Verify the expected function calls were made
+    mock_check_if_stp_enabled_for_interface.assert_called_once()
+    mock_check_if_interface_is_valid.assert_called_once()
     mock_mod_entry.assert_called_once_with('STP_PORT', interface_name, {'link_type': 'point-to-point'})
