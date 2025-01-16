@@ -540,23 +540,24 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-@patch('config.stp.check_if_stp_enabled_for_interface')  # Mocking the function check_if_stp_enabled_for_interface
-@patch('config.stp.check_if_interface_is_valid')  # Mocking the function check_if_interface_is_valid
-@patch('config.stp._db.cfgdb.mod_entry')  # Mocking the mod_entry method of db.cfgdb
+# Test case for stp_interface_link_type_point_to_point function
 def test_stp_interface_link_type_point_to_point_success(
-    mock_mod_entry, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface
+    mock_db, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface
 ):
-    """Test successful execution of stp_interface_link_type_point_to_point."""
+    # Set up the mock return values for the validation functions
+    mock_check_if_interface_is_valid.return_value = None
+    mock_check_if_stp_enabled_for_interface.return_value = None
+    mock_db.cfgdb.mod_entry.return_value = None  # Simulating that the modification was successful
 
-    # Arrange: Mock context and database
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-
-    # Act: Call the function with mock arguments
-    interface_name = "Ethernet0"
+    # Call the function
+    interface_name = "Ethernet0"  # Example interface name
     stp_interface_link_type_point_to_point(mock_db, interface_name)
 
-    # Assert: Verify the expected function calls were made
-    mock_check_if_stp_enabled_for_interface.assert_called_once()
-    mock_check_if_interface_is_valid.assert_called_once()
-    mock_mod_entry.assert_called_once_with('STP_PORT', interface_name, {'link_type': 'point-to-point'})
+    # Assert that the correct database call was made
+    mock_db.cfgdb.mod_entry.assert_called_once_with(
+        'STP_PORT', interface_name, {'link_type': 'point-to-point'}
+    )
+
+    # Check that the validation functions were also called
+    mock_check_if_interface_is_valid.assert_called_once_with(mock_db, interface_name)
+    mock_check_if_stp_enabled_for_interface.assert_called_once_with(mock_db, interface_name)
