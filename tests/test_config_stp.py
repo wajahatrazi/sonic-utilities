@@ -538,10 +538,15 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
+# Test for successful execution of the function
 @patch('check_if_stp_enabled_for_interface')  # Mock the check_if_stp_enabled_for_interface function
 @patch('check_if_interface_is_valid')  # Mock the check_if_interface_is_valid function
 @patch('db.mod_entry')  # Mock the db.mod_entry function
-def test_stp_interface_link_type_point_to_point_success(mock_mod_entry, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface):
+def test_stp_interface_link_type_point_to_point_success(
+    mock_mod_entry,
+    mock_check_if_interface_is_valid,
+    mock_check_if_stp_enabled_for_interface
+):
     # Arrange
     mock_db = MagicMock()
     mock_ctx = MagicMock()
