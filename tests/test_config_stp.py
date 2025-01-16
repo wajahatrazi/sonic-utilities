@@ -547,15 +547,15 @@ def test_stp_interface_link_type_point_to_point_success(
     mock_mod_entry, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface
 ):
     """Test successful execution of stp_interface_link_type_point_to_point."""
-    
+
     # Arrange: Mock context and database
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
-    
+
     # Act: Call the function with mock arguments
     interface_name = "Ethernet0"
     stp_interface_link_type_point_to_point(mock_db, interface_name)
-    
+
     # Assert: Verify the expected function calls were made
     mock_check_if_stp_enabled_for_interface.assert_called_once()
     mock_check_if_interface_is_valid.assert_called_once()
