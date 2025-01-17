@@ -19,7 +19,7 @@ from config.stp import (
     # stp_global_root_guard_timeout,
     is_valid_hello_interval,
     stp_disable,
-    is_valid_max_age,
+    # is_valid_max_age,
     # is_valid_bridge_priority,
     enable_mst_instance0,
     # dot stp_global_forward_delay,
@@ -571,18 +571,18 @@ def test_stp_global_max_age_mst_mode(mock_db, mock_ctx):
     mock_db.cfgdb.get_global_stp_mode.return_value = "mst"  # Simulate MST mode
 
     # Mock the helper functions
-    with patch('check_if_global_stp_enabled') as check_if_global_stp_enabled, \
-         patch('is_valid_max_age') as is_valid_max_age:
-        
+    with patch('config.stp.check_if_global_stp_enabled') as check_if_global_stp_enabled, \
+         patch('config.stp.is_valid_max_age') as is_valid_max_age:
+
         # Create the CliRunner instance
         runner = CliRunner()
-        
+
         # Use invoke to pass the argument to the command
         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)  # Simulate command-line input
-        
+
         # Assert the command ran successfully
         assert result.exit_code == 0
-        
+
         # Assert that the helper functions are called correctly
         check_if_global_stp_enabled.assert_called_once()
         is_valid_max_age.assert_called_once_with(mock_ctx, 25)
