@@ -10,7 +10,7 @@ from config.stp import (
     # check_if_stp_enabled_for_interface,
     # check_if_interface_is_valid,
     # stp_global_hello_interval,
-    stp_interface_link_type_point_to_point,
+    # stp_interface_link_type_point_to_point,
     # dot spanning_tree_enable,
     stp_global_max_age,
     stp_global_max_hops,
