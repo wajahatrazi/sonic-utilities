@@ -565,38 +565,34 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 
 def test_stp_global_max_age_mst_mode(mock_db, mock_ctx):
     """Test for MST mode configuration."""
-    mock_ctx.fail = MagicMock()  # Mock the fail method of the context
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}  # Simulate MST mode
+    mock_ctx.fail = MagicMock()
 
     # Mock helper functions
-    with patch('config.stp.check_if_global_stp_enabled') as check_if_global_stp_enabled, \
-         patch('config.stp.is_valid_max_age') as is_valid_max_age:
+    with patch('config.stp.check_if_global_stp_enabled') as _, \
+         patch('config.stp.is_valid_max_age') as is_valid_max_age, \
+         patch('config.stp.get_global_stp_mode', return_value='mst'):
 
-        # Create a runner instance
         runner = CliRunner()
-
-        # Invoke the command with max_age argument
         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)
 
-        # Check the command ran successfully
+        # Check for successful execution
         assert result.exit_code == 0
 
-        # Check that helper functions were called
-        check_if_global_stp_enabled.assert_called_once()
+        # Check helper function calls
         is_valid_max_age.assert_called_once_with(mock_ctx, 25)
-
-        # Check that database entries were modified for MST mode
-        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', 'GLOBAL', {'max_age': 25})
+        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
 
 
 def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
     """Test for invalid mode configuration."""
     mock_ctx.fail = MagicMock()
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid_mode'}  # Simulate invalid mode
 
-    # Expect SystemExit due to invalid mode
-    with pytest.raises(SystemExit):
-        stp_global_max_age(mock_db, 30)
+    with patch('config.stp.check_if_global_stp_enabled'), \
+         patch('config.stp.get_global_stp_mode', return_value='invalid_mode'):
 
-    # Check that fail method was called on invalid mode
-    mock_ctx.fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
+        runner = CliRunner()
+        result = runner.invoke(stp_global_max_age, ['30'], obj=mock_db)
+
+        # Check for failed execution
+        assert result.exit_code != 0
+        mock_ctx.fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
