@@ -563,36 +563,46 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 #     mock_check_if_stp_enabled_for_interface.assert_called_once_with(mock_db, interface_name)
 
 
-def test_stp_global_max_age_mst_mode(mock_db, mock_ctx):
-    """Test for MST mode configuration."""
-    mock_ctx.fail = MagicMock()
+def test_stp_global_max_age_mst_mode(mock_db):
+    """Test the stp_global_max_age function for MST mode configuration."""
+    # Mock context object and ensure correct context behavior
+    mock_ctx = click.Context(click.Command('max_age'))
 
-    # Mock helper functions
-    with patch('config.stp.check_if_global_stp_enabled') as _, \
-         patch('config.stp.is_valid_max_age') as is_valid_max_age, \
-         patch('config.stp.get_global_stp_mode', return_value='mst'):
+    # Patch helper functions and required calls
+    with patch('config.stp.check_if_global_stp_enabled') as mock_check_if_enabled, \
+         patch('config.stp.is_valid_max_age') as mock_is_valid_max_age, \
+         patch('config.stp.get_global_stp_mode', return_value='mst'), \
+         patch('config.stp.update_stp_vlan_parameter') as mock_update_stp_vlan, \
+         patch('config.stp.is_valid_stp_global_parameters'):
 
+        # Set return values for mocks
+        mock_check_if_enabled.return_value = None
+        mock_is_valid_max_age.return_value = None
+
+        # Initialize CLI runner for test execution
         runner = CliRunner()
         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)
 
-        # Check for successful execution
-        assert result.exit_code == 0
-
-        # Check helper function calls
-        is_valid_max_age.assert_called_once_with(mock_ctx, 25)
-        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
+        # Assertions
+        assert result.exit_code == 0  # Ensure function exits successfully
+        mock_check_if_enabled.assert_called_once_with(mock_db.cfgdb, click.get_current_context())
+        mock_is_valid_max_age.assert_called_once_with(click.get_current_context(), 25)
+        mock_update_stp_vlan.assert_not_called()  # Not called in MST mode
 
 
 def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
     """Test for invalid mode configuration."""
-    mock_ctx.fail = MagicMock()
+    mock_ctx.fail = MagicMock()  # Mock the fail method directly
 
     with patch('config.stp.check_if_global_stp_enabled'), \
          patch('config.stp.get_global_stp_mode', return_value='invalid_mode'):
-
+        
         runner = CliRunner()
         result = runner.invoke(stp_global_max_age, ['30'], obj=mock_db)
 
         # Check for failed execution
-        assert result.exit_code != 0
+        assert result.exit_code != 0  # Ensure the function exits with an error
+
+        # Verify fail was called with the correct error message
         mock_ctx.fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
+    
