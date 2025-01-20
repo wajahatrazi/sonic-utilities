@@ -581,6 +581,7 @@ def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
         # Verify fail was called with the correct error message
         mock_ctx.fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
 
+
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
 STP_DEFAULT_FORWARD_DELAY = "15"
@@ -613,7 +614,6 @@ class TestSpanningTreeEnable:
             mock_enable_interfaces.assert_called_once()
             mock_enable_vlans.assert_called_once()
 
-
     def test_enable_mst_fresh_config(self, mock_db):
         """Test enabling MST mode on a fresh configuration"""
         # Override the default mock to return empty config
@@ -632,7 +632,6 @@ class TestSpanningTreeEnable:
             mock_enable_interfaces.assert_called_once()
             mock_enable_instance0.assert_called_once()
 
-
     def test_enable_pvst_when_mst_configured(self, mock_db):
         """Test enabling PVST mode when MST is already configured"""
         # Default mock already returns MST mode
@@ -643,7 +642,6 @@ class TestSpanningTreeEnable:
         assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
 
-
     def test_enable_mst_when_already_configured(self, mock_db):
         """Test enabling MST mode when it's already configured"""
         # Default mock already returns MST mode
@@ -653,7 +651,6 @@ class TestSpanningTreeEnable:
         assert result.exit_code != 0
         assert "MST is already configured" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
-
 
     def test_enable_mst_when_pvst_configured(self, mock_db):
         """Test enabling MST mode when PVST is configured"""
@@ -668,7 +665,6 @@ class TestSpanningTreeEnable:
         assert result.exit_code != 0
         assert "PVST is already configured; please disable PVST before enabling MST" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
-
 
     def test_enable_pvst_when_already_configured(self, mock_db):
         """Test enabling PVST mode when it's already configured"""
