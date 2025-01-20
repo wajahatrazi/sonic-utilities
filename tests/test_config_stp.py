@@ -566,24 +566,34 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 def test_stp_global_max_age_mst_mode(mock_db):
     """Test for MST mode configuration."""
 
+    # Mock the return value of 'get_global_stp_mode' to return 'mst'
     with patch('config.stp.check_if_global_stp_enabled'), \
          patch('config.stp.is_valid_max_age') as is_valid_max_age, \
-         patch('config.stp.get_global_stp_mode', return_value='mst'):
+         patch('config.stp.get_global_stp_mode', return_value='mst'), \
+         patch('config.stp.db') as mock_cfgdb:
 
-        # Mock the context to check for fail calls
+        # Create a mock context to simulate the Click context
         mock_ctx = MagicMock()
+
+        # Simulate valid max_age validation (no error should be raised)
+        is_valid_max_age.return_value = None
+
+        # Mock the database methods like get_entry and mod_entry
+        mock_db.cfgdb = mock_cfgdb
+
+        # Create the CLI runner to simulate invoking the command
         runner = CliRunner()
 
-        # Invoke the command with a valid max_age
+        # Invoke the 'stp_global_max_age' command with a valid max_age argument
         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)
 
-        # Check for successful execution
+        # Assert the command ran successfully (exit_code == 0)
         assert result.exit_code == 0
 
-        # Check that is_valid_max_age was called with the correct arguments
+        # Check if 'is_valid_max_age' was called with the correct context and value
         is_valid_max_age.assert_called_once_with(mock_ctx, 25)
 
-        # Check that db.mod_entry was called with the correct arguments
+        # Check if the database was modified correctly (update max_age to 25)
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
 
 
