@@ -540,61 +540,29 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-# # Test case for stp_interface_link_type_point_to_point function
-# def test_stp_interface_link_type_point_to_point_success(
-#     mock_db, mock_check_if_interface_is_valid, mock_check_if_stp_enabled_for_interface
-# ):
-#     # Set up the mock return values for the validation functions
-#     mock_check_if_interface_is_valid.return_value = None
-#     mock_check_if_stp_enabled_for_interface.return_value = None
-#     mock_db.cfgdb.mod_entry.return_value = None  # Simulating that the modification was successful
-
-#     # Call the function
-#     interface_name = "Ethernet0"  # Example interface name
-#     stp_interface_link_type_point_to_point(mock_db, interface_name)
-
-#     # Assert that the correct database call was made
-#     mock_db.cfgdb.mod_entry.assert_called_once_with(
-#         'STP_PORT', interface_name, {'link_type': 'point-to-point'}
-#     )
-
-#     # Check that the validation functions were also called
-#     mock_check_if_interface_is_valid.assert_called_once_with(mock_db, interface_name)
-#     mock_check_if_stp_enabled_for_interface.assert_called_once_with(mock_db, interface_name)
-
-
 def test_stp_global_max_age_mst_mode(mock_db):
     """Test for MST mode configuration."""
 
-    # Mock the return value of 'get_global_stp_mode' to return 'mst'
-    with patch('config.stp.check_if_global_stp_enabled'), \
-         patch('config.stp.is_valid_max_age') as is_valid_max_age, \
-         patch('config.stp.get_global_stp_mode', return_value='mst'), \
-         patch('config.stp.mod_entry') as mock_mod_entry:
+    # Mock all necessary functions and dependencies
+    with patch('check_if_global_stp_enabled'), \
+         patch('is_valid_max_age') as is_valid_max_age, \
+         patch('get_global_stp_mode', return_value='mst'), \
+         patch('update_stp_vlan_parameter') as update_stp_vlan_parameter:
 
-        # Create a mock context to simulate the Click context
-        mock_ctx = MagicMock()
-
-        # Simulate valid max_age validation (no error should be raised)
-        is_valid_max_age.return_value = None
-
-        # Mock the database methods like get_entry and mod_entry
-        mock_db.cfgdb = mock_mod_entry
-
-        # Create the CLI runner to simulate invoking the command
+        # Simulate context passed to the command
         runner = CliRunner()
 
-        # Invoke the 'stp_global_max_age' command with a valid max_age argument
+        # Simulate invoking the command with max_age value 25
         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)
 
-        # Assert the command ran successfully (exit_code == 0)
+        # Assert command ran successfully
         assert result.exit_code == 0
 
-        # Check if 'is_valid_max_age' was called with the correct context and value
-        is_valid_max_age.assert_called_once_with(mock_ctx, 25)
+        # Check if 'is_valid_max_age' was called with the correct value
+        is_valid_max_age.assert_called_once_with(result.obj, 25)
 
-        # Check if the database was modified correctly (update max_age to 25)
-        mock_mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
+        # Verify database update with correct parameters
+        update_stp_vlan_parameter.assert_called_once_with(mock_db, 'STP_MST', 'GLOBAL', 'max_age', 25)
 
 
 def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
