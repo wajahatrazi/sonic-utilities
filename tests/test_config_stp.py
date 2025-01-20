@@ -570,7 +570,7 @@ def test_stp_global_max_age_mst_mode(mock_db):
     with patch('config.stp.check_if_global_stp_enabled'), \
          patch('config.stp.is_valid_max_age') as is_valid_max_age, \
          patch('config.stp.get_global_stp_mode', return_value='mst'), \
-         patch('config.stp.db') as mock_cfgdb:
+         patch('config.stp.mod_entry') as mock_mod_entry:
 
         # Create a mock context to simulate the Click context
         mock_ctx = MagicMock()
@@ -579,7 +579,7 @@ def test_stp_global_max_age_mst_mode(mock_db):
         is_valid_max_age.return_value = None
 
         # Mock the database methods like get_entry and mod_entry
-        mock_db.cfgdb = mock_cfgdb
+        mock_db.cfgdb = mock_mod_entry
 
         # Create the CLI runner to simulate invoking the command
         runner = CliRunner()
@@ -594,7 +594,7 @@ def test_stp_global_max_age_mst_mode(mock_db):
         is_valid_max_age.assert_called_once_with(mock_ctx, 25)
 
         # Check if the database was modified correctly (update max_age to 25)
-        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
+        mock_mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_age': 25})
 
 
 def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
