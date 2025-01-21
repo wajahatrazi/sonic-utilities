@@ -782,7 +782,7 @@ class TestSpanningTreeInterfaceEdgeport:
 
         # Set up patches for validation functions
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-            patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
             # Mock the mod_entry method to ensure it gets called
             mock_db.cfgdb.mod_entry = MagicMock()
@@ -810,7 +810,7 @@ class TestSpanningTreeInterfaceEdgeport:
 
         # Set up patches for both validations
         with patch('config.stp.check_if_interface_is_valid') as mock_interface_check, \
-            patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+             patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
 
             # Configure mock to raise error for interface validation
             mock_interface_check.side_effect = click.ClickException("Interface does not exist")
