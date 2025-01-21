@@ -775,8 +775,8 @@ class TestSpanningTreeInterfaceEdgeport:
         """Test successfully enabling STP edgeport for an interface"""
         interface_name = "Ethernet0"
 
-        # Mock database configuration
-        mock_db.cfgdb.get_entry.side_effect = lambda table, key: {
+        # Mock database returns valid interface and STP enabled
+        mock_db.cfgdb.get_entry.return_value = {
             'admin_status': 'up'  # For interface validation
         }
 
@@ -784,9 +784,9 @@ class TestSpanningTreeInterfaceEdgeport:
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
 
-            # Both checks should pass silently (return None)
-            mock_stp_check.return_value = None
-            mock_interface_check.return_value = None
+            # Configure mock responses
+            mock_stp_check.return_value = None  # Successful check returns None
+            mock_interface_check.return_value = None  # Successful check returns None
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
@@ -794,9 +794,9 @@ class TestSpanningTreeInterfaceEdgeport:
             # Verify successful execution
             assert result.exit_code == 0
 
-            # Verify validation functions were called
-            mock_stp_check.assert_called_once()
-            mock_interface_check.assert_called_once()
+            # Verify mocks were called with correct arguments
+            mock_stp_check.assert_called_once_with(mock_db.ctx, mock_db.cfgdb, interface_name)
+            mock_interface_check.assert_called_once_with(mock_db.ctx, mock_db.cfgdb, interface_name)
 
             # Verify database was updated
             mock_db.cfgdb.mod_entry.assert_called_once_with(
@@ -809,16 +809,20 @@ class TestSpanningTreeInterfaceEdgeport:
         """Test enabling STP edgeport for invalid interface"""
         interface_name = "InvalidInterface"
 
-        # Set up mock for interface validation to fail
-        with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+        # Set up patches for validation functions
+        with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check, \
+             patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+
+            # Configure mock to raise error for interface validation
             mock_interface_check.side_effect = click.ClickException("Interface does not exist")
+            mock_stp_check.return_value = None  # This should not be called
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
 
-            # Verify command failed
+            # Verify command failed with correct error message
             assert result.exit_code != 0
-            assert "Interface does not exist" in result.output
+            assert "Interface does not exist" in str(result.exception)
 
             # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
