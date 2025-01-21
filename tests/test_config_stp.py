@@ -805,10 +805,8 @@ class TestSpanningTreeInterfaceEdgeport:
         """Test enabling STP edgeport for invalid interface"""
         interface_name = "InvalidInterface"
 
-        # Set up patches for validation functions
-        with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check, \
-             patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
-
+        # Set up patch for interface validation only
+        with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
             # Configure mock to raise error for interface validation
             mock_interface_check.side_effect = click.ClickException("Interface does not exist")
 
