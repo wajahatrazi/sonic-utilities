@@ -782,7 +782,10 @@ class TestSpanningTreeInterfaceEdgeport:
 
         # Set up patches for validation functions
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+            patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+
+            # Mock the mod_entry method to ensure it gets called
+            mock_db.cfgdb.mod_entry = MagicMock()
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
@@ -791,8 +794,8 @@ class TestSpanningTreeInterfaceEdgeport:
             assert result.exit_code == 0
 
             # Verify validation functions were called
-            assert mock_stp_check.call_count == 1
-            assert mock_interface_check.call_count == 1
+            mock_stp_check.assert_called_once()
+            mock_interface_check.assert_called_once()
 
             # Verify database was updated
             mock_db.cfgdb.mod_entry.assert_called_once_with(
@@ -805,8 +808,10 @@ class TestSpanningTreeInterfaceEdgeport:
         """Test enabling STP edgeport for invalid interface"""
         interface_name = "InvalidInterface"
 
-        # Set up patch for interface validation only
-        with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+        # Set up patches for both validations
+        with patch('config.stp.check_if_interface_is_valid') as mock_interface_check, \
+            patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+
             # Configure mock to raise error for interface validation
             mock_interface_check.side_effect = click.ClickException("Interface does not exist")
 
@@ -815,7 +820,10 @@ class TestSpanningTreeInterfaceEdgeport:
 
             # Verify command failed with correct error message
             assert result.exit_code != 0
-            assert "Interface does not exist" in result.output
+            assert "Interface does not exist" in str(result.exception)
+
+            # Verify STP check was not called (since interface check failed first)
+            mock_stp_check.assert_not_called()
 
             # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
