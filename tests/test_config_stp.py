@@ -758,7 +758,7 @@ class TestSpanningTreeEnable:
 def test_stp_interface_edgeport_enable_success(self, mock_db):
     """Test successfully enabling STP edgeport for an interface"""
     interface_name = "Ethernet0"
-    
+
     # Mock database returns valid interface and STP enabled
     mock_db.cfgdb.get_entry.side_effect = lambda table, key: {
         'admin_status': 'up'  # For interface validation
@@ -780,8 +780,8 @@ def test_stp_interface_edgeport_enable_success(self, mock_db):
 
         # Verify database was updated correctly
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            interface_name, 
+            'STP_PORT',
+            interface_name,
             {'edgeport': 'true'}
         )
 
@@ -800,7 +800,7 @@ def test_stp_interface_edgeport_enable_interface_not_valid(self, mock_db):
         # Verify command failed
         assert result.exit_code != 0
         assert "Interface does not exist" in result.output
-        
+
         # Verify database was not modified
         mock_db.cfgdb.mod_entry.assert_not_called()
 
