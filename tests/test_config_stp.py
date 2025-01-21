@@ -13,6 +13,7 @@ from config.stp import (
     # stp_interface_link_type_point_to_point,
     spanning_tree_enable,
     # stp_global_max_age,
+    stp_interface_edgeport_enable,
     stp_global_max_hops,
     stp_mst_region_name,
     stp_global_revision,
@@ -752,3 +753,82 @@ class TestSpanningTreeEnable:
         if result.exit_code == 1:
             assert "MST is already configured" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
+
+
+def test_stp_interface_edgeport_enable_success(self, mock_db):
+    """Test successfully enabling STP edgeport for an interface"""
+    interface_name = "Ethernet0"
+    
+    # Mock database returns valid interface and STP enabled
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {
+        'admin_status': 'up'  # For interface validation
+    }
+
+    # Mock STP checks to return successfully
+    with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check, \
+         patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
+
+        # Verify successful execution
+        assert result.exit_code == 0
+
+        # Verify all required functions were called
+        mock_stp_check.assert_called_once()
+        mock_interface_check.assert_called_once()
+
+        # Verify database was updated correctly
+        mock_db.cfgdb.mod_entry.assert_called_once_with(
+            'STP_PORT', 
+            interface_name, 
+            {'edgeport': 'true'}
+        )
+
+
+def test_stp_interface_edgeport_enable_interface_not_valid(self, mock_db):
+    """Test enabling STP edgeport for invalid interface"""
+    interface_name = "InvalidInterface"
+
+    # Mock interface validation to raise an error
+    with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+        mock_interface_check.side_effect = Exception("Interface does not exist")
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
+
+        # Verify command failed
+        assert result.exit_code != 0
+        assert "Interface does not exist" in result.output
+        
+        # Verify database was not modified
+        mock_db.cfgdb.mod_entry.assert_not_called()
+
+
+def test_stp_interface_edgeport_enable_stp_not_enabled(self, mock_db):
+    """Test enabling STP edgeport when STP is not enabled for interface"""
+    interface_name = "Ethernet0"
+
+    # Mock STP check to raise an error
+    with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+        mock_stp_check.side_effect = Exception("STP is not enabled for interface")
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
+
+        # Verify command failed
+        assert result.exit_code != 0
+        assert "STP is not enabled for interface" in result.output
+
+        # Verify database was not modified
+        mock_db.cfgdb.mod_entry.assert_not_called()
+
+
+def test_stp_interface_edgeport_enable_missing_interface(self):
+    """Test enabling STP edgeport without providing interface name"""
+    runner = CliRunner()
+    result = runner.invoke(stp_interface_edgeport_enable)
+
+    # Verify command failed due to missing required argument
+    assert result.exit_code != 0
+    assert "Missing argument" in result.output
