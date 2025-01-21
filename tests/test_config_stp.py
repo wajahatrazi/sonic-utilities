@@ -787,8 +787,8 @@ class TestSpanningTreeInterfaceEdgeport:
 
             # Verify database was updated correctly
             mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT', 
-                interface_name, 
+                'STP_PORT',
+                interface_name,
                 {'edgeport': 'true'}
             )
 
