@@ -686,7 +686,7 @@ class TestSpanningTreeEnable:
         mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
 
         with patch('config.stp.enable_stp_for_interfaces') as mock_enable_interfaces, \
-            patch('config.stp.enable_stp_for_vlans') as mock_enable_vlans:
+             patch('config.stp.enable_stp_for_vlans') as mock_enable_vlans:
 
             runner = CliRunner()
             result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
@@ -711,7 +711,7 @@ class TestSpanningTreeEnable:
         mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
 
         with patch('config.stp.enable_mst_for_interfaces') as mock_enable_interfaces, \
-            patch('config.stp.enable_mst_instance0') as mock_enable_instance0:
+             patch('config.stp.enable_mst_instance0') as mock_enable_instance0:
 
             runner = CliRunner()
             result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
