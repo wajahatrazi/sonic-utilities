@@ -679,3 +679,91 @@ class TestSpanningTreeEnable:
         assert result.exit_code != 0
         assert "PVST is already configured" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
+
+    def test_enable_pvst_fresh_config(self, mock_db):
+        """Test enabling PVST mode on a fresh configuration"""
+        # Setup mock to return empty config (fresh state)
+        mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
+
+        with patch('config.stp.enable_stp_for_interfaces') as mock_enable_interfaces, \
+             patch('config.stp.enable_stp_for_vlans') as mock_enable_vlans:
+
+            runner = CliRunner()
+            result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
+
+            # Verify successful execution
+            assert result.exit_code == 0
+            assert "STP PVST mode enabled successfully" in result.output
+
+            # Verify correct configuration was set
+            mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
+                'mode': 'pvst',
+                'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
+                'forward_delay': STP_DEFAULT_FORWARD_DELAY,
+                'hello_time': STP_DEFAULT_HELLO_INTERVAL,
+                'max_age': STP_DEFAULT_MAX_AGE,
+                'priority': STP_DEFAULT_BRIDGE_PRIORITY
+            })
+            
+            # Verify interface and VLAN setup was called
+            mock_enable_interfaces.assert_called_once()
+            mock_enable_vlans.assert_called_once()
+
+    def test_enable_mst_fresh_config(self, mock_db):
+        """Test enabling MST mode on a fresh configuration"""
+        # Setup mock to return empty config (fresh state)
+        mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
+
+        with patch('config.stp.enable_mst_for_interfaces') as mock_enable_interfaces, \
+             patch('config.stp.enable_mst_instance0') as mock_enable_instance0:
+
+            runner = CliRunner()
+            result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
+
+            # Verify successful execution
+            assert result.exit_code == 0
+            assert "STP MST mode enabled successfully" in result.output
+
+            # Verify correct configuration was set
+            mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
+                'mode': 'mst',
+                'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
+                'forward_delay': STP_DEFAULT_FORWARD_DELAY,
+                'hello_time': STP_DEFAULT_HELLO_INTERVAL,
+                'max_age': STP_DEFAULT_MAX_AGE,
+                'priority': STP_DEFAULT_BRIDGE_PRIORITY
+            })
+
+            # Verify interface and instance setup was called
+            mock_enable_interfaces.assert_called_once()
+            mock_enable_instance0.assert_called_once()
+
+    def test_enable_pvst_when_mst_configured(self, mock_db):
+        """Test enabling PVST mode when MST is already configured"""
+        # Setup mock to return MST configuration
+        mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+
+        runner = CliRunner()
+        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
+
+        # Verify command fails with correct error message
+        assert result.exit_code == 1
+        assert "Error: MSTP is already configured; please disable MST before enabling PVST" in result.output
+
+        # Verify no configuration changes were made
+        mock_db.cfgdb.set_entry.assert_not_called()
+
+    def test_enable_mst_when_already_configured(self, mock_db):
+        """Test enabling MST mode when it's already configured"""
+        # Setup mock to return MST configuration
+        mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+
+        runner = CliRunner()
+        result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
+
+        # Verify command fails with correct error message
+        assert result.exit_code == 1
+        assert "Error: MST is already configured" in result.output
+
+        # Verify no configuration changes were made
+        mock_db.cfgdb.set_entry.assert_not_called()
