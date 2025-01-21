@@ -704,7 +704,7 @@ class TestSpanningTreeEnable:
                 'max_age': STP_DEFAULT_MAX_AGE,
                 'priority': STP_DEFAULT_BRIDGE_PRIORITY
             })
-            
+
             # Verify interface and VLAN setup was called
             mock_enable_interfaces.assert_called_once()
             mock_enable_vlans.assert_called_once()
