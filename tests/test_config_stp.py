@@ -762,18 +762,31 @@ class TestSpanningTreeInterfaceEdgeport:
         db.cfgdb = MagicMock()
         return db
 
+    def test_stp_interface_edgeport_enable_missing_interface(self, mock_db):
+        """Test enabling STP edgeport without providing interface name"""
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_enable, obj=mock_db)
+
+        # Verify command failed due to missing required argument
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
     def test_stp_interface_edgeport_enable_success(self, mock_db):
         """Test successfully enabling STP edgeport for an interface"""
         interface_name = "Ethernet0"
 
-        # Mock database returns valid interface and STP enabled
+        # Mock database configuration
         mock_db.cfgdb.get_entry.side_effect = lambda table, key: {
             'admin_status': 'up'  # For interface validation
         }
 
-        # Mock STP checks to return successfully
+        # Set up patches for validation functions
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+
+            # Both checks should pass silently (return None)
+            mock_stp_check.return_value = None
+            mock_interface_check.return_value = None
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
@@ -781,11 +794,11 @@ class TestSpanningTreeInterfaceEdgeport:
             # Verify successful execution
             assert result.exit_code == 0
 
-            # Verify all required functions were called
+            # Verify validation functions were called
             mock_stp_check.assert_called_once()
             mock_interface_check.assert_called_once()
 
-            # Verify database was updated correctly
+            # Verify database was updated
             mock_db.cfgdb.mod_entry.assert_called_once_with(
                 'STP_PORT',
                 interface_name,
@@ -796,9 +809,9 @@ class TestSpanningTreeInterfaceEdgeport:
         """Test enabling STP edgeport for invalid interface"""
         interface_name = "InvalidInterface"
 
-        # Mock interface validation to raise an error
+        # Set up mock for interface validation to fail
         with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
-            mock_interface_check.side_effect = Exception("Interface does not exist")
+            mock_interface_check.side_effect = click.ClickException("Interface does not exist")
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
@@ -807,16 +820,16 @@ class TestSpanningTreeInterfaceEdgeport:
             assert result.exit_code != 0
             assert "Interface does not exist" in result.output
 
-            # Verify database was not modified
+            # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
 
     def test_stp_interface_edgeport_enable_stp_not_enabled(self, mock_db):
         """Test enabling STP edgeport when STP is not enabled for interface"""
         interface_name = "Ethernet0"
 
-        # Mock STP check to raise an error
+        # Set up mock for STP check to fail
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
-            mock_stp_check.side_effect = Exception("STP is not enabled for interface")
+            mock_stp_check.side_effect = click.ClickException("STP is not enabled for interface")
 
             runner = CliRunner()
             result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
@@ -825,14 +838,5 @@ class TestSpanningTreeInterfaceEdgeport:
             assert result.exit_code != 0
             assert "STP is not enabled for interface" in result.output
 
-            # Verify database was not modified
+            # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
-
-    def test_stp_interface_edgeport_enable_missing_interface(self, mock_db):
-        """Test enabling STP edgeport without providing interface name"""
-        runner = CliRunner()
-        result = runner.invoke(stp_interface_edgeport_enable, obj=mock_db)
-
-        # Verify command failed due to missing required argument
-        assert result.exit_code != 0
-        assert "Missing argument" in result.output
