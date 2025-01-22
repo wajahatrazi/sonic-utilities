@@ -905,10 +905,11 @@ class TestSpanningTreeInterfaceEdgeportDisable:
             obj = {'db': mock_db}  # Create proper object context
 
             # Run the command in isolated mode to handle the exception
-            result = runner.invoke(stp_interface_edgeport_disable, 
-                                 [interface_name], 
-                                 obj=obj, 
-                                 catch_exceptions=False)
+            result = runner.invoke(
+                stp_interface_edgeport_disable,
+                [interface_name],
+                obj=obj,
+                catch_exceptions=False)
 
             # Verify command failed with correct error message
             assert result.exit_code != 0
@@ -916,7 +917,7 @@ class TestSpanningTreeInterfaceEdgeportDisable:
 
             # Verify interface check was called
             mock_interface_check.assert_called_once()
-            
+
             # No need to check mock_stp_check since we're not even creating the mock
             # The implementation should handle this by checking interface validity first
 
