@@ -855,12 +855,12 @@ class TestSpanningTreeInterfaceEdgeportEnable:
 
 class TestSpanningTreeInterfaceEdgeportDisable:
 
-    @pytest.mark.parametrize('mock_db', [()])
     def test_stp_interface_edgeport_disable_success(self, mock_db):
         """Test successfully disabling STP edgeport for an interface"""
         interface_name = "Ethernet0"
 
         # Mock database returns valid interface and STP enabled
+        mock_db.cfgdb = MagicMock()
         mock_db.cfgdb.get_entry.return_value = {
             'admin_status': 'up'  # For interface validation
         }
@@ -890,20 +890,12 @@ class TestSpanningTreeInterfaceEdgeportDisable:
                 {'edgeport': 'false'}
             )
 
-    @pytest.mark.parametrize('mock_db', [()])
-    def test_stp_interface_edgeport_disable_missing_interface(self, mock_db):
-        """Test disabling STP edgeport without providing interface name"""
-        runner = CliRunner()
-        result = runner.invoke(stp_interface_edgeport_disable, obj=mock_db)
-
-        # Verify command failed due to missing required argument
-        assert result.exit_code != 0
-        assert "Missing argument" in result.output
-
-    @pytest.mark.parametrize('mock_db', [()])
     def test_stp_interface_edgeport_disable_stp_not_enabled(self, mock_db):
         """Test disabling STP edgeport when STP is not enabled for interface"""
         interface_name = "Ethernet0"
+
+        # Set up mock database
+        mock_db.cfgdb = MagicMock()
 
         # Mock the mod_entry method
         mock_mod_entry = MagicMock()
@@ -923,10 +915,12 @@ class TestSpanningTreeInterfaceEdgeportDisable:
             # Verify database was not updated
             mock_mod_entry.assert_not_called()
 
-    @pytest.mark.parametrize('mock_db', [()])
     def test_stp_interface_edgeport_disable_interface_not_valid(self, mock_db):
         """Test disabling STP edgeport for invalid interface"""
         interface_name = "InvalidInterface"
+
+        # Set up mock database
+        mock_db.cfgdb = MagicMock()
 
         # Mock the mod_entry method
         mock_mod_entry = MagicMock()
@@ -951,3 +945,13 @@ class TestSpanningTreeInterfaceEdgeportDisable:
 
             # Verify database was not updated
             mock_mod_entry.assert_not_called()
+
+    @pytest.mark.parametrize('mock_db', [()])
+    def test_stp_interface_edgeport_disable_missing_interface(self, mock_db):
+        """Test disabling STP edgeport without providing interface name"""
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_disable, obj=mock_db)
+
+        # Verify command failed due to missing required argument
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
