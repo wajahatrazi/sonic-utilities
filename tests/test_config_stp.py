@@ -7,6 +7,7 @@ from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
+    stp_interface_link_type_auto,
     # check_if_stp_enabled_for_interface,
     # check_if_interface_is_valid,
     # stp_global_hello_interval,
@@ -953,5 +954,92 @@ class TestSpanningTreeInterfaceEdgeportDisable:
         result = runner.invoke(stp_interface_edgeport_disable, obj=mock_db)
 
         # Verify command failed due to missing required argument
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
+
+class TestSpanningTreeInterfaceLinkTypeAuto:
+    def setUp(self):
+        self.interface_name = "Ethernet0"
+        self.db = MagicMock()
+        self.db.cfgdb = MagicMock()
+
+    def test_stp_interface_link_type_auto_success(self):
+        """Test successfully setting STP link type to auto for an interface"""
+        # Mock database returns valid interface
+        self.db.cfgdb.get_entry.return_value = {
+            'admin_status': 'up'  # For interface validation
+        }
+
+        # Set up patches for validation functions
+        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
+             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+
+            runner = CliRunner()
+            result = runner.invoke(stp_interface_link_type_auto, 
+                                 [self.interface_name], 
+                                 obj={'db': self.db})
+
+            # Verify successful execution
+            assert result.exit_code == 0
+
+            # Verify validations were called with correct parameters
+            mock_stp_check.assert_called_once()
+            mock_interface_check.assert_called_once()
+
+            # Verify database was updated correctly
+            self.db.cfgdb.mod_entry.assert_called_once_with(
+                'STP_PORT',
+                self.interface_name,
+                {'link_type': 'auto'}
+            )
+
+    def test_stp_interface_link_type_auto_stp_not_enabled(self):
+        """Test setting link type to auto when STP is not enabled"""
+        error_message = "STP is not enabled for interface Ethernet0"
+
+        # Mock STP check to raise exception
+        with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+            mock_stp_check.side_effect = click.ClickException(error_message)
+
+            runner = CliRunner()
+            result = runner.invoke(stp_interface_link_type_auto, 
+                                 [self.interface_name], 
+                                 obj={'db': self.db})
+
+            # Verify command failed with correct error
+            assert result.exit_code != 0
+            assert error_message in result.output
+
+            # Verify database was not updated
+            self.db.cfgdb.mod_entry.assert_not_called()
+
+    def test_stp_interface_link_type_auto_invalid_interface(self):
+        """Test setting link type to auto for invalid interface"""
+        error_message = "Interface does not exist"
+
+        # Mock interface check to raise exception
+        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+            mock_interface_check.side_effect = click.ClickException(error_message)
+
+            runner = CliRunner()
+            result = runner.invoke(stp_interface_link_type_auto, 
+                                 [self.interface_name], 
+                                 obj={'db': self.db})
+
+            # Verify command failed with correct error
+            assert result.exit_code != 0
+            assert error_message in result.output
+
+            # Verify database was not updated
+            self.db.cfgdb.mod_entry.assert_not_called()
+
+    def test_stp_interface_link_type_auto_missing_interface(self):
+        """Test command without providing interface name"""
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_link_type_auto, [], obj={'db': self.db})
+
+        # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
