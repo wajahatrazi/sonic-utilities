@@ -976,9 +976,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            result = self.runner.invoke(stp_interface_link_type_auto, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify successful execution
             assert result.exit_code == 0
@@ -1002,9 +1003,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
             mock_stp_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(stp_interface_link_type_auto, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
@@ -1022,9 +1024,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
             mock_interface_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(stp_interface_link_type_auto, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
@@ -1035,9 +1038,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
 
     def test_stp_interface_link_type_auto_missing_interface(self, mock_db):
         """Test command without providing interface name"""
-        result = self.runner.invoke(stp_interface_link_type_auto, 
-                                  [], 
-                                  obj={'db': mock_db})
+        result = self.runner.invoke(
+            stp_interface_link_type_auto,
+            [],
+            obj={'db': mock_db})
 
         # Verify command failed due to missing argument
         assert result.exit_code != 0
