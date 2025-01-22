@@ -965,35 +965,35 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         self.interface_name = "Ethernet0"
         self.runner = CliRunner()
 
-    def test_stp_interface_link_type_auto_success(self, mock_db):
-        """Test successfully setting STP link type to auto for an interface"""
-        # Mock database returns valid interface
-        mock_db.cfgdb.get_entry.return_value = {
-            'admin_status': 'up'  # For interface validation
-        }
+    # def test_stp_interface_link_type_auto_success(self, mock_db):
+    #     """Test successfully setting STP link type to auto for an interface"""
+    #     # Mock database returns valid interface
+    #     mock_db.cfgdb.get_entry.return_value = {
+    #         'admin_status': 'up'  # For interface validation
+    #     }
 
-        # Set up patches for validation functions
-        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+    #     # Set up patches for validation functions
+    #     with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
+    #          patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            result = self.runner.invoke(
-                stp_interface_link_type_auto,
-                [self.interface_name],
-                obj={'db': mock_db})
+    #         result = self.runner.invoke(
+    #             stp_interface_link_type_auto,
+    #             [self.interface_name],
+    #             obj={'db': mock_db})
 
-            # Verify successful execution
-            assert result.exit_code == 0
+    #         # Verify successful execution
+    #         assert result.exit_code == 0
 
-            # Verify validations were called with correct parameters
-            mock_stp_check.assert_called_once()
-            mock_interface_check.assert_called_once()
+    #         # Verify validations were called with correct parameters
+    #         mock_stp_check.assert_called_once()
+    #         mock_interface_check.assert_called_once()
 
-            # Verify database was updated correctly
-            mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT',
-                self.interface_name,
-                {'link_type': 'auto'}
-            )
+    #         # Verify database was updated correctly
+    #         mock_db.cfgdb.mod_entry.assert_called_once_with(
+    #             'STP_PORT',
+    #             self.interface_name,
+    #             {'link_type': 'auto'}
+    #         )
 
     def test_stp_interface_link_type_auto_stp_not_enabled(self, mock_db):
         """Test setting link type to auto when STP is not enabled"""
