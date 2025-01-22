@@ -981,9 +981,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            result = self.runner.invoke(stp_interface_link_type_auto, 
-                                      [self.interface_name], 
-                                      obj={'db': self.mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': self.mock_db})
 
             # Verify successful execution
             assert result.exit_code == 0
@@ -1042,9 +1043,9 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
 
     def test_stp_interface_link_type_auto_missing_interface(self):
         """Test command without providing interface name"""
-        result = self.runner.invoke(stp_interface_link_type_auto, 
-                                  [], 
-                                  obj={'db': self.mock_db})
+        result = self.runner.invoke(stp_interface_link_type_auto,
+                                    [],
+                                    obj={'db': self.mock_db})
 
         # Verify command failed due to missing argument
         assert result.exit_code != 0
