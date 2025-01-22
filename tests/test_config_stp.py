@@ -976,9 +976,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
              patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
             runner = CliRunner()
-            result = runner.invoke(stp_interface_link_type_auto, 
-                                 [self.interface_name], 
-                                 obj={'db': self.db})
+            result = runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': self.db})
 
             # Verify successful execution
             assert result.exit_code == 0
@@ -1003,9 +1004,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
             mock_stp_check.side_effect = click.ClickException(error_message)
 
             runner = CliRunner()
-            result = runner.invoke(stp_interface_link_type_auto, 
-                                 [self.interface_name], 
-                                 obj={'db': self.db})
+            result = runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': self.db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
@@ -1024,9 +1026,10 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
             mock_interface_check.side_effect = click.ClickException(error_message)
 
             runner = CliRunner()
-            result = runner.invoke(stp_interface_link_type_auto, 
-                                 [self.interface_name], 
-                                 obj={'db': self.db})
+            result = runner.invoke(
+                stp_interface_link_type_auto,
+                [self.interface_name],
+                obj={'db': self.db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
