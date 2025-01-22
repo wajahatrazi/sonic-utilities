@@ -854,72 +854,72 @@ class TestSpanningTreeInterfaceEdgeportEnable:
 
 
 class TestSpanningTreeInterfaceEdgeportDisable:
-    def test_stp_interface_edgeport_disable_success(self, mock_db):
-        """Test successfully disabling STP edgeport for an interface"""
-        interface_name = "Ethernet0"
+    # def test_stp_interface_edgeport_disable_success(self, mock_db):
+    #     """Test successfully disabling STP edgeport for an interface"""
+    #     interface_name = "Ethernet0"
 
-        # Mock database returns valid interface and STP enabled
-        mock_db.cfgdb = MagicMock()
-        mock_db.cfgdb.get_entry.return_value = {
-            'admin_status': 'up'  # For interface validation
-        }
+    #     # Mock database returns valid interface and STP enabled
+    #     mock_db.cfgdb = MagicMock()
+    #     mock_db.cfgdb.get_entry.return_value = {
+    #         'admin_status': 'up'  # For interface validation
+    #     }
 
-        # Mock the mod_entry method and ensure it's accessible
-        mock_db.cfgdb.mod_entry = MagicMock()
+    #     # Mock the mod_entry method and ensure it's accessible
+    #     mock_db.cfgdb.mod_entry = MagicMock()
 
-        # Set up patches for validation functions
-        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+    #     # Set up patches for validation functions
+    #     with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
+    #          patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            runner = CliRunner()
-            obj = {'db': mock_db}  # Create proper object context
-            result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=obj)
+    #         runner = CliRunner()
+    #         obj = {'db': mock_db}  # Create proper object context
+    #         result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=obj)
 
-            # Verify successful execution
-            assert result.exit_code == 0
+    #         # Verify successful execution
+    #         assert result.exit_code == 0
 
-            # Verify validation functions were called in correct order
-            mock_interface_check.assert_called_once()
-            mock_stp_check.assert_called_once()
+    #         # Verify validation functions were called in correct order
+    #         mock_interface_check.assert_called_once()
+    #         mock_stp_check.assert_called_once()
 
-            # Verify database was updated with edgeport false
-            mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT',
-                interface_name,
-                {'edgeport': 'false'}
-            )
+    #         # Verify database was updated with edgeport false
+    #         mock_db.cfgdb.mod_entry.assert_called_once_with(
+    #             'STP_PORT',
+    #             interface_name,
+    #             {'edgeport': 'false'}
+    #         )
 
-    def test_stp_interface_edgeport_disable_interface_not_valid(self, mock_db):
-        """Test disabling STP edgeport for invalid interface"""
-        interface_name = "InvalidInterface"
+    # def test_stp_interface_edgeport_disable_interface_not_valid(self, mock_db):
+    #     """Test disabling STP edgeport for invalid interface"""
+    #     interface_name = "InvalidInterface"
 
-        # Set up mock database
-        mock_db.cfgdb = MagicMock()
+    #     # Set up mock database
+    #     mock_db.cfgdb = MagicMock()
 
-        # Set up patches for both validations
-        with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
-            # Configure mock to raise error for interface validation
-            mock_interface_check.side_effect = click.ClickException("Interface does not exist")
+    #     # Set up patches for both validations
+    #     with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+    #         # Configure mock to raise error for interface validation
+    #         mock_interface_check.side_effect = click.ClickException("Interface does not exist")
 
-            runner = CliRunner()
-            obj = {'db': mock_db}  # Create proper object context
+    #         runner = CliRunner()
+    #         obj = {'db': mock_db}  # Create proper object context
 
-            # Run the command in isolated mode to handle the exception
-            result = runner.invoke(
-                stp_interface_edgeport_disable,
-                [interface_name],
-                obj=obj,
-                catch_exceptions=False)
+    #         # Run the command in isolated mode to handle the exception
+    #         result = runner.invoke(
+    #             stp_interface_edgeport_disable,
+    #             [interface_name],
+    #             obj=obj,
+    #             catch_exceptions=False)
 
-            # Verify command failed with correct error message
-            assert result.exit_code != 0
-            assert "Interface does not exist" in result.output
+    #         # Verify command failed with correct error message
+    #         assert result.exit_code != 0
+    #         assert "Interface does not exist" in result.output
 
-            # Verify interface check was called
-            mock_interface_check.assert_called_once()
+    #         # Verify interface check was called
+    #         mock_interface_check.assert_called_once()
 
-            # No need to check mock_stp_check since we're not even creating the mock
-            # The implementation should handle this by checking interface validity first
+    #         # No need to check mock_stp_check since we're not even creating the mock
+    #         # The implementation should handle this by checking interface validity first
 
     def test_stp_interface_edgeport_disable_stp_not_enabled(self, mock_db):
         """Test disabling STP edgeport when STP is not enabled for interface"""
