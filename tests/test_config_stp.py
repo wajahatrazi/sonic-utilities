@@ -11,6 +11,7 @@ from config.stp import (
     # check_if_interface_is_valid,
     # stp_global_hello_interval,
     # stp_interface_link_type_point_to_point,
+    stp_interface_edgeport_disable,
     spanning_tree_enable,
     # stp_global_max_age,
     stp_interface_edgeport_enable,
@@ -850,3 +851,100 @@ class TestSpanningTreeInterfaceEdgeport:
 
             # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
+
+
+def test_stp_interface_edgeport_disable_success(self, mock_db):
+    """Test successfully disabling STP edgeport for an interface"""
+    interface_name = "Ethernet0"
+
+    # Mock database returns valid interface and STP enabled
+    mock_db.cfgdb.get_entry.return_value = {
+        'admin_status': 'up'  # For interface validation
+    }
+
+    # Mock the mod_entry method
+    mock_mod_entry = MagicMock()
+    mock_db.cfgdb.mod_entry = mock_mod_entry
+
+    # Set up patches for validation functions
+    with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
+         patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=mock_db)
+
+        # Verify successful execution
+        assert result.exit_code == 0
+
+        # Verify validation functions were called
+        mock_stp_check.assert_called_once()
+        mock_interface_check.assert_called_once()
+
+        # Verify database was updated with edgeport false
+        mock_mod_entry.assert_called_once_with(
+            'STP_PORT',
+            interface_name,
+            {'edgeport': 'false'}
+        )
+
+
+def test_stp_interface_edgeport_disable_missing_interface(self, mock_db):
+    """Test disabling STP edgeport without providing interface name"""
+    runner = CliRunner()
+    result = runner.invoke(stp_interface_edgeport_disable, obj=mock_db)
+
+    # Verify command failed due to missing required argument
+    assert result.exit_code != 0
+    assert "Missing argument" in result.output
+
+
+def test_stp_interface_edgeport_disable_stp_not_enabled(self, mock_db):
+    """Test disabling STP edgeport when STP is not enabled for interface"""
+    interface_name = "Ethernet0"
+
+    # Mock the mod_entry method
+    mock_mod_entry = MagicMock()
+    mock_db.cfgdb.mod_entry = mock_mod_entry
+
+    # Set up mock for STP check to fail
+    with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+        mock_stp_check.side_effect = click.ClickException("STP is not enabled for interface")
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=mock_db)
+
+        # Verify command failed
+        assert result.exit_code != 0
+        assert "STP is not enabled for interface" in result.output
+
+        # Verify database was not updated
+        mock_mod_entry.assert_not_called()
+
+
+def test_stp_interface_edgeport_disable_interface_not_valid(self, mock_db):
+    """Test disabling STP edgeport for invalid interface"""
+    interface_name = "InvalidInterface"
+
+    # Mock the mod_entry method
+    mock_mod_entry = MagicMock()
+    mock_db.cfgdb.mod_entry = mock_mod_entry
+
+    # Set up patches for both validations
+    with patch('config.stp.check_if_interface_is_valid') as mock_interface_check, \
+         patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+
+        # Configure mock to raise error for interface validation
+        mock_interface_check.side_effect = click.ClickException("Interface does not exist")
+
+        runner = CliRunner()
+        result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=mock_db)
+
+        # Verify command failed with correct error message
+        assert result.exit_code != 0
+        assert "Interface does not exist" in result.output
+
+        # Verify STP check was not called (since interface check failed first)
+        mock_stp_check.assert_not_called()
+
+        # Verify database was not updated
+        mock_mod_entry.assert_not_called()
