@@ -959,21 +959,16 @@ class TestSpanningTreeInterfaceEdgeportDisable:
 
 
 class TestSpanningTreeInterfaceLinkTypeAuto:
-    @patch('config.stp.stp_interface_link_type_auto')
-    def setUp(self, mock_cmd):
-        """Set up test fixtures before each test method"""
-        self.runner = CliRunner()
+    @pytest.fixture(autouse=True)
+    def setup_method(self):
+        """Setup method that runs before each test"""
         self.interface_name = "Ethernet0"
-        self.mock_db = MagicMock()
-        self.mock_db.cfgdb = MagicMock()
+        self.runner = CliRunner()
 
-        # Initialize the mock command
-        self.mock_cmd = mock_cmd
-
-    def test_stp_interface_link_type_auto_success(self):
+    def test_stp_interface_link_type_auto_success(self, mock_db):
         """Test successfully setting STP link type to auto for an interface"""
         # Mock database returns valid interface
-        self.mock_db.cfgdb.get_entry.return_value = {
+        mock_db.cfgdb.get_entry.return_value = {
             'admin_status': 'up'  # For interface validation
         }
 
@@ -981,10 +976,9 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            result = self.runner.invoke(
-                stp_interface_link_type_auto,
-                [self.interface_name],
-                obj={'db': self.mock_db})
+            result = self.runner.invoke(stp_interface_link_type_auto, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
 
             # Verify successful execution
             assert result.exit_code == 0
@@ -994,13 +988,13 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
             mock_interface_check.assert_called_once()
 
             # Verify database was updated correctly
-            self.mock_db.cfgdb.mod_entry.assert_called_once_with(
+            mock_db.cfgdb.mod_entry.assert_called_once_with(
                 'STP_PORT',
                 self.interface_name,
                 {'link_type': 'auto'}
             )
 
-    def test_stp_interface_link_type_auto_stp_not_enabled(self):
+    def test_stp_interface_link_type_auto_stp_not_enabled(self, mock_db):
         """Test setting link type to auto when STP is not enabled"""
         error_message = "STP is not enabled for interface Ethernet0"
 
@@ -1008,19 +1002,18 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
             mock_stp_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(
-                stp_interface_link_type_auto,
-                [self.interface_name],
-                obj={'db': self.mock_db})
+            result = self.runner.invoke(stp_interface_link_type_auto, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
             assert error_message in result.output
 
             # Verify database was not updated
-            self.mock_db.cfgdb.mod_entry.assert_not_called()
+            mock_db.cfgdb.mod_entry.assert_not_called()
 
-    def test_stp_interface_link_type_auto_invalid_interface(self):
+    def test_stp_interface_link_type_auto_invalid_interface(self, mock_db):
         """Test setting link type to auto for invalid interface"""
         error_message = "Interface does not exist"
 
@@ -1029,23 +1022,22 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
             mock_interface_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(
-                stp_interface_link_type_auto,
-                [self.interface_name],
-                obj={'db': self.mock_db})
+            result = self.runner.invoke(stp_interface_link_type_auto, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
             assert error_message in result.output
 
             # Verify database was not updated
-            self.mock_db.cfgdb.mod_entry.assert_not_called()
+            mock_db.cfgdb.mod_entry.assert_not_called()
 
-    def test_stp_interface_link_type_auto_missing_interface(self):
+    def test_stp_interface_link_type_auto_missing_interface(self, mock_db):
         """Test command without providing interface name"""
-        result = self.runner.invoke(stp_interface_link_type_auto,
-                                    [],
-                                    obj={'db': self.mock_db})
+        result = self.runner.invoke(stp_interface_link_type_auto, 
+                                  [], 
+                                  obj={'db': mock_db})
 
         # Verify command failed due to missing argument
         assert result.exit_code != 0
