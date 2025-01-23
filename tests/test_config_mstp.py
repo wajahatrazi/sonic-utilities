@@ -846,8 +846,8 @@ def test_stp_interface_link_type_point_to_point_success():
         mock_stp_check.assert_called_once_with(mock_ctx, mock_db.cfgdb, 'Ethernet0')
         mock_interface_check.assert_called_once_with(mock_ctx, mock_db.cfgdb, 'Ethernet0')
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            'Ethernet0', 
+            'STP_PORT',
+            'Ethernet0',
             {'link_type': 'point-to-point'}
         )
 
