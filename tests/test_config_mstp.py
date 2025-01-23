@@ -832,8 +832,8 @@ def test_stp_interface_link_type_point_to_point_success(mock_db):
         stp_interface_link_type_point_to_point(mock_db, 'eth0')
 
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            'eth0', 
+            'STP_PORT',
+            'eth0',
             {'link_type': 'point-to-point'}
         )
 
@@ -860,4 +860,3 @@ def test_stp_interface_link_type_point_to_point_db_error(mock_db):
          pytest.raises(Exception):
 
         stp_interface_link_type_point_to_point(mock_db, 'eth0')
-
