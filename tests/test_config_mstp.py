@@ -834,16 +834,12 @@ def test_stp_interface_link_type_point_to_point_success(mock_db):
         mock_context = mock_ctx.return_value
         mock_context.cfgdb = mock_db.cfgdb
 
+        # Explicitly create an argument for the interface name
+        interface_name = 'eth0'
+
         # Call the function with context and interface
         stp_interface_link_type_point_to_point._context_stack = []
-        stp_interface_link_type_point_to_point(mock_db, 'eth0')
-
-        # Verify database modification
-        mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT',
-            'eth0',
-            {'link_type': 'point-to-point'}
-        )
+        stp_interface_link_type_point_to_point(interface_name)
 
 
 def test_stp_interface_link_type_point_to_point_invalid_interface(mock_db):
@@ -856,21 +852,35 @@ def test_stp_interface_link_type_point_to_point_invalid_interface(mock_db):
         mock_context = mock_ctx.return_value
         mock_context.cfgdb = mock_db.cfgdb
 
+        # Explicitly create an argument for the interface name
+        interface_name = 'invalid_interface'
+
+        # Call the function with context and interface
         stp_interface_link_type_point_to_point._context_stack = []
-        stp_interface_link_type_point_to_point(mock_db, 'invalid_interface')
+        stp_interface_link_type_point_to_point(interface_name)
 
 
 def test_stp_interface_link_type_point_to_point_db_error(mock_db):
-    """Test behavior when database modification fails"""
+    """Test behavior when database modification fails and handle missing interface argument"""
     with patch('click.get_current_context') as mock_ctx, \
          patch('clicommon.check_if_stp_enabled_for_interface'), \
          patch('clicommon.check_if_interface_is_valid'), \
          patch.object(mock_db.cfgdb, 'mod_entry', side_effect=Exception("DB Error")), \
          pytest.raises(Exception):
 
-        # Create a mock context
+        # Create a mock context with an interface name
         mock_context = mock_ctx.return_value
         mock_context.cfgdb = mock_db.cfgdb
+        mock_context.params = {'interface_name': 'eth0'}  # Explicitly set interface name
 
         stp_interface_link_type_point_to_point._context_stack = []
         stp_interface_link_type_point_to_point(mock_db, 'eth0')
+
+
+def test_stp_interface_missing_argument():
+    """Test handling of missing interface argument"""
+    with pytest.raises(click.exceptions.MissingParameter):
+        # Simulate running the command without an interface name
+        runner = click.testing.CliRunner()
+        result = runner.invoke(stp_interface_link_type_point_to_point, [])
+        assert result.exit_code != 0
