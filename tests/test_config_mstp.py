@@ -1048,6 +1048,7 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 
+
 class TestSpanningTreeInterfaceLinkTypeShared:
     @pytest.fixture(autouse=True)
     def setup_method(self):
@@ -1066,9 +1067,10 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
              patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
 
-            result = self.runner.invoke(stp_interface_link_type_shared, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_shared,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify successful execution
             assert result.exit_code == 0
@@ -1092,9 +1094,10 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
             mock_stp_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(stp_interface_link_type_shared, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_shared,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
@@ -1112,9 +1115,10 @@ class TestSpanningTreeInterfaceLinkTypeShared:
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
             mock_interface_check.side_effect = click.ClickException(error_message)
 
-            result = self.runner.invoke(stp_interface_link_type_shared, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_shared,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify command failed with correct error
             assert result.exit_code != 0
@@ -1125,9 +1129,10 @@ class TestSpanningTreeInterfaceLinkTypeShared:
 
     def test_stp_interface_link_type_shared_missing_interface(self, mock_db):
         """Test command without providing interface name"""
-        result = self.runner.invoke(stp_interface_link_type_shared, 
-                                  [], 
-                                  obj={'db': mock_db})
+        result = self.runner.invoke(
+            stp_interface_link_type_shared,
+            [],
+            obj={'db': mock_db})
 
         # Verify command failed due to missing argument
         assert result.exit_code != 0
@@ -1147,9 +1152,10 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
              patch('config.stp.check_if_interface_is_valid', return_value=None):
 
-            result = self.runner.invoke(stp_interface_link_type_shared, 
-                                      [self.interface_name], 
-                                      obj={'db': mock_db})
+            result = self.runner.invoke(
+                stp_interface_link_type_shared,
+                [self.interface_name],
+                obj={'db': mock_db})
 
             # Verify command failed due to database error
             assert result.exit_code != 0
