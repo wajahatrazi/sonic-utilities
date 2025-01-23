@@ -8,6 +8,7 @@ from config.stp import (
     is_valid_root_guard_timeout,
     is_valid_forward_delay,
     stp_interface_link_type_auto,
+    stp_interface_link_type_shared,
     # check_if_stp_enabled_for_interface,
     # check_if_interface_is_valid,
     # stp_global_hello_interval,
@@ -1046,3 +1047,110 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
+
+class TestSpanningTreeInterfaceLinkTypeShared:
+    @pytest.fixture(autouse=True)
+    def setup_method(self):
+        """Setup method that runs before each test"""
+        self.interface_name = "Ethernet0"
+        self.runner = CliRunner()
+
+    def test_stp_interface_link_type_shared_success(self, mock_db):
+        """Test successfully setting STP link type to shared for an interface"""
+        # Mock database returns valid interface
+        mock_db.cfgdb.get_entry.return_value = {
+            'admin_status': 'up'  # For interface validation
+        }
+
+        # Set up patches for validation functions
+        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
+             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
+
+            result = self.runner.invoke(stp_interface_link_type_shared, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
+
+            # Verify successful execution
+            assert result.exit_code == 0
+
+            # Verify validations were called with correct parameters
+            mock_stp_check.assert_called_once()
+            mock_interface_check.assert_called_once()
+
+            # Verify database was updated correctly
+            mock_db.cfgdb.mod_entry.assert_called_once_with(
+                'STP_PORT',
+                self.interface_name,
+                {'link_type': 'shared'}
+            )
+
+    def test_stp_interface_link_type_shared_stp_not_enabled(self, mock_db):
+        """Test setting link type to shared when STP is not enabled"""
+        error_message = "STP is not enabled for interface Ethernet0"
+
+        # Mock STP check to raise exception
+        with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+            mock_stp_check.side_effect = click.ClickException(error_message)
+
+            result = self.runner.invoke(stp_interface_link_type_shared, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
+
+            # Verify command failed with correct error
+            assert result.exit_code != 0
+            assert error_message in result.output
+
+            # Verify database was not updated
+            mock_db.cfgdb.mod_entry.assert_not_called()
+
+    def test_stp_interface_link_type_shared_invalid_interface(self, mock_db):
+        """Test setting link type to shared for invalid interface"""
+        error_message = "Interface does not exist"
+
+        # Mock interface check to raise exception
+        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+            mock_interface_check.side_effect = click.ClickException(error_message)
+
+            result = self.runner.invoke(stp_interface_link_type_shared, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
+
+            # Verify command failed with correct error
+            assert result.exit_code != 0
+            assert error_message in result.output
+
+            # Verify database was not updated
+            mock_db.cfgdb.mod_entry.assert_not_called()
+
+    def test_stp_interface_link_type_shared_missing_interface(self, mock_db):
+        """Test command without providing interface name"""
+        result = self.runner.invoke(stp_interface_link_type_shared, 
+                                  [], 
+                                  obj={'db': mock_db})
+
+        # Verify command failed due to missing argument
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
+    def test_stp_interface_link_type_shared_db_modification_error(self, mock_db):
+        """Test handling of database modification error"""
+        # Mock database returns valid interface
+        mock_db.cfgdb.get_entry.return_value = {
+            'admin_status': 'up'  # For interface validation
+        }
+
+        # Simulate database modification error
+        mock_db.cfgdb.mod_entry.side_effect = Exception("Database update failed")
+
+        # Set up patches for validation functions
+        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid', return_value=None):
+
+            result = self.runner.invoke(stp_interface_link_type_shared, 
+                                      [self.interface_name], 
+                                      obj={'db': mock_db})
+
+            # Verify command failed due to database error
+            assert result.exit_code != 0
+            assert "Database update failed" in result.output
