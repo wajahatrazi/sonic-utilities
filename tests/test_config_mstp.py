@@ -842,8 +842,8 @@ def test_stp_interface_link_type_point_to_point_success():
 
         # Verify database modification
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            'eth0', 
+            'STP_PORT',
+            'eth0',
             {'link_type': 'point-to-point'}
         )
 
