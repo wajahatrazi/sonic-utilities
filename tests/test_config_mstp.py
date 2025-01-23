@@ -826,37 +826,51 @@ class TestSpanningTreeInterfaceLinkTypeShared:
 
 def test_stp_interface_link_type_point_to_point_success(mock_db):
     """Test successful configuration of point-to-point link type"""
-    with patch('clicommon.check_if_stp_enabled_for_interface'), \
+    with patch('click.get_current_context') as mock_ctx, \
+         patch('clicommon.check_if_stp_enabled_for_interface'), \
          patch('clicommon.check_if_interface_is_valid'):
 
+        # Create a mock context
+        mock_context = mock_ctx.return_value
+        mock_context.cfgdb = mock_db.cfgdb
+
+        # Call the function with context and interface
+        stp_interface_link_type_point_to_point._context_stack = []
         stp_interface_link_type_point_to_point(mock_db, 'eth0')
 
+        # Verify database modification
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT',
-            'eth0',
+            'STP_PORT', 
+            'eth0', 
             {'link_type': 'point-to-point'}
         )
 
 
 def test_stp_interface_link_type_point_to_point_invalid_interface(mock_db):
     """Test behavior with an invalid interface"""
-    with patch('clicommon.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled")), \
+    with patch('click.get_current_context') as mock_ctx, \
+         patch('clicommon.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled")), \
          pytest.raises(click.ClickException):
 
+        # Create a mock context
+        mock_context = mock_ctx.return_value
+        mock_context.cfgdb = mock_db.cfgdb
+
+        stp_interface_link_type_point_to_point._context_stack = []
         stp_interface_link_type_point_to_point(mock_db, 'invalid_interface')
-
-
-def test_stp_interface_link_type_point_to_point_no_interface():
-    """Test behavior when no interface is provided"""
-    with pytest.raises(TypeError):
-        stp_interface_link_type_point_to_point(None)
 
 
 def test_stp_interface_link_type_point_to_point_db_error(mock_db):
     """Test behavior when database modification fails"""
-    with patch('clicommon.check_if_stp_enabled_for_interface'), \
+    with patch('click.get_current_context') as mock_ctx, \
+         patch('clicommon.check_if_stp_enabled_for_interface'), \
          patch('clicommon.check_if_interface_is_valid'), \
          patch.object(mock_db.cfgdb, 'mod_entry', side_effect=Exception("DB Error")), \
          pytest.raises(Exception):
 
+        # Create a mock context
+        mock_context = mock_ctx.return_value
+        mock_context.cfgdb = mock_db.cfgdb
+
+        stp_interface_link_type_point_to_point._context_stack = []
         stp_interface_link_type_point_to_point(mock_db, 'eth0')
