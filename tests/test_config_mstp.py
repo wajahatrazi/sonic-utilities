@@ -13,6 +13,7 @@ from config.stp import (
     stp_interface_edgeport_enable,
     stp_global_max_hops,
     stp_mst_region_name,
+    stp_interface_link_type_point_to_point,
     stp_global_revision,
     is_valid_hello_interval,
     stp_disable,
@@ -821,3 +822,59 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
+
+
+def test_stp_interface_link_type_point_to_point_success():
+    """Test successful configuration of point-to-point link type"""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+
+    # Mock the context and dependency checks
+    with patch('clicommon.check_if_stp_enabled_for_interface') as mock_stp_check, \
+         patch('clicommon.check_if_interface_is_valid') as mock_interface_check:
+
+        # Simulate function call with a valid interface
+        stp_interface_link_type_point_to_point(mock_db, 'eth0')
+
+        # Verify dependency checks were called
+        mock_stp_check.assert_called_once()
+        mock_interface_check.assert_called_once()
+
+        # Verify database modification
+        mock_db.cfgdb.mod_entry.assert_called_once_with(
+            'STP_PORT', 
+            'eth0', 
+            {'link_type': 'point-to-point'}
+        )
+
+
+def test_stp_interface_link_type_point_to_point_invalid_interface():
+    """Test behavior with an invalid interface"""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+
+    # Mock the context and dependency checks to raise an exception
+    with patch('clicommon.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled")), \
+         pytest.raises(click.ClickException):
+
+        stp_interface_link_type_point_to_point(mock_db, 'invalid_interface')
+
+
+def test_stp_interface_link_type_point_to_point_no_interface():
+    """Test behavior when no interface is provided"""
+    with pytest.raises(TypeError):
+        stp_interface_link_type_point_to_point(None)
+
+
+def test_stp_interface_link_type_point_to_point_db_error():
+    """Test behavior when database modification fails"""
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+
+    # Mock dependency checks to pass
+    with patch('clicommon.check_if_stp_enabled_for_interface'), \
+         patch('clicommon.check_if_interface_is_valid'), \
+         patch.object(mock_db.cfgdb, 'mod_entry', side_effect=Exception("DB Error")), \
+         pytest.raises(Exception):
+
+        stp_interface_link_type_point_to_point(mock_db, 'eth0')
