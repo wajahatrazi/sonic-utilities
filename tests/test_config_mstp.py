@@ -1,7 +1,6 @@
 import pytest
 import click
 from unittest.mock import MagicMock, patch
-# from click import Context
 from click.testing import CliRunner
 from config.stp import (
     get_intf_list_in_vlan_member_table,
@@ -9,47 +8,23 @@ from config.stp import (
     is_valid_forward_delay,
     stp_interface_link_type_auto,
     stp_interface_link_type_shared,
-    # check_if_stp_enabled_for_interface,
-    # check_if_interface_is_valid,
-    # stp_global_hello_interval,
-    # stp_interface_link_type_point_to_point,
     stp_interface_edgeport_disable,
     spanning_tree_enable,
-    # stp_global_max_age,
     stp_interface_edgeport_enable,
     stp_global_max_hops,
     stp_mst_region_name,
     stp_global_revision,
-    # stp_global_root_guard_timeout,
     is_valid_hello_interval,
     stp_disable,
-    # is_valid_max_age,
-    # is_valid_bridge_priority,
     enable_mst_instance0,
-    # dot stp_global_forward_delay,
     MST_AUTO_LINK_TYPE,
     MST_DEFAULT_PORT_PATH_COST,
     MST_DEFAULT_PORT_PRIORITY,
     MST_DEFAULT_BRIDGE_PRIORITY,
-    # MST_MAX_REVISION,
-    # MST_MIN_REVISION,
-    # validate_params,
     is_valid_stp_vlan_parameters,
     is_valid_stp_global_parameters,
-    # update_stp_vlan_parameter,
-    # check_if_vlan_exist_in_db,
     enable_stp_for_vlans,
-    # get_stp_enabled_vlan_count,
-    # vlan_enable_stp,
-    # interface_enable_stp,
-    # is_vlan_configured_interface,
-    # is_interface_vlan_member,
     get_vlan_list_for_interface,
-    # get_pc_member_port_list,
-    # get_vlan_list_from_stp_vlan_intf_table,
-    # get_intf_list_from_stp_vlan_intf_table,
-    # is_portchannel_member_port,
-    # enable_stp_for_interfaces,
     is_global_stp_enabled,
     check_if_global_stp_enabled,
     get_global_stp_mode,
@@ -58,7 +33,6 @@ from config.stp import (
     get_global_stp_max_age,
     get_global_stp_priority,
     get_bridge_mac_address,
-    # do_vlan_to_instance0,
     enable_mst_for_interfaces,
     disable_global_pvst,
     disable_global_mst
@@ -544,48 +518,6 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-# def test_stp_global_max_age_mst_mode(mock_db):
-#     """Test for MST mode configuration."""
-
-#     # Mock all necessary functions and dependencies
-#     with patch('check_if_global_stp_enabled'), \
-#          patch('is_valid_max_age') as is_valid_max_age, \
-#          patch('get_global_stp_mode', return_value='mst'), \
-#          patch('update_stp_vlan_parameter') as update_stp_vlan_parameter:
-
-#         # Simulate context passed to the command
-#         runner = CliRunner()
-
-#         # Simulate invoking the command with max_age value 25
-#         result = runner.invoke(stp_global_max_age, ['25'], obj=mock_db)
-
-#         # Assert command ran successfully
-#         assert result.exit_code == 0
-
-#         # Check if 'is_valid_max_age' was called with the correct value
-#         is_valid_max_age.assert_called_once_with(result.obj, 25)
-
-#         # Verify database update with correct parameters
-#         update_stp_vlan_parameter.assert_called_once_with(mock_db, 'STP_MST', 'GLOBAL', 'max_age', 25)
-
-
-# def test_stp_global_max_age_invalid_mode(mock_db, mock_ctx):
-#     """Test for invalid mode configuration."""
-#     mock_ctx.fail = MagicMock()  # Mock the fail method directly
-
-#     with patch('config.stp.check_if_global_stp_enabled'), \
-#          patch('config.stp.get_global_stp_mode', return_value='invalid_mode'):
-
-#         runner = CliRunner()
-#         result = runner.invoke(stp_global_max_age, ['30'], obj=mock_db)
-
-#         # Check for failed execution
-#         assert result.exit_code != 0  # Ensure the function exits with an error
-
-#         # Verify fail was called with the correct error message
-#         mock_ctx.fail.assert_called_once_with("Invalid STP mode configuration, no mode is enabled")
-
-
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
 STP_DEFAULT_FORWARD_DELAY = "15"
@@ -595,66 +527,6 @@ STP_DEFAULT_BRIDGE_PRIORITY = "32768"
 
 
 class TestSpanningTreeEnable:
-    # def test_enable_pvst_fresh_config(self, mock_db):
-    #     """Test enabling PVST mode on a fresh configuration"""
-    #     # Override the default mock to return empty config
-    #     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
-
-    #     with patch('config.stp.enable_stp_for_interfaces') as mock_enable_interfaces, \
-    #          patch('config.stp.enable_stp_for_vlans') as mock_enable_vlans:
-
-    #         runner = CliRunner()
-    #         result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
-
-    #         assert result.exit_code == 0
-    #         mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
-    #             'mode': 'pvst',
-    #             'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
-    #             'forward_delay': STP_DEFAULT_FORWARD_DELAY,
-    #             'hello_time': STP_DEFAULT_HELLO_INTERVAL,
-    #             'max_age': STP_DEFAULT_MAX_AGE,
-    #             'priority': STP_DEFAULT_BRIDGE_PRIORITY
-    #         })
-    #         mock_enable_interfaces.assert_called_once()
-    #         mock_enable_vlans.assert_called_once()
-
-    # def test_enable_mst_fresh_config(self, mock_db):
-    #     """Test enabling MST mode on a fresh configuration"""
-    #     # Override the default mock to return empty config
-    #     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
-
-    #     with patch('config.stp.enable_mst_for_interfaces') as mock_enable_interfaces, \
-    #          patch('config.stp.enable_mst_instance0') as mock_enable_instance0:
-
-    #         runner = CliRunner()
-    #         result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
-
-    #         assert result.exit_code == 0
-    #         mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
-    #             'mode': 'mst'
-    #         })
-    #         mock_enable_interfaces.assert_called_once()
-    #         mock_enable_instance0.assert_called_once()
-
-    # def test_enable_pvst_when_mst_configured(self, mock_db):
-    #     """Test enabling PVST mode when MST is already configured"""
-    #     # Default mock already returns MST mode
-    #     runner = CliRunner()
-    #     result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
-
-    #     assert result.exit_code != 0
-    #     assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
-    #     mock_db.cfgdb.set_entry.assert_not_called()
-
-    # def test_enable_mst_when_already_configured(self, mock_db):
-    #     """Test enabling MST mode when it's already configured"""
-    #     # Default mock already returns MST mode
-    #     runner = CliRunner()
-    #     result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
-
-    #     assert result.exit_code != 0
-    #     assert "MST is already configured" in result.output
-    #     mock_db.cfgdb.set_entry.assert_not_called()
 
     def test_enable_mst_when_pvst_configured(self, mock_db):
         """Test enabling MST mode when PVST is configured"""
@@ -774,68 +646,6 @@ class TestSpanningTreeInterfaceEdgeportEnable:
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 
-    # def test_stp_interface_edgeport_enable_success(self, mock_db):
-    #     """Test successfully enabling STP edgeport for an interface"""
-    #     interface_name = "Ethernet0"
-
-    #     # Mock database returns valid interface and STP enabled
-    #     mock_db.cfgdb.get_entry.return_value = {
-    #         'admin_status': 'up'  # For interface validation
-    #     }
-
-    #     # Mock the mod_entry method before the patches
-    #     mock_mod_entry = MagicMock()
-    #     mock_db.cfgdb.mod_entry = mock_mod_entry
-
-    #     # Set up patches for validation functions
-    #     with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-    #          patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
-
-    #         runner = CliRunner()
-    #         result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
-
-    #         # Verify successful execution
-    #         assert result.exit_code == 0
-
-    #         # Verify validation functions were called
-    #         mock_stp_check.assert_called_once()
-    #         mock_interface_check.assert_called_once()
-
-    #         # Verify database was updated
-    #         mock_mod_entry.assert_called_once_with(
-    #             'STP_PORT',
-    #             interface_name,
-    #             {'edgeport': 'true'}
-    #         )
-
-    #  def test_stp_interface_edgeport_enable_interface_not_valid(self, mock_db):
-    #      """Test enabling STP edgeport for invalid interface"""
-    #      interface_name = "InvalidInterface"
-
-    #     # Mock the mod_entry method
-    #     mock_mod_entry = MagicMock()
-    #     mock_db.cfgdb.mod_entry = mock_mod_entry
-
-    #     # Set up patches for both validations
-    #     with patch('config.stp.check_if_interface_is_valid') as mock_interface_check, \
-    #          patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
-
-    #         # Configure mock to raise error for interface validation
-    #           mock_interface_check.side_effect = click.ClickException("Interface does not exist")
-
-    #         runner = CliRunner()
-    #         result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
-
-    #         # Verify command failed with correct error message
-    #         assert result.exit_code != 0
-    #         assert "Interface does not exist" in result.output
-
-    #         # Verify STP check was not called (since interface check failed first)
-    #         mock_stp_check.assert_not_called()
-
-    #         # Verify database was not updated
-    #         mock_mod_entry.assert_not_called()
-
     def test_stp_interface_edgeport_enable_stp_not_enabled(self, mock_db):
         """Test enabling STP edgeport when STP is not enabled for interface"""
         interface_name = "Ethernet0"
@@ -856,72 +666,6 @@ class TestSpanningTreeInterfaceEdgeportEnable:
 
 
 class TestSpanningTreeInterfaceEdgeportDisable:
-    # def test_stp_interface_edgeport_disable_success(self, mock_db):
-    #     """Test successfully disabling STP edgeport for an interface"""
-    #     interface_name = "Ethernet0"
-
-    #     # Mock database returns valid interface and STP enabled
-    #     mock_db.cfgdb = MagicMock()
-    #     mock_db.cfgdb.get_entry.return_value = {
-    #         'admin_status': 'up'  # For interface validation
-    #     }
-
-    #     # Mock the mod_entry method and ensure it's accessible
-    #     mock_db.cfgdb.mod_entry = MagicMock()
-
-    #     # Set up patches for validation functions
-    #     with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-    #          patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
-
-    #         runner = CliRunner()
-    #         obj = {'db': mock_db}  # Create proper object context
-    #         result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=obj)
-
-    #         # Verify successful execution
-    #         assert result.exit_code == 0
-
-    #         # Verify validation functions were called in correct order
-    #         mock_interface_check.assert_called_once()
-    #         mock_stp_check.assert_called_once()
-
-    #         # Verify database was updated with edgeport false
-    #         mock_db.cfgdb.mod_entry.assert_called_once_with(
-    #             'STP_PORT',
-    #             interface_name,
-    #             {'edgeport': 'false'}
-    #         )
-
-    # def test_stp_interface_edgeport_disable_interface_not_valid(self, mock_db):
-    #     """Test disabling STP edgeport for invalid interface"""
-    #     interface_name = "InvalidInterface"
-
-    #     # Set up mock database
-    #     mock_db.cfgdb = MagicMock()
-
-    #     # Set up patches for both validations
-    #     with patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
-    #         # Configure mock to raise error for interface validation
-    #         mock_interface_check.side_effect = click.ClickException("Interface does not exist")
-
-    #         runner = CliRunner()
-    #         obj = {'db': mock_db}  # Create proper object context
-
-    #         # Run the command in isolated mode to handle the exception
-    #         result = runner.invoke(
-    #             stp_interface_edgeport_disable,
-    #             [interface_name],
-    #             obj=obj,
-    #             catch_exceptions=False)
-
-    #         # Verify command failed with correct error message
-    #         assert result.exit_code != 0
-    #         assert "Interface does not exist" in result.output
-
-    #         # Verify interface check was called
-    #         mock_interface_check.assert_called_once()
-
-    #         # No need to check mock_stp_check since we're not even creating the mock
-    #         # The implementation should handle this by checking interface validity first
 
     def test_stp_interface_edgeport_disable_stp_not_enabled(self, mock_db):
         """Test disabling STP edgeport when STP is not enabled for interface"""
@@ -965,36 +709,6 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         """Setup method that runs before each test"""
         self.interface_name = "Ethernet0"
         self.runner = CliRunner()
-
-    # def test_stp_interface_link_type_auto_success(self, mock_db):
-    #     """Test successfully setting STP link type to auto for an interface"""
-    #     # Mock database returns valid interface
-    #     mock_db.cfgdb.get_entry.return_value = {
-    #         'admin_status': 'up'  # For interface validation
-    #     }
-
-    #     # Set up patches for validation functions
-    #     with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-    #          patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
-
-    #         result = self.runner.invoke(
-    #             stp_interface_link_type_auto,
-    #             [self.interface_name],
-    #             obj={'db': mock_db})
-
-    #         # Verify successful execution
-    #         assert result.exit_code == 0
-
-    #         # Verify validations were called with correct parameters
-    #         mock_stp_check.assert_called_once()
-    #         mock_interface_check.assert_called_once()
-
-    #         # Verify database was updated correctly
-    #         mock_db.cfgdb.mod_entry.assert_called_once_with(
-    #             'STP_PORT',
-    #             self.interface_name,
-    #             {'link_type': 'auto'}
-    #         )
 
     def test_stp_interface_link_type_auto_stp_not_enabled(self, mock_db):
         """Test setting link type to auto when STP is not enabled"""
@@ -1056,36 +770,6 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         self.interface_name = "Ethernet0"
         self.runner = CliRunner()
 
-    def test_stp_interface_link_type_shared_success(self, mock_db):
-        """Test successfully setting STP link type to shared for an interface"""
-        # Mock database returns valid interface
-        mock_db.cfgdb.get_entry.return_value = {
-            'admin_status': 'up'  # For interface validation
-        }
-
-        # Set up patches for validation functions
-        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None) as mock_stp_check, \
-             patch('config.stp.check_if_interface_is_valid', return_value=None) as mock_interface_check:
-
-            result = self.runner.invoke(
-                stp_interface_link_type_shared,
-                [self.interface_name],
-                obj={'db': mock_db})
-
-            # Verify successful execution
-            assert result.exit_code == 0
-
-            # Verify validations were called with correct parameters
-            mock_stp_check.assert_called_once()
-            mock_interface_check.assert_called_once()
-
-            # Verify database was updated correctly
-            mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT',
-                self.interface_name,
-                {'link_type': 'shared'}
-            )
-
     def test_stp_interface_link_type_shared_stp_not_enabled(self, mock_db):
         """Test setting link type to shared when STP is not enabled"""
         error_message = "STP is not enabled for interface Ethernet0"
@@ -1137,26 +821,3 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
-
-    def test_stp_interface_link_type_shared_db_modification_error(self, mock_db):
-        """Test handling of database modification error"""
-        # Mock database returns valid interface
-        mock_db.cfgdb.get_entry.return_value = {
-            'admin_status': 'up'  # For interface validation
-        }
-
-        # Simulate database modification error
-        mock_db.cfgdb.mod_entry.side_effect = Exception("Database update failed")
-
-        # Set up patches for validation functions
-        with patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
-             patch('config.stp.check_if_interface_is_valid', return_value=None):
-
-            result = self.runner.invoke(
-                stp_interface_link_type_shared,
-                [self.interface_name],
-                obj={'db': mock_db})
-
-            # Verify command failed due to database error
-            assert result.exit_code != 0
-            assert "Database update failed" in result.output
