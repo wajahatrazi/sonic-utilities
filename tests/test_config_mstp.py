@@ -824,82 +824,73 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         assert "Missing argument" in result.output
 
 
-def test_stp_interface_link_type_point_to_point_success():
+def test_stp_interface_link_type_point_to_point_success(mocker):
     """Test successful configuration of point-to-point link type"""
-    # Mock dependencies
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
+    # Mock database and context
+    mock_db = mocker.Mock()
+    mock_db.cfgdb = mocker.Mock()
 
-    # Patch context and interface validation functions
-    with patch('click.get_current_context') as mock_get_context, \
-         patch('__main__.check_if_stp_enabled_for_interface') as mock_stp_check, \
-         patch('__main__.check_if_interface_is_valid') as mock_interface_check:
+    # Mock the validation functions
+    mocker.patch('__main__.check_if_stp_enabled_for_interface')
+    mocker.patch('__main__.check_if_interface_is_valid')
 
-        # Set up mocks
-        mock_ctx = MagicMock()
-        mock_get_context.return_value = mock_ctx
+    # Mock click context
+    mock_ctx = mocker.Mock()
+    mocker.patch('click.get_current_context', return_value=mock_ctx)
 
-        # Call the function
+    # Call the function
+    stp_interface_link_type_point_to_point(mock_db, 'Ethernet0')
+
+    # Verify database modification
+    mock_db.cfgdb.mod_entry.assert_called_once_with(
+        'STP_PORT', 
+        'Ethernet0', 
+        {'link_type': 'point-to-point'}
+    )
+
+
+def test_stp_interface_link_type_point_to_point_stp_disabled(mocker):
+    """Test behavior when STP is not enabled for the interface"""
+    mock_db = mocker.Mock()
+    mock_db.cfgdb = mocker.Mock()
+
+    # Simulate STP check raising an exception
+    mock_stp_check = mocker.patch(
+        '__main__.check_if_stp_enabled_for_interface', 
+        side_effect=click.ClickException("STP not enabled")
+    )
+
+    with pytest.raises(click.ClickException, match="STP not enabled"):
         stp_interface_link_type_point_to_point(mock_db, 'Ethernet0')
 
-        # Verify calls
-        mock_stp_check.assert_called_once_with(mock_ctx, mock_db.cfgdb, 'Ethernet0')
-        mock_interface_check.assert_called_once_with(mock_ctx, mock_db.cfgdb, 'Ethernet0')
-        mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT',
-            'Ethernet0',
-            {'link_type': 'point-to-point'}
-        )
 
-
-def test_stp_interface_link_type_point_to_point_stp_disabled():
-    """Test behavior when STP is not enabled for the interface"""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-
-    with patch('click.get_current_context') as mock_get_context, \
-         patch('__main__.check_if_stp_enabled_for_interface') as mock_stp_check:
-
-        mock_ctx = MagicMock()
-        mock_get_context.return_value = mock_ctx
-
-        # Simulate STP check raising an exception
-        mock_stp_check.side_effect = click.ClickException("STP not enabled")
-
-        with pytest.raises(click.ClickException, match="STP not enabled"):
-            stp_interface_link_type_point_to_point(mock_db, 'Ethernet0')
-
-
-def test_stp_interface_link_type_point_to_point_invalid_interface():
+def test_stp_interface_link_type_point_to_point_invalid_interface(mocker):
     """Test behavior with an invalid interface"""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
+    mock_db = mocker.Mock()
+    mock_db.cfgdb = mocker.Mock()
 
-    with patch('click.get_current_context') as mock_get_context, \
-         patch('__main__.check_if_stp_enabled_for_interface'), \
-         patch('__main__.check_if_interface_is_valid') as mock_interface_check:
+    # Simulate interface validation failing
+    mocker.patch('__main__.check_if_stp_enabled_for_interface')
+    mock_interface_check = mocker.patch(
+        '__main__.check_if_interface_is_valid', 
+        side_effect=click.ClickException("Invalid interface")
+    )
 
-        mock_ctx = MagicMock()
-        mock_get_context.return_value = mock_ctx
-
-        # Simulate interface validation failing
-        mock_interface_check.side_effect = click.ClickException("Invalid interface")
-
-        with pytest.raises(click.ClickException, match="Invalid interface"):
-            stp_interface_link_type_point_to_point(mock_db, 'InvalidInterface')
+    with pytest.raises(click.ClickException, match="Invalid interface"):
+        stp_interface_link_type_point_to_point(mock_db, 'InvalidInterface')
 
 
-def test_stp_interface_link_type_point_to_point_database_error():
+def test_stp_interface_link_type_point_to_point_database_error(mocker):
     """Test database modification error handling"""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
+    mock_db = mocker.Mock()
+    mock_db.cfgdb = mocker.Mock()
 
-    with patch('click.get_current_context'), \
-         patch('__main__.check_if_stp_enabled_for_interface'), \
-         patch('__main__.check_if_interface_is_valid'):
+    # Mock validation functions
+    mocker.patch('__main__.check_if_stp_enabled_for_interface')
+    mocker.patch('__main__.check_if_interface_is_valid')
 
-        # Simulate database modification failure
-        mock_db.cfgdb.mod_entry.side_effect = Exception("Database error")
+    # Simulate database modification failure
+    mock_db.cfgdb.mod_entry.side_effect = Exception("Database error")
 
-        with pytest.raises(Exception, match="Database error"):
-            stp_interface_link_type_point_to_point(mock_db, 'Ethernet0')
+    with pytest.raises(Exception, match="Database error"):
+        stp_interface_link_type_point_to_point(mock_db, 'Ethernet0')
