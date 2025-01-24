@@ -865,7 +865,7 @@ class TestSTPInterfaceLinkType:
 
         with pytest.mock.patch('click.get_current_context', return_value=mock_ctx), \
              pytest.mock.patch('__main__.check_if_stp_enabled_for_interface'), \
-             pytest.mock.patch('__main__.check_if_interface_is_valid', 
+             pytest.mock.patch('__main__.check_if_interface_is_valid',
                                side_effect=click.ClickException("Invalid interface")):
 
             with pytest.raises(click.ClickException, match="Invalid interface"):
