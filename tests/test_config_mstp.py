@@ -845,8 +845,8 @@ class TestSTPInterfaceLinkTypePointToPoint:
 
         # Verify database modification
         mock_db.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            interface_name, 
+            'STP_PORT',
+            interface_name,
             {'link_type': 'point-to-point'}
         )
 
@@ -857,7 +857,7 @@ class TestSTPInterfaceLinkTypePointToPoint:
 
         # Patch to raise exception for STP not being enabled
         mocker.patch('click.get_current_context', return_value=mock_ctx)
-        mocker.patch('__main__.check_if_stp_enabled_for_interface', 
+        mocker.patch('__main__.check_if_stp_enabled_for_interface',
                      side_effect=click.ClickException("STP not enabled"))
 
         # Prepare test data
@@ -876,13 +876,13 @@ class TestSTPInterfaceLinkTypePointToPoint:
         # Patch to raise exception for invalid interface
         mocker.patch('click.get_current_context', return_value=mock_ctx)
         mocker.patch('__main__.check_if_stp_enabled_for_interface')
-        mocker.patch('__main__.check_if_interface_is_valid', 
+        mocker.patch('__main__.check_if_interface_is_valid',
                      side_effect=click.ClickException("Invalid interface"))
 
         # Prepare test data
         interface_name = 'InvalidInterface'
         mock_db.cfgdb = mock_db
-        
+
         # Verify exception is raised
         with pytest.raises(click.ClickException, match="Invalid interface"):
             stp_interface_link_type_point_to_point(mock_db, interface_name)
