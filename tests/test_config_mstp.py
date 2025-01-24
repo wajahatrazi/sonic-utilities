@@ -843,7 +843,7 @@ class TestSTPInterfaceLinkType:
 
         # Patch get_current_context and check_if_stp_enabled_for_interface
         mocker.patch('click.get_current_context', return_value=mock_ctx)
-        mocker.patch('__main__.check_if_stp_enabled_for_interface', 
+        mocker.patch('__main__.check_if_stp_enabled_for_interface',
                      side_effect=click.ClickException("STP not enabled"))
 
         # Test would verify the exception is raised correctly
@@ -858,7 +858,7 @@ class TestSTPInterfaceLinkType:
         # Patch necessary methods
         mocker.patch('click.get_current_context', return_value=mock_ctx)
         mocker.patch('__main__.check_if_stp_enabled_for_interface')
-        mocker.patch('__main__.check_if_interface_is_valid', 
+        mocker.patch('__main__.check_if_interface_is_valid',
                      side_effect=click.ClickException("Invalid interface"))
 
         # Test would verify the exception is raised correctly
