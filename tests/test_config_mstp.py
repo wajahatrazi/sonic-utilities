@@ -843,8 +843,8 @@ class TestSTPInterfaceLinkTypePointToPoint:
 
         # Verify database modification
         mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_PORT', 
-            interface_name, 
+            'STP_PORT',
+            interface_name,
             {'link_type': 'point-to-point'}
         )
 
@@ -855,8 +855,8 @@ class TestSTPInterfaceLinkTypePointToPoint:
 
         # Patch methods to raise exception for STP not being enabled
         monkeypatch.setattr('click.get_current_context', lambda: mock_ctx)
-        monkeypatch.setattr('__main__.check_if_stp_enabled_for_interface', 
-                             lambda *args: exec('raise click.ClickException("STP not enabled")'))
+        monkeypatch.setattr('__main__.check_if_stp_enabled_for_interface',
+                            lambda *args: exec('raise click.ClickException("STP not enabled")'))
 
         # Prepare test data
         interface_name = 'Ethernet1'
@@ -873,8 +873,8 @@ class TestSTPInterfaceLinkTypePointToPoint:
         # Patch methods to raise exception for invalid interface
         monkeypatch.setattr('click.get_current_context', lambda: mock_ctx)
         monkeypatch.setattr('__main__.check_if_stp_enabled_for_interface', lambda *args: None)
-        monkeypatch.setattr('__main__.check_if_interface_is_valid', 
-                             lambda *args: exec('raise click.ClickException("Invalid interface")'))
+        monkeypatch.setattr('__main__.check_if_interface_is_valid',
+                            lambda *args: exec('raise click.ClickException("Invalid interface")'))
 
         # Prepare test data
         interface_name = 'InvalidInterface'
