@@ -13,7 +13,7 @@ from config.stp import (
     stp_interface_edgeport_enable,
     stp_global_max_hops,
     stp_mst_region_name,
-    # stp_interface_link_type_point_to_point,
+    stp_interface_link_type_point_to_point,
     stp_global_revision,
     is_valid_hello_interval,
     stp_disable,
@@ -822,3 +822,110 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
+
+
+def test_stp_interface_link_type_point_to_point_success(
+    mock_db, 
+    mocker
+):
+    """Test successful configuration of point-to-point link type"""
+    # Arrange
+    interface_name = 'Ethernet1/1'
+
+    # Mock the necessary check functions
+    mocker.patch('your_module.check_if_stp_enabled_for_interface')
+    mocker.patch('your_module.check_if_interface_is_valid')
+
+    # Create a runner
+    runner = CliRunner()
+
+    # Act
+    with patch('click.get_current_context'):
+        result = runner.invoke(
+            stp_interface_link_type_point_to_point, 
+            [interface_name], 
+            obj=mock_db
+        )
+
+    # Assert
+    assert result.exit_code == 0
+    mock_db.cfgdb.mod_entry.assert_called_once_with(
+        'STP_PORT', 
+        interface_name, 
+        {'link_type': 'point-to-point'}
+    )
+
+
+def test_stp_interface_link_type_invalid_interface(
+    mock_db, 
+    mocker
+):
+    """Test handling of invalid interface name"""
+    # Arrange
+    interface_name = ''
+    runner = CliRunner()
+
+    # Mock check functions to raise an exception
+    mocker.patch(
+        'your_module.check_if_interface_is_valid', 
+        side_effect=click.ClickException("Invalid interface")
+    )
+
+    # Act
+    with patch('click.get_current_context'):
+        result = runner.invoke(
+            stp_interface_link_type_point_to_point, 
+            [interface_name], 
+            obj=mock_db
+        )
+
+    # Assert
+    assert result.exit_code != 0
+    assert "Invalid interface" in result.output
+
+
+def test_stp_interface_link_type_stp_not_enabled(
+    mock_db, 
+    mocker
+):
+    """Test behavior when STP is not enabled for interface"""
+    # Arrange
+    interface_name = 'Ethernet1/2'
+    runner = CliRunner()
+
+    # Mock check function to raise an exception
+    mocker.patch(
+        'your_module.check_if_stp_enabled_for_interface', 
+        side_effect=click.ClickException("STP not enabled")
+    )
+
+    # Act
+    with patch('click.get_current_context'):
+        result = runner.invoke(
+            stp_interface_link_type_point_to_point, 
+            [interface_name], 
+            obj=mock_db
+        )
+
+    # Assert
+    assert result.exit_code != 0
+    assert "STP not enabled" in result.output
+
+
+def test_stp_interface_link_type_missing_interface(
+    mock_db
+):
+    """Test handling of missing interface argument"""
+    # Arrange
+    runner = CliRunner()
+
+    # Act
+    result = runner.invoke(
+        stp_interface_link_type_point_to_point, 
+        [], 
+        obj=mock_db
+    )
+
+    # Assert
+    assert result.exit_code != 0
+    assert "Missing argument" in result.output
