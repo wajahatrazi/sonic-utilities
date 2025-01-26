@@ -13,7 +13,7 @@ from config.stp import (
     stp_interface_edgeport_enable,
     stp_global_max_hops,
     stp_mst_region_name,
-    stp_interface_link_type_point_to_point,
+    # stp_interface_link_type_point_to_point,
     stp_global_revision,
     is_valid_hello_interval,
     stp_disable,
