@@ -1484,3 +1484,106 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 # Invoke main()
 # if __name__ == '__main__':
 #    spanning_tree()
+
+# INSTANCE-LEVEL COMMANDS
+# config spanning_tree mst instance <instance-id> priority <priority-value>
+
+@mst.command('instance-vlan')
+@click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
+@click.argument('action', metavar='(add|del)', required=True, type=click.Choice(['add', 'del']))
+@click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
+@clicommon.pass_db
+def stp_mst_instance_vlan(_db, instance_id, action, vlan_id):
+    """Map or unmap VLAN to/from an MST instance"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    # Validate instance ID
+    if instance_id not in range(MST_MIN_INSTANCES, MST_MAX_INSTANCES + 1):
+        ctx.fail(f"Invalid instance ID. Must be between {MST_MIN_INSTANCES} and {MST_MAX_INSTANCES}.")
+
+    # Validate VLAN ID
+    if vlan_id not in range(1, 4095):
+        ctx.fail(f"Invalid VLAN ID. Must be between 1 and 4094.")
+
+    # Check if instance exists
+    mst_instance_key = f"MST_INSTANCE:{instance_id}"
+    mst_instance = db.get_entry('STP_MST_INST', mst_instance_key)
+    if not mst_instance:
+        ctx.fail(f"MST instance {instance_id} does not exist.")
+
+    # Check if VLAN exists
+    vlan_name = f"Vlan{vlan_id}"
+    vlan_entry = db.get_entry('VLAN', vlan_name)
+    if not vlan_entry:
+        ctx.fail(f"VLAN {vlan_id} does not exist.")
+
+    # Get the current VLAN list for the instance
+    vlan_list = mst_instance.get('vlan_list', '')
+    vlan_set = set(filter(None, vlan_list.split(',')))
+
+    if action == 'add':
+        # Add VLAN to the instance
+        if str(vlan_id) in vlan_set:
+            ctx.fail(f"VLAN {vlan_id} is already mapped to MST instance {instance_id}.")
+        vlan_set.add(str(vlan_id))
+    elif action == 'del':
+        # Remove VLAN from the instance
+        if str(vlan_id) not in vlan_set:
+            ctx.fail(f"VLAN {vlan_id} is not mapped to MST instance {instance_id}.")
+        vlan_set.remove(str(vlan_id))
+
+    # Update the VLAN list in the database
+    new_vlan_list = ','.join(sorted(vlan_set))
+    db.mod_entry('STP_MST_INST', mst_instance_key, {'vlan_list': new_vlan_list})
+
+
+# config spanning_tree mst instance <instance-id> vlan (add|del) <vlan-id>
+@mst.command('instance-vlan')
+@click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
+@click.argument('action', metavar='(add|del)', required=True, type=click.Choice(['add', 'del']))
+@click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
+@clicommon.pass_db
+def stp_mst_instance_vlan(_db, instance_id, action, vlan_id):
+    """Map or unmap VLAN to/from an MST instance"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    # Validate instance ID
+    if instance_id not in range(MST_MIN_INSTANCES, MST_MAX_INSTANCES + 1):
+        ctx.fail(f"Invalid instance ID. Must be between {MST_MIN_INSTANCES} and {MST_MAX_INSTANCES}.")
+
+    # Validate VLAN ID
+    if vlan_id not in range(1, 4095):
+        ctx.fail(f"Invalid VLAN ID. Must be between 1 and 4094.")
+
+    # Check if instance exists
+    mst_instance_key = f"MST_INSTANCE:{instance_id}"
+    mst_instance = db.get_entry('STP_MST_INST', mst_instance_key)
+    if not mst_instance:
+        ctx.fail(f"MST instance {instance_id} does not exist.")
+
+    # Check if VLAN exists
+    vlan_name = f"Vlan{vlan_id}"
+    vlan_entry = db.get_entry('VLAN', vlan_name)
+    if not vlan_entry:
+        ctx.fail(f"VLAN {vlan_id} does not exist.")
+
+    # Get the current VLAN list for the instance
+    vlan_list = mst_instance.get('vlan_list', '')
+    vlan_set = set(filter(None, vlan_list.split(',')))
+
+    if action == 'add':
+        # Add VLAN to the instance
+        if str(vlan_id) in vlan_set:
+            ctx.fail(f"VLAN {vlan_id} is already mapped to MST instance {instance_id}.")
+        vlan_set.add(str(vlan_id))
+    elif action == 'del':
+        # Remove VLAN from the instance
+        if str(vlan_id) not in vlan_set:
+            ctx.fail(f"VLAN {vlan_id} is not mapped to MST instance {instance_id}.")
+        vlan_set.remove(str(vlan_id))
+
+    # Update the VLAN list in the database
+    new_vlan_list = ','.join(sorted(vlan_set))
+    db.mod_entry('STP_MST_INST', mst_instance_key, {'vlan_list': new_vlan_list})
