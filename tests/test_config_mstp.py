@@ -838,8 +838,8 @@ def test_stp_interface_link_type_point_to_point_success(
     def mock_check(*args):
         return None
 
-    monkeypatch.setattr('your_module.check_if_stp_enabled_for_interface', mock_check)
-    monkeypatch.setattr('your_module.check_if_interface_is_valid', mock_check)
+    monkeypatch.setattr('config.stp.check_if_stp_enabled_for_interface', mock_check)
+    monkeypatch.setattr('config.stp..check_if_interface_is_valid', mock_check)
     monkeypatch.setattr('click.get_current_context', lambda: mock_ctx)
 
     # Act
@@ -871,7 +871,7 @@ def test_stp_interface_link_type_invalid_interface(
     def mock_check_invalid(*args):
         raise click.ClickException("Invalid interface")
 
-    monkeypatch.setattr('your_module.check_if_interface_is_valid', mock_check_invalid)
+    monkeypatch.setattr('config.stp.check_if_interface_is_valid', mock_check_invalid)
     monkeypatch.setattr('click.get_current_context', lambda: mock_ctx)
 
     # Act
@@ -899,7 +899,7 @@ def test_stp_interface_link_type_stp_not_enabled(
     def mock_check_stp_disabled(*args):
         raise click.ClickException("STP not enabled")
 
-    monkeypatch.setattr('your_module.check_if_stp_enabled_for_interface', mock_check_stp_disabled)
+    monkeypatch.setattr('config.stp..check_if_stp_enabled_for_interface', mock_check_stp_disabled)
     monkeypatch.setattr('click.get_current_context', lambda: mock_ctx)
 
     # Act
