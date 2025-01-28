@@ -1588,3 +1588,44 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 #     # Update the VLAN list in the database
 #     new_vlan_list = ','.join(sorted(vlan_set))
 #     db.mod_entry('STP_MST_INST', mst_instance_key, {'vlan_list': new_vlan_list})
+
+
+# INTERFACE-LEVEL COMMANDS
+# Command: config spanning_tree interface {enable|disable} <ifname>
+# Configure an interface for MSTP.
+
+
+@spanning_tree_interface.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def mstp_interface_enable(_db, interface_name):
+    """Enable MSTP for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    if is_stp_enabled_for_interface(db, interface_name):
+        ctx.fail("MSTP is already enabled for " + interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    stp_intf_entry = db.get_entry('STP_PORT', interface_name)
+    if len(stp_intf_entry) == 0:
+        fvs = {'enabled': 'true',
+               'root_guard': 'false',
+               'bpdu_guard': 'false',
+               'bpdu_guard_do_disable': 'false',
+               'portfast': 'false',
+               'uplink_fast': 'false'}
+        db.set_entry('STP_PORT', interface_name, fvs)
+    else:
+        db.mod_entry('STP_PORT', interface_name, {'enabled': 'true'})
+
+
+@spanning_tree_interface.command('disable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def mstp_interface_disable(_db, interface_name):
+    """Disable MSTP for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'enabled': 'false'})
