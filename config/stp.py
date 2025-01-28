@@ -1629,3 +1629,17 @@ def mstp_interface_disable(_db, interface_name):
     check_if_global_stp_enabled(db, ctx)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'enabled': 'false'})
+
+
+# config spanning_tree interface edgeport {enable|disable} <ifname>
+@spanning_tree_interface.command('edgeport')
+@click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def mstp_interface_edgeport(_db, state, interface_name):
+    """Enable/Disable edge port on interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true' if state == 'enable' else 'false'})
