@@ -1686,17 +1686,45 @@ def mstp_interface_edgeport(_db, state, interface_name):
 
 # config spanning_tree interface root_guard {enable|disable} <ifname>
 # This command allow enabling or disabling of root_guard on an interface.
-@spanning_tree_interface.command('root_guard')
-@click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
-@click.argument('interface_name', metavar='<interface_name>', required=True)
+# STP interface bpdu guard
+# config spanning_tree interface bpdu_guard
+@spanning_tree_interface.group('bpdu_guard')
 @clicommon.pass_db
-def mstp_interface_root_guard(_db, state, interface_name):
-    """Enable/Disable root guard on interface"""
+def spanning_tree_interface_bpdu_guard(_db):
+    """Configure STP bpdu guard for interface"""
+    pass
+
+
+# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
+# MST CONFIGURATION IN THE STP_PORT TABLE
+@spanning_tree_interface_bpdu_guard.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.option('-s', '--shutdown', is_flag=True)
+@clicommon.pass_db
+def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
+    """Enable STP bpdu guard for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true' if state == 'enable' else 'false'})
+    bpdu_guard_do_disable = 'true' if shutdown else 'false'
+    fvs = {'bpdu_guard': 'true',
+           'bpdu_guard_do_disable': bpdu_guard_do_disable}
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
+# config spanning_tree interface bpdu_guard disable <interface_name>
+# MST CONFIGURATION IN THE STP_PORT TABLE
+@spanning_tree_interface_bpdu_guard.command('disable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_bpdu_guard_disable(_db, interface_name):
+    """Disable STP bpdu guard for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
 # # config spanning_tree interface priority <ifname> <port_priority-value>
