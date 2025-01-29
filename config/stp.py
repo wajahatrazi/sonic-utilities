@@ -1157,11 +1157,6 @@ def stp_interface_path_cost(_db, interface_name, cost):
     db = _db.cfgdb
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
-    BGP
-    California-SB237
-    Clock commands
-    Container Hardening
-    
     is_valid_interface_path_cost(ctx, cost)
     curr_intf_cost = db.get_entry('STP_PORT', interface_name).get('path_cost')
     db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
@@ -1675,19 +1670,18 @@ def interface(ctx, interface_name):
 
 @interface.command('bpdu_guard')
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
-@click.pass_context
-def bpdu_guard(ctx, state):
+@click.option('-s', '--shutdown', is_flag=True)
+@clicommon.pass_db
+def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
     """Enable/Disable BPDU guard on interface"""
-    interface_name = ctx.obj['interface_name']
-    db = clicommon.Db()
-    # Ensure the STP is enabled for the interface and the interface is valid
-    # Implement check_if_stp_enabled_for_interface and check_if_interface_is_valid accordingly
-    # check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    # check_if_interface_is_valid(ctx, db, interface_name)
-    if state == 'enable':
-        db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'true'})
-    else:
-        db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    bpdu_guard_do_disable = 'true' if shutdown else 'false'
+    fvs = {'bpdu_guard': 'true' if state == 'enable' else 'false',
+           'bpdu_guard_do_disable': bpdu_guard_do_disable}
+    db.mod_entry('STP_PORT', interface_name, fvs)
 
 
 # # config spanning_tree interface root_guard {enable|disable} <ifname>
