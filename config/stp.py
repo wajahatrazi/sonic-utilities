@@ -1661,15 +1661,15 @@ def spanning_tree():
 
 
 @spanning_tree.group()
-@click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.pass_context
-def interface(ctx, interface_name):
+def interface(ctx):
     """STP interface configuration"""
-    ctx.obj = {"interface_name": interface_name}
+    pass
 
 
 @interface.command('bpdu_guard')
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+@click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
 @clicommon.pass_db
 def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
