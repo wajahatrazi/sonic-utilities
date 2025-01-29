@@ -1672,7 +1672,7 @@ def interface(ctx):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
 @clicommon.pass_db
-def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
+def mstp_bpdu_guard_interface(_db, state, interface_name, shutdown):
     """Enable/Disable BPDU guard on interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
