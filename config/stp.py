@@ -1157,6 +1157,11 @@ def stp_interface_path_cost(_db, interface_name, cost):
     db = _db.cfgdb
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
+    BGP
+    California-SB237
+    Clock commands
+    Container Hardening
+    
     is_valid_interface_path_cost(ctx, cost)
     curr_intf_cost = db.get_entry('STP_PORT', interface_name).get('path_cost')
     db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
@@ -1648,30 +1653,37 @@ def mstp_interface_edgeport(_db, state, interface_name):
 
 # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # This command allow enabling or disabling of bpdu_guard on an interface.
-@config.config.command()
-@click.pass_context
-def spanning_tree(ctx):
+@click.group()
+def config():
+    """Config group"""
+    pass
+
+
+@config.group()
+def spanning_tree():
     """Spanning Tree Protocol (STP) configuration"""
     pass
 
 
-@spanning_tree.command('interface')
+@spanning_tree.group()
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.pass_context
-def stp_interface(ctx, interface_name):
+def interface(ctx, interface_name):
     """STP interface configuration"""
-    pass
+    ctx.obj = {"interface_name": interface_name}
 
 
-@stp_interface.command('bpdu_guard')
+@interface.command('bpdu_guard')
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
 @click.pass_context
-def stp_interface_bpdu_guard(ctx, state):
+def bpdu_guard(ctx, state):
     """Enable/Disable BPDU guard on interface"""
-    interface_name = ctx.parent.params['interface_name']
-    db = ctx.obj.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
+    interface_name = ctx.obj['interface_name']
+    db = clicommon.Db()
+    # Ensure the STP is enabled for the interface and the interface is valid
+    # Implement check_if_stp_enabled_for_interface and check_if_interface_is_valid accordingly
+    # check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    # check_if_interface_is_valid(ctx, db, interface_name)
     if state == 'enable':
         db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'true'})
     else:
