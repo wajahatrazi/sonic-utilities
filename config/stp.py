@@ -1648,21 +1648,34 @@ def mstp_interface_edgeport(_db, state, interface_name):
 
 # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # This command allow enabling or disabling of bpdu_guard on an interface.
-@spanning_tree_interface.command('bpdu_guard')
-@click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+@config.config.command()
+@click.pass_context
+def spanning_tree(ctx):
+    """Spanning Tree Protocol (STP) configuration"""
+    pass
+
+
+@spanning_tree.command('interface')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
-@click.option('-s', '--shutdown', is_flag=True)
-@clicommon.pass_db
-def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
+@click.pass_context
+def stp_interface(ctx, interface_name):
+    """STP interface configuration"""
+    pass
+
+
+@stp_interface.command('bpdu_guard')
+@click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+@click.pass_context
+def stp_interface_bpdu_guard(ctx, state):
     """Enable/Disable BPDU guard on interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
+    interface_name = ctx.parent.params['interface_name']
+    db = ctx.obj.cfgdb
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
-    bpdu_guard_do_disable = 'true' if shutdown else 'false'
-    fvs = {'bpdu_guard': 'true' if state == 'enable' else 'false',
-           'bpdu_guard_do_disable': bpdu_guard_do_disable}
-    db.mod_entry('STP_PORT', interface_name, fvs)
+    if state == 'enable':
+        db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'true'})
+    else:
+        db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
 # # config spanning_tree interface root_guard {enable|disable} <ifname>
