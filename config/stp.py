@@ -1736,7 +1736,12 @@ def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
 # # Specify configuring the interface at different link types.
 # # Default : Auto
 # @spanning_tree_interface.command('link-type')
-# @click.argument('link_type', metavar='<P2P|Shared-Lan|Auto>', required=True, type=click.Choice(['P2P', 'Shared-Lan', 'Auto']))
+# @click.argument(
+#     'link_type',
+#     metavar='<P2P|Shared-Lan|Auto>',
+#     required=True,
+#     type=click.Choice(['P2P', 'Shared-Lan', 'Auto'])
+# )
 # @click.argument('interface_name', metavar='<interface_name>', required=True)
 # @clicommon.pass_db
 # def mstp_interface_link_type(_db, link_type, interface_name):
