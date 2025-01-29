@@ -1216,40 +1216,40 @@ def spanning_tree_interface_bpdu_guard(_db):
     """Configure STP bpdu guard for interface"""
     pass
 
-
+# -----------------------OLD PVST INTERFACE_BPDU_GUARD COMMAND------------------------
 # config spanning_tree interface bpdu_guard enable <interface_name> [-s]
 # MST CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_bpdu_guard.command('enable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@click.option('-s', '--shutdown', is_flag=True)
-@clicommon.pass_db
-def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
-    """Enable STP bpdu guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    if shutdown is True:
-        bpdu_guard_do_disable = 'true'
-    else:
-        bpdu_guard_do_disable = 'false'
-    fvs = {'bpdu_guard': 'true',
-           'bpdu_guard_do_disable': bpdu_guard_do_disable}
-    db.mod_entry('STP_PORT', interface_name, fvs)
+# @spanning_tree_interface_bpdu_guard.command('enable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @click.option('-s', '--shutdown', is_flag=True)
+# @clicommon.pass_db
+# def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
+#     """Enable STP bpdu guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     if shutdown is True:
+#         bpdu_guard_do_disable = 'true'
+#     else:
+#         bpdu_guard_do_disable = 'false'
+#     fvs = {'bpdu_guard': 'true',
+#            'bpdu_guard_do_disable': bpdu_guard_do_disable}
+#     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-# config spanning_tree interface bpdu_guard disable <interface_name>
-# MST CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_bpdu_guard.command('disable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@clicommon.pass_db
-def stp_interface_bpdu_guard_disable(_db, interface_name):
-    """Disable STP bpdu guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
+# # config spanning_tree interface bpdu_guard disable <interface_name>
+# # MST CONFIGURATION IN THE STP_PORT TABLE
+# @spanning_tree_interface_bpdu_guard.command('disable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def stp_interface_bpdu_guard_disable(_db, interface_name):
+#     """Disable STP bpdu guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
 # STP interface portfast
@@ -1646,6 +1646,82 @@ def mstp_interface_edgeport(_db, state, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true' if state == 'enable' else 'false'})
 
 
+# config spanning_tree interface bpdu_guard {enable|disable} <ifname>
+# STP interface bpdu guard
+# config spanning_tree interface bpdu_guard
+@spanning_tree_interface.group('bpdu_guard')
+@clicommon.pass_db
+def spanning_tree_interface_bpdu_guard(_db):
+    """Configure STP bpdu guard for interface"""
+    pass
+
+
+# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
+# PVST and MST CONFIGURATION IN THE STP_PORT TABLE
+@spanning_tree_interface_bpdu_guard.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.option('-s', '--shutdown', is_flag=True)
+@clicommon.pass_db
+def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
+    """Enable STP bpdu guard for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    mode = get_global_stp_mode(db)
+    if shutdown is True:
+        bpdu_guard_do_disable = 'true'
+    else:
+        bpdu_guard_do_disable = 'false'
+        
+    if mode == "pvst":
+        fvs = {
+            'bpdu_guard': 'true',
+            'bpdu_guard_do_disable': bpdu_guard_do_disable
+        }
+    elif mode == "mstp":
+        fvs = {
+            'bpdu_guard': 'true',
+            'bpdu_guard_do_disable': bpdu_guard_do_disable,
+            'edge_port': 'false',
+            'link_type': 'auto'
+        }
+    else:
+        ctx.fail("Unsupported STP mode")
+
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
+# config spanning_tree interface bpdu_guard disable <interface_name>
+# PVST and MST CONFIGURATION IN THE STP_PORT TABLE
+@spanning_tree_interface_bpdu_guard.command('disable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_bpdu_guard_disable(_db, interface_name):
+    """Disable STP bpdu guard for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    mode = get_global_stp_mode(db)
+    if mode == "pvst":
+        fvs = {
+            'bpdu_guard': 'false'
+        }
+    elif mode == "mstp":
+        fvs = {
+            'bpdu_guard': 'false',
+            'edge_port': 'false',
+            'link_type': 'auto'
+        }
+    else:
+        ctx.fail("Unsupported STP mode")
+
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
 # # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # # This command allow enabling or disabling of bpdu_guard on an interface.
 # @click.group()
@@ -1688,43 +1764,43 @@ def mstp_interface_edgeport(_db, state, interface_name):
 # This command allow enabling or disabling of root_guard on an interface.
 # STP interface bpdu guard
 # config spanning_tree interface bpdu_guard
-@spanning_tree_interface.group('bpdu_guard')
-@clicommon.pass_db
-def spanning_tree_interface_bpdu_guard(_db):
-    """Configure STP bpdu guard for interface"""
-    pass
+# @spanning_tree_interface.group('bpdu_guard')
+# @clicommon.pass_db
+# def spanning_tree_interface_bpdu_guard(_db):
+#     """Configure STP bpdu guard for interface"""
+#     pass
 
 
-# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
-# MST CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_bpdu_guard.command('enable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@click.option('-s', '--shutdown', is_flag=True)
-@clicommon.pass_db
-def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
-    """Enable STP bpdu guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    bpdu_guard_do_disable = 'true' if shutdown else 'false'
-    fvs = {'bpdu_guard': 'true',
-           'bpdu_guard_do_disable': bpdu_guard_do_disable}
-    db.mod_entry('STP_PORT', interface_name, fvs)
+# # config spanning_tree interface bpdu_guard enable <interface_name> [-s]
+# # MST CONFIGURATION IN THE STP_PORT TABLE
+# @spanning_tree_interface_bpdu_guard.command('enable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @click.option('-s', '--shutdown', is_flag=True)
+# @clicommon.pass_db
+# def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
+#     """Enable STP bpdu guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     bpdu_guard_do_disable = 'true' if shutdown else 'false'
+#     fvs = {'bpdu_guard': 'true',
+#            'bpdu_guard_do_disable': bpdu_guard_do_disable}
+#     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-# config spanning_tree interface bpdu_guard disable <interface_name>
-# MST CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_bpdu_guard.command('disable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@clicommon.pass_db
-def stp_interface_bpdu_guard_disable(_db, interface_name):
-    """Disable STP bpdu guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
+# # config spanning_tree interface bpdu_guard disable <interface_name>
+# # MST CONFIGURATION IN THE STP_PORT TABLE
+# @spanning_tree_interface_bpdu_guard.command('disable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def stp_interface_bpdu_guard_disable(_db, interface_name):
+#     """Disable STP bpdu guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
 # # config spanning_tree interface priority <ifname> <port_priority-value>
