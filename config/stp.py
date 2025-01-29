@@ -1632,6 +1632,7 @@ def mstp_interface_disable(_db, interface_name):
 
 
 # config spanning_tree interface edgeport {enable|disable} <ifname>
+# This command allow enabling or disabling of edge port on an interface.
 @spanning_tree_interface.command('edgeport')
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
 @click.argument('interface_name', metavar='<interface_name>', required=True)
@@ -1643,3 +1644,105 @@ def mstp_interface_edgeport(_db, state, interface_name):
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true' if state == 'enable' else 'false'})
+
+
+# config spanning_tree interface bpdu_guard {enable|disable} <ifname>
+# This command allow enabling or disabling of bpdu_guard on an interface.
+@spanning_tree_interface.command('bpdu_guard')
+@click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.option('-s', '--shutdown', is_flag=True)
+@clicommon.pass_db
+def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
+    """Enable/Disable BPDU guard on interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    bpdu_guard_do_disable = 'true' if shutdown else 'false'
+    fvs = {'bpdu_guard': 'true' if state == 'enable' else 'false',
+           'bpdu_guard_do_disable': bpdu_guard_do_disable}
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
+# # config spanning_tree interface root_guard {enable|disable} <ifname>
+# # This command allow enabling or disabling of root_guard on an interface.
+# @spanning_tree_interface.command('root_guard')
+# @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def mstp_interface_root_guard(_db, state, interface_name):
+#     """Enable/Disable root guard on interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true' if state == 'enable' else 'false'})
+
+
+# # config spanning_tree interface priority <ifname> <port_priority-value>
+# # Specify configuring the port level priority for root bridge in seconds.
+# # Default: 128, range 0-240
+# @spanning_tree_interface.command('priority')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @click.argument('priority', metavar='<0-240>', required=True, type=int)
+# @clicommon.pass_db
+# def mstp_interface_priority(_db, interface_name, priority):
+#     """Configure MSTP port priority for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     is_valid_interface_priority(ctx, priority)
+#     curr_intf_proirty = db.get_entry('STP_PORT', interface_name).get('priority')
+#     db.mod_entry('STP_PORT', interface_name, {'priority': priority})
+#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
+#         if intf == interface_name:
+#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
+#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
+#             if len(vlan_intf_entry) != 0:
+#                 vlan_intf_priority = vlan_intf_entry.get('priority')
+#                 if curr_intf_proirty == vlan_intf_priority:
+#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'priority': priority})
+
+
+# # config spanning_tree interface cost <ifname> <cost-value>
+# # Specify configuring the port level priority for root bridge in seconds.
+# # Default: 0, range 1-200000000
+# @spanning_tree_interface.command('cost')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
+# @clicommon.pass_db
+# def mstp_interface_path_cost(_db, interface_name, cost):
+#     """Configure MSTP path cost for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     is_valid_interface_path_cost(ctx, cost)
+#     curr_intf_cost = db.get_entry('STP_PORT', interface_name).get('path_cost')
+#     db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
+#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
+#         if intf == interface_name:
+#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
+#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
+#             if len(vlan_intf_entry) != 0:
+#                 vlan_intf_cost = vlan_intf_entry.get('path_cost')
+#                 if curr_intf_cost == vlan_intf_cost:
+#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'path_cost': cost})
+
+
+# # config spanning_tree interface link-type {P2P|Shared-Lan|Auto} <ifname>
+# # Specify configuring the interface at different link types.
+# # Default : Auto
+# @spanning_tree_interface.command('link-type')
+# @click.argument('link_type', metavar='<P2P|Shared-Lan|Auto>', required=True, type=click.Choice(['P2P', 'Shared-Lan', 'Auto']))
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def mstp_interface_link_type(_db, link_type, interface_name):
+#     """Configure link-type for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'link_type': link_type})
