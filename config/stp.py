@@ -1208,15 +1208,16 @@ def stp_interface_root_guard_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'false'})
 
 
+# -----------------------OLD PVST INTERFACE_BPDU_GUARD COMMAND------------------------
 # STP interface bpdu guard
 # config spanning_tree interface bpdu_guard
-@spanning_tree_interface.group('bpdu_guard')
-@clicommon.pass_db
-def spanning_tree_interface_bpdu_guard(_db):
-    """Configure STP bpdu guard for interface"""
-    pass
+# @spanning_tree_interface.group('bpdu_guard')
+# @clicommon.pass_db
+# def spanning_tree_interface_bpdu_guard(_db):
+#     """Configure STP bpdu guard for interface"""
+#     pass
 
-# -----------------------OLD PVST INTERFACE_BPDU_GUARD COMMAND------------------------
+
 # config spanning_tree interface bpdu_guard enable <interface_name> [-s]
 # MST CONFIGURATION IN THE STP_PORT TABLE
 # @spanning_tree_interface_bpdu_guard.command('enable')
@@ -1674,7 +1675,7 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
         bpdu_guard_do_disable = 'true'
     else:
         bpdu_guard_do_disable = 'false'
-        
+
     if mode == "pvst":
         fvs = {
             'bpdu_guard': 'true',
