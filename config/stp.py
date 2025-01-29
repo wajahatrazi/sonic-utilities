@@ -1684,17 +1684,6 @@ def mstp_interface_bpdu_guard(_db, state, interface_name, shutdown):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-# This command is unrelated to the interface-level bpdu_guard implementation
-@spanning_tree.command('disable')
-@click.argument('mode', metavar='<mode>', required=True, type=click.Choice(['pvst']))
-@click.pass_context
-def disable(ctx, mode):
-    """Disable a spanning tree mode"""
-    db = ctx.obj['db']
-    if mode == 'pvst':
-        db.mod_entry('STP', 'GLOBAL', {'mode': 'disable'})
-
-
 # # config spanning_tree interface root_guard {enable|disable} <ifname>
 # # This command allow enabling or disabling of root_guard on an interface.
 # @spanning_tree_interface.command('root_guard')
