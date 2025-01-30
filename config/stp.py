@@ -1832,6 +1832,53 @@ def stp_interface_priority(_db, interface_name, priority_value):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
+# config spanning_tree interface cost <ifname> <cost-value>
+
+# Specify configuring the port level priority for root bridge in seconds.
+# Default: 0, range 1-200000000
+# STP interface port cost
+STP_INTERFACE_MIN_COST = 1
+STP_INTERFACE_MAX_COST = 200000000
+STP_INTERFACE_DEFAULT_COST = 0
+
+
+def is_valid_interface_cost(ctx, cost):
+    """Validate if the provided cost is within the valid range"""
+    if cost < STP_INTERFACE_MIN_COST or cost > STP_INTERFACE_MAX_COST:
+        ctx.fail("STP interface cost must be in range 1-200000000")
+
+
+# config spanning_tree interface cost <ifname> <cost-value>
+@spanning_tree_interface.command('cost')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.argument('cost', metavar='<1-200000000>', required=True, type=int)
+@clicommon.pass_db
+def stp_interface_cost(_db, interface_name, cost):
+    """Configure STP port cost for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    check_if_global_stp_enabled(db, ctx)
+    check_if_interface_is_valid(ctx, db, interface_name)
+    is_valid_interface_cost(ctx, cost)
+
+    stp_intf_entry = db.get_entry('STP_PORT', interface_name)
+    mode = get_global_stp_mode(db)
+
+    fvs = {'path_cost': cost}
+
+    # Add additional attributes based on STP mode
+    if mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif mode == "mst":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
+
+    if len(stp_intf_entry) == 0:
+        db.set_entry('STP_PORT', interface_name, fvs)
+    else:
+        db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
+
+
 # # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # # This command allow enabling or disabling of bpdu_guard on an interface.
 # @click.group()
