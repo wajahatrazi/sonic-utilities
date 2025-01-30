@@ -1879,6 +1879,54 @@ def stp_interface_cost(_db, interface_name, cost):
         db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
 
 
+# config spanning_tree interface link-type {P2P|Shared-Lan|Auto} <ifname>
+# Specify configuring the interface at different link types.
+# Default : Auto
+# STP interface link-type
+@spanning_tree_interface.group('link-type')
+@clicommon.pass_db
+def spanning_tree_interface_link_type(_db):
+    """Configure STP link type for interface"""
+    pass
+
+
+@spanning_tree_interface_link_type.command('set')
+@click.argument('link_type', metavar='<P2P|Shared-Lan|Auto>', required=True, type=click.Choice(["P2P", "Shared-Lan", "Auto"], case_sensitive=False))
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_link_type_set(_db, link_type, interface_name):
+    """Configure STP link type for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    # Ensure STP is enabled for the interface
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+
+    # Validate interface
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    # Determine STP mode
+    stp_mode = get_global_stp_mode(db)
+
+    # Map link type options
+    link_type_mapping = {
+        "P2P": "p2p",
+        "Shared-Lan": "shared",
+        "Auto": "auto"
+    }
+
+    # Set appropriate link type
+    fvs = {'link_type': link_type_mapping[link_type]}
+
+    # Add PVST or MST-specific attributes
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mst":
+        fvs.update({'edge_port': 'false'})
+
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
 # # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # # This command allow enabling or disabling of bpdu_guard on an interface.
 # @click.group()
