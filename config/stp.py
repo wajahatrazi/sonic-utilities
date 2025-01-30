@@ -1172,40 +1172,41 @@ def stp_interface_path_cost(_db, interface_name, cost):
     # end
 
 
-# STP interface root guard
-@spanning_tree_interface.group('root_guard')
-@clicommon.pass_db
-def spanning_tree_interface_root_guard(_db):
-    """Configure STP root guard for interface"""
-    pass
+# -----------------------OLD PVST INTERFACE_ROOT_GUARD COMMAND------------------------
+# # STP interface root guard
+# @spanning_tree_interface.group('root_guard')
+# @clicommon.pass_db
+# def spanning_tree_interface_root_guard(_db):
+#     """Configure STP root guard for interface"""
+#     pass
 
 
-# config spanning_tree interface root_guard enable <interface_name>
-# MST CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_root_guard.command('enable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@clicommon.pass_db
-def stp_interface_root_guard_enable(_db, interface_name):
-    """Enable STP root guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true'})
+# # config spanning_tree interface root_guard enable <interface_name>
+# # MST CONFIGURATION IN THE STP_PORT TABLE
+# @spanning_tree_interface_root_guard.command('enable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def stp_interface_root_guard_enable(_db, interface_name):
+#     """Enable STP root guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true'})
 
 
-# config spanning_tree interface root_guard disable <interface_name>
-# mst CONFIGURATION IN THE STP_PORT TABLE
-@spanning_tree_interface_root_guard.command('disable')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@clicommon.pass_db
-def stp_interface_root_guard_disable(_db, interface_name):
-    """Disable STP root guard for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'root_guard': 'false'})
+# # config spanning_tree interface root_guard disable <interface_name>
+# # mst CONFIGURATION IN THE STP_PORT TABLE
+# @spanning_tree_interface_root_guard.command('disable')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @clicommon.pass_db
+# def stp_interface_root_guard_disable(_db, interface_name):
+#     """Disable STP root guard for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'false'})
 
 
 # -----------------------OLD PVST INTERFACE_BPDU_GUARD COMMAND------------------------
@@ -1728,6 +1729,57 @@ def stp_interface_bpdu_guard_disable(_db, interface_name):
     stp_mode = get_global_stp_mode(db)
     fvs = {'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false'}
 
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mstp":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
+
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
+# config spanning_tree interface root_guard {enable|disable} <ifname>
+# This command allow enabling or disabling of root_guard on an interface.
+# STP interface root guard
+@spanning_tree_interface.group('root_guard')
+@clicommon.pass_db
+def spanning_tree_interface_root_guard(_db):
+    """Configure STP root guard for interface"""
+    pass
+
+@spanning_tree_interface_root_guard.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_root_guard_enable(_db, interface_name):
+    """Enable STP root guard for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    stp_mode = get_global_stp_mode(db)
+    fvs = {'root_guard': 'true'}
+
+    # Add mode-specific attributes
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mstp":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
+
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
+@spanning_tree_interface_root_guard.command('disable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_root_guard_disable(_db, interface_name):
+    """Disable STP root guard for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    stp_mode = get_global_stp_mode(db)
+    fvs = {'root_guard': 'false'}
+
+    # Add mode-specific attributes
     if stp_mode == "pvst":
         fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
     elif stp_mode == "mstp":
