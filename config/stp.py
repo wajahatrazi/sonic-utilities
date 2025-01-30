@@ -1110,29 +1110,30 @@ def is_valid_interface_priority(ctx, intf_priority):
         ctx.fail("STP interface priority must be in range 0-240")
 
 
+# -----------------------OLD PVST INTERFACE PRIORITY COMMAND------------------------
 # config spanning_tree interface priority <interface_name> <value: 0-240>
-@spanning_tree_interface.command('priority')
-@click.argument('interface_name', metavar='<interface_name>', required=True)
-@click.argument('priority', metavar='<0-240>', required=True, type=int)
-@clicommon.pass_db
-def stp_interface_priority(_db, interface_name, priority):
-    """Configure STP port priority for interface"""
-    ctx = click.get_current_context()
-    db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
-    check_if_interface_is_valid(ctx, db, interface_name)
-    is_valid_interface_priority(ctx, priority)
-    curr_intf_proirty = db.get_entry('STP_PORT', interface_name).get('priority')
-    db.mod_entry('STP_PORT', interface_name, {'priority': priority})
-    # update interface priority in all stp_vlan_intf entries if entry exists
-    for vlan, intf in db.get_table('STP_VLAN_PORT'):
-        if intf == interface_name:
-            vlan_intf_key = "{}|{}".format(vlan, interface_name)
-            vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
-            if len(vlan_intf_entry) != 0:
-                vlan_intf_priority = vlan_intf_entry.get('priority')
-                if curr_intf_proirty == vlan_intf_priority:
-                    db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'priority': priority})
+# @spanning_tree_interface.command('priority')
+# @click.argument('interface_name', metavar='<interface_name>', required=True)
+# @click.argument('priority', metavar='<0-240>', required=True, type=int)
+# @clicommon.pass_db
+# def stp_interface_priority(_db, interface_name, priority):
+#     """Configure STP port priority for interface"""
+#     ctx = click.get_current_context()
+#     db = _db.cfgdb
+#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
+#     check_if_interface_is_valid(ctx, db, interface_name)
+#     is_valid_interface_priority(ctx, priority)
+#     curr_intf_proirty = db.get_entry('STP_PORT', interface_name).get('priority')
+#     db.mod_entry('STP_PORT', interface_name, {'priority': priority})
+#     # update interface priority in all stp_vlan_intf entries if entry exists
+#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
+#         if intf == interface_name:
+#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
+#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
+#             if len(vlan_intf_entry) != 0:
+#                 vlan_intf_priority = vlan_intf_entry.get('priority')
+#                 if curr_intf_proirty == vlan_intf_priority:
+#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'priority': priority})
     # end
 
 
