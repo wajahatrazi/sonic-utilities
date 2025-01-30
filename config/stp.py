@@ -1891,7 +1891,12 @@ def spanning_tree_interface_link_type(_db):
 
 
 @spanning_tree_interface_link_type.command('set')
-@click.argument('link_type', metavar='<P2P|Shared-Lan|Auto>', required=True, type=click.Choice(["P2P", "Shared-Lan", "Auto"], case_sensitive=False))
+@click.argument(
+    'link_type',
+    metavar='<P2P|Shared-Lan|Auto>',
+    required=True,
+    type=click.Choice(["P2P", "Shared-Lan", "Auto"], case_sensitive=False)
+)
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
 def stp_interface_link_type_set(_db, link_type, interface_name):
