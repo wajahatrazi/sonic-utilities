@@ -1794,6 +1794,7 @@ def stp_interface_root_guard_disable(_db, interface_name):
 # Specify configuring the port level priority for root bridge in seconds.
 # Default: 128, range 0-240
 # STP interface priority
+# STP interface priority
 @spanning_tree_interface.command('priority')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority_value', metavar='<0-240>', required=True, type=int)
@@ -1814,7 +1815,7 @@ def stp_interface_priority(_db, interface_name, priority_value):
 
     # Validate the priority range
     if priority_value < 0 or priority_value > 240:
-        ctx.fail("STP port priority must be in range 0-240")
+        ctx.fail("STP interface priority must be in range 0-240")
 
     # Fetch STP mode (PVST or MSTP)
     stp_mode = get_global_stp_mode(db)
