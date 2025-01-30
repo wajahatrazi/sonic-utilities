@@ -1650,6 +1650,42 @@ def mstp_interface_edgeport(_db, state, interface_name):
 # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # STP interface bpdu guard
 # config spanning_tree interface bpdu_guard
+@spanning_tree_interface.command('enable')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@clicommon.pass_db
+def stp_interface_enable(_db, interface_name):
+    """Enable STP for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+    check_if_global_stp_enabled(db, ctx)
+
+    if is_stp_enabled_for_interface(db, interface_name):
+        ctx.fail("STP is already enabled for " + interface_name)
+    
+    check_if_interface_is_valid(ctx, db, interface_name)
+    
+    stp_intf_entry = db.get_entry('STP_PORT', interface_name)
+    mode = get_global_stp_mode(db)
+
+    fvs = {'enabled': 'true',
+           'root_guard': 'false',
+           'bpdu_guard': 'false',
+           'bpdu_guard_do_disable': 'false'}
+    
+    if mode == "pvst":
+        fvs.update({'portfast': 'false',
+                    'uplink_fast': 'false'})
+    elif mode == "mst":
+        fvs.update({'edge_port': 'false',
+                    'link_type': 'auto'}) # Adjusted values based on HLD
+
+    if len(stp_intf_entry) == 0:
+        db.set_entry('STP_PORT', interface_name, fvs)
+    else:
+        db.mod_entry('STP_PORT', interface_name, {'enabled': 'true'})
+
+
+# STP interface bpdu guard
 @spanning_tree_interface.group('bpdu_guard')
 @clicommon.pass_db
 def spanning_tree_interface_bpdu_guard(_db):
@@ -1657,8 +1693,6 @@ def spanning_tree_interface_bpdu_guard(_db):
     pass
 
 
-# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
-# PVST and MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_bpdu_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
@@ -1667,35 +1701,22 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     """Enable STP bpdu guard for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
-
-    mode = get_global_stp_mode(db)
-    if shutdown is True:
-        bpdu_guard_do_disable = 'true'
+    stp_mode = get_global_stp_mode(db)
+    fvs = {'bpdu_guard': 'true'}
+    if shutdown:
+        fvs['bpdu_guard_do_disable'] = 'true'
     else:
-        bpdu_guard_do_disable = 'false'
+        fvs['bpdu_guard_do_disable'] = 'false'
 
-    if mode == "pvst":
-        fvs = {
-            'bpdu_guard': 'true',
-            'bpdu_guard_do_disable': bpdu_guard_do_disable
-        }
-    elif mode == "mstp":
-        fvs = {
-            'bpdu_guard': 'true',
-            'bpdu_guard_do_disable': bpdu_guard_do_disable,
-            'edge_port': 'false',
-            'link_type': 'auto'
-        }
-    else:
-        ctx.fail("Unsupported STP mode")
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mstp":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
 
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-# config spanning_tree interface bpdu_guard disable <interface_name>
-# PVST and MST CONFIGURATION IN THE STP_PORT TABLE
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1703,22 +1724,14 @@ def stp_interface_bpdu_guard_disable(_db, interface_name):
     """Disable STP bpdu guard for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
-    check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
+    stp_mode = get_global_stp_mode(db)
+    fvs = {'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false'}
 
-    mode = get_global_stp_mode(db)
-    if mode == "pvst":
-        fvs = {
-            'bpdu_guard': 'false'
-        }
-    elif mode == "mstp":
-        fvs = {
-            'bpdu_guard': 'false',
-            'edge_port': 'false',
-            'link_type': 'auto'
-        }
-    else:
-        ctx.fail("Unsupported STP mode")
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mstp":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
 
     db.mod_entry('STP_PORT', interface_name, fvs)
 
