@@ -1789,6 +1789,47 @@ def stp_interface_root_guard_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
+# config spanning_tree interface priority <ifname> <port_priority-value>
+# Specify configuring the port level priority for root bridge in seconds.
+# Default: 128, range 0-240
+# STP interface priority
+@spanning_tree_interface.command('priority')
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.argument('priority_value', metavar='<0-240>', required=True, type=int)
+@clicommon.pass_db
+def stp_interface_priority(_db, interface_name, priority_value):
+    """Configure STP port priority for interface"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    # Validate if STP is enabled globally
+    check_if_global_stp_enabled(db, ctx)
+
+    # Validate if STP is enabled for the given interface
+    check_if_stp_enabled_for_interface(ctx, db, interface_name)
+
+    # Ensure interface is valid
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    # Validate the priority range
+    if priority_value < 0 or priority_value > 240:
+        ctx.fail("STP port priority must be in range 0-240")
+
+    # Fetch STP mode (PVST or MSTP)
+    stp_mode = get_global_stp_mode(db)
+
+    # Constructing field values to be updated in STP_PORT table
+    fvs = {'priority': str(priority_value)}
+
+    if stp_mode == "pvst":
+        fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
+    elif stp_mode == "mst":
+        fvs.update({'edge_port': 'false', 'link_type': 'auto'})
+
+    # Update the database entry
+    db.mod_entry('STP_PORT', interface_name, fvs)
+
+
 # # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
 # # This command allow enabling or disabling of bpdu_guard on an interface.
 # @click.group()
