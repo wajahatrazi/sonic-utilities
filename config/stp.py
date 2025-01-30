@@ -1845,7 +1845,7 @@ STP_INTERFACE_DEFAULT_COST = 0
 def is_valid_interface_cost(ctx, cost):
     """Validate if the provided cost is within the valid range"""
     if cost < STP_INTERFACE_MIN_COST or cost > STP_INTERFACE_MAX_COST:
-        ctx.fail("STP interface cost must be in range 1-200000000")
+        ctx.fail("STP interface path cost must be in range 1-200000000")
 
 
 # config spanning_tree interface cost <ifname> <cost-value>
