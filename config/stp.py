@@ -1746,6 +1746,7 @@ def spanning_tree_interface_root_guard(_db):
     """Configure STP root guard for interface"""
     pass
 
+
 @spanning_tree_interface_root_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
