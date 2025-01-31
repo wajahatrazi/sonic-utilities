@@ -2,7 +2,6 @@ import pytest
 import click
 from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
-from click import Context, ClickException
 from config.stp import (
     get_intf_list_in_vlan_member_table,
     is_valid_root_guard_timeout,
@@ -523,37 +522,44 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 def test_stp_global_max_hops():
     """Test case for stp_global_max_hops command"""
 
-    # Mocking the click context and database
-    mock_ctx = MagicMock(spec=Context)
+    # Initialize Click test runner
+    runner = CliRunner()
+
+    # Mock database
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
     # Case 1: STP is not enabled
     mock_db.cfgdb.get_entry.return_value = {}
-    with pytest.raises(ClickException, match="Global STP is not enabled"):
-        stp_global_max_hops.invoke(mock_ctx, mock_db, 20)
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "Global STP is not enabled" in result.output
 
     # Case 2: PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
-    with pytest.raises(ClickException, match="Max hops not supported for PVST"):
-        stp_global_max_hops.invoke(mock_ctx, mock_db, 20)
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "Max hops not supported for PVST" in result.output
 
     # Case 3: MST mode with valid max_hops
     mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-    for valid_hops in range(1, 41):
+    for valid_hops in range(1, 41):  # Valid range 1-40
         mock_db.cfgdb.mod_entry.reset_mock()
-        stp_global_max_hops.invoke(mock_ctx, mock_db, valid_hops)
+        result = runner.invoke(stp_global_max_hops, [str(valid_hops)], obj=mock_db)
+        assert result.exit_code == 0
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': valid_hops})
 
     # Case 4: MST mode with invalid max_hops (out of range)
-    for invalid_hops in [0, 41, -5, 100]:
-        with pytest.raises(ClickException, match="STP max hops must be in range 1-40"):
-            stp_global_max_hops.invoke(mock_ctx, mock_db, invalid_hops)
+    for invalid_hops in [0, 41, -5, 100]:  # Out-of-range values
+        result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
+        assert result.exit_code == 2
+        assert "STP max hops must be in range 1-40" in result.output
 
     # Case 5: Invalid STP mode
     mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid_mode'}
-    with pytest.raises(ClickException, match="Invalid STP mode configured"):
-        stp_global_max_hops.invoke(mock_ctx, mock_db, 20)
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "Invalid STP mode configured" in result.output
 
 
 # Constants for STP default values
