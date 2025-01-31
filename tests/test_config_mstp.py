@@ -525,29 +525,32 @@ def test_stp_global_max_hops():
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
-    # STP is NOT enabled (but function checks PVST first)
+    # ✅ Case 1: STP is NOT enabled (but function checks PVST first)
     mock_db.cfgdb.get_entry.return_value = {}  # No mode set
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output
+    assert "Max hops not supported for PVST" in result.output  # ✅ Function checks PVST first
 
-    # PVST mode - should fail
+    # ✅ Case 2: PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
     assert "Max hops not supported for PVST" in result.output
 
-    # MST mode - should succeed
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+    # ✅ Case 3: MST mode - should succeed
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}  
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 0  # No error expected
+    assert result.exit_code == 0  # Expecting success
 
-    # Invalid MST max_hops range
+    # ✅ Ensure DB modification was called
+    mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': 20})
+
+    # ✅ Case 4: Invalid MST max_hops range
     result = runner.invoke(stp_global_max_hops, ['50'], obj=mock_db)
     assert result.exit_code == 2
     assert "STP max hops must be in range 1-40" in result.output
 
-    # Invalid mode
+    # ✅ Case 5: Invalid mode
     mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid'}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
