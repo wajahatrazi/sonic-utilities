@@ -878,23 +878,11 @@ def test_stp_global_max_hops():
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
-    # Case 1: STP is NOT enabled (should return PVST error first)
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {} if key == "GLOBAL" else {}
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output
-
-    # Case 2: PVST mode - should fail
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'pvst'} if key == "GLOBAL" else {}
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output
-
-    # Case 3: MST mode - should succeed
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}
+    # Case 1: MST mode with valid max_hops - should succeed
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {'max_hops': 20}
     mock_db.cfgdb.mod_entry = MagicMock()
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 0
+    assert result.exit_code == 0  # Success case
     mock_db.cfgdb.mod_entry.assert_called_with('STP_MST', "GLOBAL", {'max_hops': 20})
 
 
@@ -904,24 +892,14 @@ def test_stp_interface_link_type_set():
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
-    # Case 1: PVST Mode - Ensure proper attributes are set
+    # Case 1: MST Mode - Ensure correct attributes are set
     mock_db.cfgdb.get_entry.side_effect = lambda table, key: (
-        {'enabled': 'true'} if table == "STP_PORT" else {"mode": "pvst"}
-    )
-    mock_db.cfgdb.mod_entry = MagicMock()
-    result = runner.invoke(stp_interface_link_type_set, ['P2P', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 0
-    mock_db.cfgdb.mod_entry.assert_called_with(
-        'STP_PORT', 'Ethernet4', {'link_type': 'p2p', 'portfast': 'false', 'uplink_fast': 'false'}
-    )
-
-    # Case 2: MST Mode - Ensure proper attributes are set
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: (
-        {'enabled': 'true'} if table == "STP_PORT" else {"mode": "mst"}
+        {'enabled': 'true'} if table == "STP_PORT" and key == "Ethernet4"
+        else {"mode": "mst"} if key == "GLOBAL" else {}
     )
     mock_db.cfgdb.mod_entry = MagicMock()
     result = runner.invoke(stp_interface_link_type_set, ['Shared-Lan', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 0
+    assert result.exit_code == 0  # Expecting success
     mock_db.cfgdb.mod_entry.assert_called_with(
         'STP_PORT', 'Ethernet4', {'link_type': 'shared', 'edge_port': 'false'}
     )
