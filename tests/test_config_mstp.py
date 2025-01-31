@@ -522,26 +522,23 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 def test_stp_global_max_hops():
     """Test case for stp_global_max_hops command"""
 
-    # Initialize Click test runner
     runner = CliRunner()
-
-    # Mock database
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
-    # Case 1: STP is not enabled
-    mock_db.cfgdb.get_entry.return_value = {}
+    # STP is NOT enabled
+    mock_db.cfgdb.get_entry.return_value = {}  # No mode set = STP disabled
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
-    assert "Global STP is not enabled" in result.output
+    assert "Global STP is not enabled" in result.output  
 
-    # Case 2: PVST mode - should fail
+    # PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
     assert "Max hops not supported for PVST" in result.output
 
-    # Case 3: MST mode with valid max_hops
+    # MST mode with valid max_hops
     mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
     for valid_hops in range(1, 41):  # Valid range 1-40
         mock_db.cfgdb.mod_entry.reset_mock()
@@ -549,13 +546,13 @@ def test_stp_global_max_hops():
         assert result.exit_code == 0
         mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': valid_hops})
 
-    # Case 4: MST mode with invalid max_hops (out of range)
+    # MST mode with invalid max_hops (out of range)
     for invalid_hops in [0, 41, -5, 100]:  # Out-of-range values
         result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
         assert result.exit_code == 2
         assert "STP max hops must be in range 1-40" in result.output
 
-    # Case 5: Invalid STP mode
+    # Invalid STP mode
     mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid_mode'}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
