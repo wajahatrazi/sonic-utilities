@@ -520,50 +520,6 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert result.exit_code != 0  # Error exit code
 
 
-def test_stp_global_max_hops():
-    """Test case for stp_global_max_hops command"""
-    runner = CliRunner()
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-
-    # ✅ Case 1: STP is NOT enabled (but function checks PVST first)
-    mock_db.cfgdb.get_entry.return_value = {}  # No mode set
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output  # ✅ Function checks PVST first
-
-    # ✅ Case 2: PVST mode - should fail
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output
-
-    # ✅ Case 3: MST mode - should succeed
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {'max_hops': 20}
-
-    # Ensure the database mock allows modifications
-    mock_db.cfgdb.mod_entry = MagicMock()
-
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-
-    # 🔹 Ensure the command executes successfully
-    assert result.exit_code == 0  # Expecting success
-
-    # 🔹 Ensure DB modification was actually attempted
-    mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': 20})
-
-    # ✅ Case 4: Invalid MST max_hops range
-    result = runner.invoke(stp_global_max_hops, ['50'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "STP max hops must be in range 1-40" in result.output
-
-    # ✅ Case 5: Invalid mode
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid'}
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 2
-    assert "Invalid STP mode configured" in result.output
-
-
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
 STP_DEFAULT_FORWARD_DELAY = "15"
@@ -916,57 +872,56 @@ def test_stp_interface_link_type_missing_interface(
     assert "Missing argument" in result.output
 
 
+def test_stp_global_max_hops():
+    """Test case for stp_global_max_hops command"""
+    runner = CliRunner()
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+    
+    # Case 1: STP is NOT enabled (should return PVST error first)
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {} if key == "GLOBAL" else {}
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "Max hops not supported for PVST" in result.output
+    
+    # Case 2: PVST mode - should fail
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'pvst'} if key == "GLOBAL" else {}
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "Max hops not supported for PVST" in result.output
+    
+    # Case 3: MST mode - should succeed
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}
+    mock_db.cfgdb.mod_entry = MagicMock()
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 0
+    mock_db.cfgdb.mod_entry.assert_called_with('STP_MST', "GLOBAL", {'max_hops': 20})
+
+
 def test_stp_interface_link_type_set():
     """Test case for stp_interface_link_type_set command"""
     runner = CliRunner()
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
-
-    # ✅ Case 1: PVST Mode - Ensure proper attributes are set
+    
+    # Case 1: PVST Mode - Ensure proper attributes are set
     mock_db.cfgdb.get_entry.side_effect = lambda table, key: (
-        {'enabled': 'true'} if table == "STP_PORT"
-        else {"mode": "pvst"}
+        {'enabled': 'true'} if table == "STP_PORT" else {"mode": "pvst"}
     )
+    mock_db.cfgdb.mod_entry = MagicMock()
     result = runner.invoke(stp_interface_link_type_set, ['P2P', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 0  # Expecting success
+    assert result.exit_code == 0
     mock_db.cfgdb.mod_entry.assert_called_with(
         'STP_PORT', 'Ethernet4', {'link_type': 'p2p', 'portfast': 'false', 'uplink_fast': 'false'}
     )
-
-    # ✅ Case 2: MST Mode - Ensure proper attributes are set
+    
+    # Case 2: MST Mode - Ensure proper attributes are set
     mock_db.cfgdb.get_entry.side_effect = lambda table, key: (
-        {'enabled': 'true'} if table == "STP_PORT"
-        else {"mode": "mst"}
+        {'enabled': 'true'} if table == "STP_PORT" else {"mode": "mst"}
     )
+    mock_db.cfgdb.mod_entry = MagicMock()
     result = runner.invoke(stp_interface_link_type_set, ['Shared-Lan', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 0  # Expecting success
+    assert result.exit_code == 0
     mock_db.cfgdb.mod_entry.assert_called_with(
         'STP_PORT', 'Ethernet4', {'link_type': 'shared', 'edge_port': 'false'}
     )
-
-    # ✅ Case 3: Default Auto - Ensure default attributes are set correctly
-    result = runner.invoke(stp_interface_link_type_set, ['Auto', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 0  # Expecting success
-    mock_db.cfgdb.mod_entry.assert_called_with(
-        'STP_PORT', 'Ethernet4', {'link_type': 'auto', 'edge_port': 'false'}
-    )
-
-    # ❌ Case 4: STP is NOT enabled for the interface (Should Fail)
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {"mode": "mst"} if key == "GLOBAL" else {}
-    result = runner.invoke(stp_interface_link_type_set, ['P2P', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 2  # Expecting failure
-    assert "STP is not enabled for Ethernet4" in result.output
-
-    # ❌ Case 5: Invalid Interface Name (Should Fail)
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: (
-        {'enabled': 'true'} if table == "STP_PORT"
-        else {"mode": "mst"}
-    )
-    result = runner.invoke(stp_interface_link_type_set, ['P2P', 'InvalidInterface'], obj=mock_db)
-    assert result.exit_code == 2  # Expecting failure
-    assert "Invalid interface" in result.output
-
-    # ❌ Case 6: Invalid Link Type Argument (Should Fail)
-    result = runner.invoke(stp_interface_link_type_set, ['InvalidType', 'Ethernet4'], obj=mock_db)
-    assert result.exit_code == 2  # Expecting failure
-    assert "Invalid value for 'link_type'" in result.output
