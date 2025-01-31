@@ -538,7 +538,7 @@ def test_stp_global_max_hops():
     assert "Max hops not supported for PVST" in result.output
 
     # ✅ Case 3: MST mode - should succeed
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}  
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 0  # Expecting success
 
