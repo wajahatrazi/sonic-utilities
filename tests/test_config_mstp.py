@@ -970,4 +970,3 @@ def test_stp_interface_link_type_set():
     result = runner.invoke(stp_interface_link_type_set, ['InvalidType', 'Ethernet4'], obj=mock_db)
     assert result.exit_code == 2  # Expecting failure
     assert "Invalid value for 'link_type'" in result.output
-
