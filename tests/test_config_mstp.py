@@ -530,7 +530,7 @@ def test_stp_global_max_hops():
     mock_db.cfgdb.get_entry.return_value = {}  # No mode set = STP disabled
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
-    assert "Global STP is not enabled" in result.output  
+    assert "Global STP is not enabled" in result.output
 
     # PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
