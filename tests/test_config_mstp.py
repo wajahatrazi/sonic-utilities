@@ -529,7 +529,7 @@ def test_stp_global_max_hops():
     mock_db.cfgdb.get_entry.return_value = {}  # No mode set
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
-    assert "Max hops not supported for PVST" in result.output  
+    assert "Max hops not supported for PVST" in result.output
 
     # PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
