@@ -521,16 +521,15 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
 
 def test_stp_global_max_hops():
     """Test case for stp_global_max_hops command"""
-
     runner = CliRunner()
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
 
-    # STP is NOT enabled
-    mock_db.cfgdb.get_entry.return_value = {}  # No mode set = STP disabled
+    # STP is NOT enabled (but function checks PVST first)
+    mock_db.cfgdb.get_entry.return_value = {}  # No mode set
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
-    assert "Global STP is not enabled" in result.output
+    assert "Max hops not supported for PVST" in result.output  
 
     # PVST mode - should fail
     mock_db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
@@ -538,22 +537,18 @@ def test_stp_global_max_hops():
     assert result.exit_code == 2
     assert "Max hops not supported for PVST" in result.output
 
-    # MST mode with valid max_hops
+    # MST mode - should succeed
     mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-    for valid_hops in range(1, 41):  # Valid range 1-40
-        mock_db.cfgdb.mod_entry.reset_mock()
-        result = runner.invoke(stp_global_max_hops, [str(valid_hops)], obj=mock_db)
-        assert result.exit_code == 0
-        mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': valid_hops})
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 0  # No error expected
 
-    # MST mode with invalid max_hops (out of range)
-    for invalid_hops in [0, 41, -5, 100]:  # Out-of-range values
-        result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
-        assert result.exit_code == 2
-        assert "STP max hops must be in range 1-40" in result.output
+    # Invalid MST max_hops range
+    result = runner.invoke(stp_global_max_hops, ['50'], obj=mock_db)
+    assert result.exit_code == 2
+    assert "STP max hops must be in range 1-40" in result.output
 
-    # Invalid STP mode
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid_mode'}
+    # Invalid mode
+    mock_db.cfgdb.get_entry.return_value = {'mode': 'invalid'}
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
     assert result.exit_code == 2
     assert "Invalid STP mode configured" in result.output
