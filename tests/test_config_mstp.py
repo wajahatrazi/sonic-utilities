@@ -9,6 +9,7 @@ from config.stp import (
     stp_interface_link_type_auto,
     stp_interface_link_type_shared,
     stp_interface_edgeport_disable,
+    stp_interface_link_type_set,
     spanning_tree_enable,
     stp_interface_edgeport_enable,
     stp_global_max_hops,
@@ -538,11 +539,17 @@ def test_stp_global_max_hops():
     assert "Max hops not supported for PVST" in result.output
 
     # ✅ Case 3: MST mode - should succeed
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {'max_hops': 20}
+    
+    # Ensure the database mock allows modifications
+    mock_db.cfgdb.mod_entry = MagicMock()
+
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+
+    # 🔹 Ensure the command executes successfully
     assert result.exit_code == 0  # Expecting success
 
-    # ✅ Ensure DB modification was called
+    # 🔹 Ensure DB modification was actually attempted
     mock_db.cfgdb.mod_entry.assert_called_once_with('STP_MST', "GLOBAL", {'max_hops': 20})
 
     # ✅ Case 4: Invalid MST max_hops range
@@ -907,3 +914,34 @@ def test_stp_interface_link_type_missing_interface(
     # Assert
     assert result.exit_code != 0
     assert "Missing argument" in result.output
+
+
+def test_stp_interface_link_type_set():
+    """Test case for stp_interface_link_type_set command"""
+    runner = CliRunner()
+    mock_db = MagicMock()
+    mock_db.cfgdb = MagicMock()
+
+    # Case 1: PVST Mode - Ensure proper attributes are set
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'enabled': 'true'} if table == "STP_PORT" else {"mode": "pvst"}
+    result = runner.invoke(stp_interface_link_type_set, ['P2P', 'Ethernet4'], obj=mock_db)
+    assert result.exit_code == 0  # Expecting success
+    mock_db.cfgdb.mod_entry.assert_called_with(
+        'STP_PORT', 'Ethernet4', {'link_type': 'p2p', 'portfast': 'false', 'uplink_fast': 'false'}
+    )
+
+    # Case 2: MST Mode - Ensure proper attributes are set
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'enabled': 'true'} if table == "STP_PORT" else {"mode": "mst"}
+    result = runner.invoke(stp_interface_link_type_set, ['Shared-Lan', 'Ethernet4'], obj=mock_db)
+    assert result.exit_code == 0  # Expecting success
+    mock_db.cfgdb.mod_entry.assert_called_with(
+        'STP_PORT', 'Ethernet4', {'link_type': 'shared', 'edge_port': 'false'}
+    )
+
+    # Case 3: Default Auto - Ensure default attributes are set correctly
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'enabled': 'true'} if table == "STP_PORT" else {"mode": "mst"}
+    result = runner.invoke(stp_interface_link_type_set, ['Auto', 'Ethernet4'], obj=mock_db)
+    assert result.exit_code == 0  # Expecting success
+    mock_db.cfgdb.mod_entry.assert_called_with(
+        'STP_PORT', 'Ethernet4', {'link_type': 'auto', 'edge_port': 'false'}
+    )
