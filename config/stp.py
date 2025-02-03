@@ -1636,9 +1636,11 @@ def stp_interface_enable(_db, interface_name):
             'uplink_fast': 'false'
         })
     else:
-        ctx.fail("No STP mode selected.")
+        click.echo("No STP mode selected. Please select a mode first.")
+        return
 
     db.set_entry('STP_PORT', interface_name, fvs)
+    click.echo(f"Mode {current_mode} is enabled for interface {interface_name}")
 
 
 # Command: config spanning_tree interface {disable} <ifname>
@@ -1656,9 +1658,6 @@ def stp_interface_disable(_db, interface_name):
     current_mode = stp_global_entry.get('mode', 'none')
     click.echo(f"Current STP mode: {current_mode}")
 
-    if current_mode == 'none':
-        ctx.fail("Global STP mode is not enabled")
-
     check_if_global_stp_enabled(db, ctx)
     check_if_interface_is_valid(ctx, db, interface_name)
 
@@ -1667,7 +1666,7 @@ def stp_interface_disable(_db, interface_name):
         db.set_entry('STP_PORT', interface_name, {'enabled': 'false'})
         click.echo(f"STP mode {current_mode} is disabled for {interface_name}")
     else:
-        click.echo("No STP mode selected")
+        click.echo("No STP mode selected. Please select a mode first.")
 
 
 # config spanning_tree interface edgeport {enable|disable} <ifname>
