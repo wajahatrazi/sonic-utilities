@@ -1656,6 +1656,9 @@ def stp_interface_disable(_db, interface_name):
     current_mode = stp_global_entry.get('mode', 'none')
     click.echo(f"Current STP mode: {current_mode}")
 
+    if current_mode == 'none':
+        ctx.fail("Global STP mode is not enabled")
+
     check_if_global_stp_enabled(db, ctx)
     check_if_interface_is_valid(ctx, db, interface_name)
 
