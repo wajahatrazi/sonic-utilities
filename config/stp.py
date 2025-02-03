@@ -1688,7 +1688,7 @@ def stp_interface_enable(_db, interface_name):
 
     if is_stp_enabled_for_interface(db, interface_name):
         ctx.fail(f"STP is already enabled for {interface_name}")
-    
+
     check_if_interface_is_valid(ctx, db, interface_name)
 
     # Set the common attributes
