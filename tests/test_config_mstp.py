@@ -9,7 +9,7 @@ from config.stp import (
     stp_interface_link_type_auto,
     stp_interface_link_type_shared,
     stp_interface_edgeport_disable,
-    stp_interface_link_type_set,
+    # stp_interface_link_type_set,
     spanning_tree_enable,
     stp_interface_edgeport_enable,
     stp_global_max_hops,
