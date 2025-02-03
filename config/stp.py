@@ -1594,44 +1594,77 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 
 
 # INTERFACE-LEVEL COMMANDS
-# Command: config spanning_tree interface {enable|disable} <ifname>
+# Command: config spanning_tree interface {enable} <ifname>
 # Configure an interface for MSTP.
 
 
 @spanning_tree_interface.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-def mstp_interface_enable(_db, interface_name):
-    """Enable MSTP for interface"""
+def stp_interface_enable(_db, interface_name):
+    """Enable STP for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
+    # Check and display the current STP mode
+    stp_global_entry = db.get_entry('STP_GLOBAL', 'GLOBAL')
+    current_mode = stp_global_entry.get('mode', 'none')
+    click.echo(f"Current STP mode: {current_mode}")
+
     check_if_global_stp_enabled(db, ctx)
     if is_stp_enabled_for_interface(db, interface_name):
-        ctx.fail("MSTP is already enabled for " + interface_name)
+        ctx.fail(f"STP is already enabled for {interface_name}")
     check_if_interface_is_valid(ctx, db, interface_name)
-    stp_intf_entry = db.get_entry('STP_PORT', interface_name)
-    if len(stp_intf_entry) == 0:
-        fvs = {'enabled': 'true',
-               'root_guard': 'false',
-               'bpdu_guard': 'false',
-               'bpdu_guard_do_disable': 'false',
-               'portfast': 'false',
-               'uplink_fast': 'false'}
-        db.set_entry('STP_PORT', interface_name, fvs)
+
+    # Set the common attributes
+    fvs = {
+        'enabled': 'true',
+        'root_guard': 'false',
+        'bpdu_guard': 'false',
+        'bpdu_guard_do_disable': 'false'
+    }
+
+    # Add mode-specific attributes
+    if current_mode == 'mstp':
+        fvs.update({
+            'edge_port': 'false',
+            'link_type': 'auto'
+        })
+    elif current_mode == 'pvst':
+        fvs.update({
+            'portfast': 'false',
+            'uplink_fast': 'false'
+        })
     else:
-        db.mod_entry('STP_PORT', interface_name, {'enabled': 'true'})
+        ctx.fail("No STP mode selected.")
+
+    db.set_entry('STP_PORT', interface_name, fvs)
 
 
+# Command: config spanning_tree interface {disable} <ifname>
+# Configure an interface for MSTP.
 @spanning_tree_interface.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-def mstp_interface_disable(_db, interface_name):
-    """Disable MSTP for interface"""
+def stp_interface_disable(_db, interface_name):
+    """Disable STP for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
+    # Check and display the current STP mode
+    stp_global_entry = db.get_entry('STP_GLOBAL', 'GLOBAL')
+    current_mode = stp_global_entry.get('mode', 'none')
+    click.echo(f"Current STP mode: {current_mode}")
+
     check_if_global_stp_enabled(db, ctx)
     check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'enabled': 'false'})
+
+    # Clear all entries for the interface except the disable attribute
+    if current_mode in ['mstp', 'pvst']:
+        db.set_entry('STP_PORT', interface_name, {'enabled': 'false'})
+        click.echo(f"STP mode {current_mode} is disabled for {interface_name}")
+    else:
+        click.echo("No STP mode selected")
 
 
 # config spanning_tree interface edgeport {enable|disable} <ifname>
