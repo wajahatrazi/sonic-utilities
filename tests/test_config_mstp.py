@@ -879,10 +879,12 @@ def test_stp_global_max_hops():
     mock_db.cfgdb = MagicMock()
 
     # Case 1: MST mode with valid max_hops - should succeed
-    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {'max_hops': 20}
+    mock_db.cfgdb.get_entry.side_effect = lambda table, key: {'mode': 'mst'} if key == "GLOBAL" else {}
     mock_db.cfgdb.mod_entry = MagicMock()
+    
     result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 0  # Success case
+
+    assert result.exit_code == 0  # Expecting success
     mock_db.cfgdb.mod_entry.assert_called_with('STP_MST', "GLOBAL", {'max_hops': 20})
 
 
@@ -898,7 +900,9 @@ def test_stp_interface_link_type_set():
         else {"mode": "mst"} if key == "GLOBAL" else {}
     )
     mock_db.cfgdb.mod_entry = MagicMock()
+
     result = runner.invoke(stp_interface_link_type_set, ['Shared-Lan', 'Ethernet4'], obj=mock_db)
+
     assert result.exit_code == 0  # Expecting success
     mock_db.cfgdb.mod_entry.assert_called_with(
         'STP_PORT', 'Ethernet4', {'link_type': 'shared', 'edge_port': 'false'}
