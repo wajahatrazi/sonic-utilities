@@ -1683,9 +1683,12 @@ def stp_interface_enable(_db, interface_name):
     current_mode = stp_global_entry.get('mode', 'none')
     click.echo(f"Current STP mode: {current_mode}")
 
-    check_if_global_stp_enabled(db, ctx)
+    if current_mode == 'none':
+        ctx.fail("Global STP mode is not enabled")
+
     if is_stp_enabled_for_interface(db, interface_name):
         ctx.fail(f"STP is already enabled for {interface_name}")
+    
     check_if_interface_is_valid(ctx, db, interface_name)
 
     # Set the common attributes
@@ -1711,6 +1714,7 @@ def stp_interface_enable(_db, interface_name):
         ctx.fail("No STP mode selected.")
 
     db.set_entry('STP_PORT', interface_name, fvs)
+    click.echo(f"STP mode {current_mode} is enabled for {interface_name}")
 
 
 @spanning_tree_interface.command('disable')
@@ -1729,7 +1733,6 @@ def stp_interface_disable(_db, interface_name):
     if current_mode == 'none':
         ctx.fail("Global STP mode is not enabled")
 
-    check_if_global_stp_enabled(db, ctx)
     check_if_interface_is_valid(ctx, db, interface_name)
 
     # Clear all entries for the interface except the disable attribute
