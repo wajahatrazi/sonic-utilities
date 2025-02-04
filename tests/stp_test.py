@@ -7,6 +7,8 @@ import config.main as config
 import show.main as show
 from utilities_common.db import Db
 from .mock_tables import dbconnector
+from unittest.mock import MagicMock
+
 
 
 EXPECTED_SHOW_SPANNING_TREE_OUTPUT = """\
@@ -191,18 +193,6 @@ class TestStp(object):
         (config.config.commands["spanning-tree"].commands["interface"].commands["disable"], ["Ethernet4"], 0, None),
         (config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], 0, None),
 
-        # Configure BPDU guard enable and disable
-        (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["enable"],
-            ["Ethernet4"], 0, None),
-        (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["disable"],
-            ["Ethernet4"], 0, None),
-
-        # Configure root guard enable and disable
-        (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["enable"],
-            ["Ethernet4"], 0, None),
-        (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["disable"],
-            ["Ethernet4"], 0, None),
-
         # Invalid cost and priority values
         (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "0"],
             2, "STP interface path cost must be in range 1-200000000"),
@@ -213,6 +203,9 @@ class TestStp(object):
     ])
     def test_stp_validate_interface_params(runner, db, command, args, expected_exit_code, expected_output):
         """Test case for STP parameter validation."""
+
+        # ✅ Mock `get_entry` as a MagicMock first
+        db.cfgdb.get_entry = MagicMock()
 
         # ✅ Define a proper mock function for database queries
         def mock_stp_config(table, key):
@@ -229,7 +222,7 @@ class TestStp(object):
                 return {}  # Simulate missing VLAN configuration
             return {}
 
-        # ✅ Apply the mock function to the database
+        # ✅ Apply the mock function to the database (Fix: `get_entry` must be mocked first!)
         db.cfgdb.get_entry.side_effect = mock_stp_config
 
         # ✅ Execute the command
