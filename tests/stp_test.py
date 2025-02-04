@@ -171,7 +171,7 @@ class TestStp(object):
         (config.config.commands["spanning-tree"].commands["disable"], ["pvst"], 0, None),
         # Attempt enabling STP interface without global STP enabled
         (config.config.commands["spanning-tree"].commands["interface"].commands["enable"],
-            ["Ethernet4"], 2, "Global STP is not enabled"),
+            ["Ethernet4"], 2, "Current STP mode: none\nUsage: enable [OPTIONS] <interface_name>\nTry "enable --help" for help.\n\nError: Global STP mode is not enabled\n"),
         # Enable pvst
         (config.config.commands["spanning-tree"].commands["enable"], ["pvst"], 0, None),
         # Configure interface priority and cost
