@@ -167,50 +167,50 @@ class TestStp(object):
             assert expected_output in result.output
 
     @pytest.mark.parametrize("command, args, expected_exit_code, expected_output", [
-    # Disable pvst
-    (config.config.commands["spanning-tree"].commands["disable"], ["pvst"], 0, None),
+        # Disable pvst
+        (config.config.commands["spanning-tree"].commands["disable"], ["pvst"], 0, None),
 
-    # Attempt enabling STP interface without global STP enabled
-    (
-        config.config.commands["spanning-tree"].commands["interface"].commands["enable"],
-        ["Ethernet4"],
-        2,
-        "Max hops not supported for PVST"
-    ),
+        # Attempt enabling STP interface without global STP enabled
+        (
+            config.config.commands["spanning-tree"].commands["interface"].commands["enable"],
+            ["Ethernet4"],
+            2,
+            "Max hops not supported for PVST"
+        ),
 
-    # Enable pvst
-    (config.config.commands["spanning-tree"].commands["enable"], ["pvst"], 0, None),
+        # Enable pvst
+        (config.config.commands["spanning-tree"].commands["enable"], ["pvst"], 0, None),
 
-    # Configure interface priority and cost
-    (config.config.commands["spanning-tree"].commands["interface"].commands["priority"],
-        ["Ethernet4", "16"], 0, None),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["cost"],
-        ["Ethernet4", "500"], 0, None),
+        # Configure interface priority and cost
+        (config.config.commands["spanning-tree"].commands["interface"].commands["priority"],
+            ["Ethernet4", "16"], 0, None),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["cost"],
+            ["Ethernet4", "500"], 0, None),
 
-    # Disable and enable interface spanning tree
-    (config.config.commands["spanning-tree"].commands["interface"].commands["disable"], ["Ethernet4"], 0, None),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], 0, None),
+        # Disable and enable interface spanning tree
+        (config.config.commands["spanning-tree"].commands["interface"].commands["disable"], ["Ethernet4"], 0, None),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], 0, None),
 
-    # Configure BPDU guard enable and disable
-    (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["enable"],
-        ["Ethernet4"], 0, None),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["disable"],
-        ["Ethernet4"], 0, None),
+        # Configure BPDU guard enable and disable
+        (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["enable"],
+            ["Ethernet4"], 0, None),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["disable"],
+            ["Ethernet4"], 0, None),
 
-    # Configure root guard enable and disable
-    (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["enable"],
-        ["Ethernet4"], 0, None),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["disable"],
-        ["Ethernet4"], 0, None),
+        # Configure root guard enable and disable
+        (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["enable"],
+            ["Ethernet4"], 0, None),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["root_guard"].commands["disable"],
+            ["Ethernet4"], 0, None),
 
-    # Invalid cost and priority values
-    (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "0"],
-        2, "STP interface path cost must be in range 1-200000000"),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "2000000000"],
-        2, "STP interface path cost must be in range 1-200000000"),
-    (config.config.commands["spanning-tree"].commands["interface"].commands["priority"], ["Ethernet4", "1000"],
-        2, "STP interface priority must be in range 0-240"),
-])
+        # Invalid cost and priority values
+        (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "0"],
+            2, "STP interface path cost must be in range 1-200000000"),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "2000000000"],
+            2, "STP interface path cost must be in range 1-200000000"),
+        (config.config.commands["spanning-tree"].commands["interface"].commands["priority"], ["Ethernet4", "1000"],
+            2, "STP interface priority must be in range 0-240"),
+    ])
     def test_stp_validate_interface_params(runner, db, command, args, expected_exit_code, expected_output):
         """Test case for STP parameter validation."""
 
