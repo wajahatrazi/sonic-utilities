@@ -1610,6 +1610,8 @@ def stp_interface_enable(_db, interface_name):
     stp_global_entry = db.get_entry('STP_GLOBAL', 'GLOBAL')
     current_mode = stp_global_entry.get('mode', 'none')
     click.echo(f"Current STP mode: {current_mode}")
+    if current_mode == "none":
+        ctx.fail("Global STP is not enabled - first configure STP mode")
 
     check_if_global_stp_enabled(db, ctx)
     if is_stp_enabled_for_interface(db, interface_name):
@@ -1639,6 +1641,7 @@ def stp_interface_enable(_db, interface_name):
         click.echo("No STP mode selected. Please select a mode first.")
         return
 
+    fvs = {'enabled': 'true'}
     db.set_entry('STP_PORT', interface_name, fvs)
     click.echo(f"Mode {current_mode} is enabled for interface {interface_name}")
 
