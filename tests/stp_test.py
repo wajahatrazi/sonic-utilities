@@ -228,9 +228,27 @@ class TestStp(object):
             None,
         ),
 
-        (config.config.commands["spanning-tree"].commands["interface"].commands["edgeport"].commands["disable"], ["Ethernet4"], 0, None),
+        (
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["edgeport"]
+            .commands["disable"],
+            ["Ethernet4"],
+            0,
+            None,
+        ),
+
         # Configure BPDU guard enable/disable
-        (config.config.commands["spanning-tree"].commands["interface"].commands["bpdu_guard"].commands["enable"], ["Ethernet4"], 0, None),
+        (
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["bpdu_guard"]
+            .commands["enable"],
+            ["Ethernet4"],
+            0,
+            None,
+        ),
+
         (
             config.config.commands["spanning-tree"]
             .commands["interface"]
