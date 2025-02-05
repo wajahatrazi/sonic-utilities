@@ -461,8 +461,8 @@ class TestStp(object):
         (config.config.commands["vlan"].commands["del"], ["500"], 0, None),
     ])
     def test_stp_validate_vlan_timer_and_priority_params(
-    self, runner, db, command, args, expected_exit_code, expected_output
-):
+        self, runner, db, command, args, expected_exit_code, expected_output
+            ):
             result = runner.invoke(command, args, obj=db)
             print(result.exit_code)
             print(result.output)
