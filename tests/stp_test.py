@@ -152,10 +152,10 @@ class TestStp(object):
         # Configure MST instance priority
         (
             config.config.commands["spanning-tree"]
-            .commands["mst"]
-            .commands["instance"]
-            .commands["1"]
-            .commands["priority"],
+            .commands.get("mst", {})
+            .get("instance", {})
+            .get("1", {})
+            .get("priority"),
             ["4096"],
             0,
             None,
@@ -460,7 +460,9 @@ class TestStp(object):
             2, "STP bridge priority must be multiple of 4096"),
         (config.config.commands["vlan"].commands["del"], ["500"], 0, None),
     ])
-    def test_stp_validate_vlan_timer_and_priority_params(self, runner, db, command, args, expected_exit_code, expected_output):
+    def test_stp_validate_vlan_timer_and_priority_params(
+    self, runner, db, command, args, expected_exit_code, expected_output
+    ):
         result = runner.invoke(command, args, obj=db)
         print(result.exit_code)
         print(result.output)
