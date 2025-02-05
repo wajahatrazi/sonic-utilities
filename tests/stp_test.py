@@ -220,9 +220,9 @@ class TestStp(object):
         # Configure edgeport enable/disable
         (
             config.config.commands["spanning-tree"]
-            .commands.get["interface"]
-            .commands.get["edgeport"]
-            .commands.get["enable"],
+            .commands["interface"]
+            .commands["edgeport"]
+            .commands["enable"],
             ["Ethernet4"],
             0,
             None,
