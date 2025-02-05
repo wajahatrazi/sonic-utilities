@@ -152,10 +152,10 @@ class TestStp(object):
         # Configure MST instance priority
         (
             config.config.commands["spanning-tree"]
-            .commands.get("mst", {})
-            .commands.get("instance", {})
-            .get("1", {})
-            .get("priority"),
+            .commands["mst"]
+            .commands["instance"]
+            .commands["1"]
+            .commands["priority"],
             ["4096"],
             0,
             None,
