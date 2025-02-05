@@ -463,12 +463,12 @@ class TestStp(object):
     def test_stp_validate_vlan_timer_and_priority_params(
         self, runner, db, command, args, expected_exit_code, expected_output
             ):
-            result = runner.invoke(command, args, obj=db)
-            print(result.exit_code)
-            print(result.output)
-            assert result.exit_code == expected_exit_code
-            if expected_output:
-                assert expected_output in result.output
+                result = runner.invoke(command, args, obj=db)
+                print(result.exit_code)
+                print(result.output)
+                assert result.exit_code == expected_exit_code
+                if expected_output:
+                    assert expected_output in result.output
 
     @classmethod
     def teardown_class(cls):
