@@ -191,6 +191,10 @@ class TestStp(object):
         result = runner.invoke(command, args, obj=db)
         print(result.exit_code)
         print(result.output)
+        if result.exit_code != expected_exit_code:
+            print(f"Command: {command}")
+            print(f"Arguments: {args}")
+            print(f"Expected exit code: {expected_exit_code}, but got: {result.exit_code}")
         assert result.exit_code == expected_exit_code
         if expected_output:
             assert expected_output in result.output
