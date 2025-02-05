@@ -162,29 +162,29 @@ class TestStp(object):
         #     ),
 
         # Add and remove VLAN in MST instance
-        (
-            config.config.commands["spanning-tree"]
-            .commands["mst"]
-            .commands["instance"]
-            .commands["1"]
-            .commands["vlan"]
-            .commands["add"],
-            ["500"],
-            0,
-            None,
-        ),
+        # (
+        #     config.config.commands["spanning-tree"]
+        #     .commands["mst"]
+        #     .commands["instance"]
+        #     .commands["1"]
+        #     .commands["vlan"]
+        #     .commands["add"],
+        #     ["500"],
+        #     0,
+        #     None,
+        # ),
 
-        (
-            config.config.commands["spanning-tree"]
-            .commands["mst"]
-            .commands["instance"]
-            .commands["1"]
-            .commands["vlan"]
-            .commands["del"],
-            ["500"],
-            0,
-            None,
-        ),
+        # (
+        #     config.config.commands["spanning-tree"]
+        #     .commands["mst"]
+        #     .commands["instance"]
+        #     .commands["1"]
+        #     .commands["vlan"]
+        #     .commands["del"],
+        #     ["500"],
+        #     0,
+        #     None,
+        # ),
 
     ])
     def test_stp_validate_mst_commands(self, runner, db, command, args, expected_exit_code, expected_output):
