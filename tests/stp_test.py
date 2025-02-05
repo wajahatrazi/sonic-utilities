@@ -154,8 +154,8 @@ class TestStp(object):
             config.config.commands["spanning-tree"]
             .commands.get("mst", {})
             .commands.get("instance", {})
-            .commands.get("1", {})
-            .commands.get("priority"),
+            .get("1", {})
+            .get("priority"),
             ["4096"],
             0,
             None,
