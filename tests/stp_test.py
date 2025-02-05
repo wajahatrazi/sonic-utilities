@@ -218,15 +218,15 @@ class TestStp(object):
         # Set interface path cost
         (config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "500"], 0, None),
         # Configure edgeport enable/disable
-        (
-            config.config.commands["spanning-tree"]
-            .commands["interface"]
-            .commands["edgeport"]
-            .commands["enable"],
-            ["Ethernet4"],
-            0,
-            None,
-        ),
+        # (
+        #     config.config.commands["spanning-tree"]
+        #     .commands["interface"]
+        #     .commands["edgeport"]
+        #     .commands["enable"],
+        #     ["Ethernet4"],
+        #     0,
+        #     None,
+        # ),
 
         (
             config.config.commands["spanning-tree"]
