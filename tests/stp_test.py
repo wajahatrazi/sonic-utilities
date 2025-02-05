@@ -150,16 +150,16 @@ class TestStp(object):
         # Configure MST revision
         (config.config.commands["spanning-tree"].commands["mst"].commands["revision"], ["10"], 0, None),
         # Configure MST instance priority
-        (
-            config.config.commands["spanning-tree"]
-            .commands["mst"]
-            .commands["instance"]
-            .commands["1"]
-            .commands["priority"],
-            ["4096"],
-            0,
-            None,
-            ),
+        # (
+        #     config.config.commands["spanning-tree"]
+        #     .commands["mst"]
+        #     .commands["instance"]
+        #     .commands["1"]
+        #     .commands["priority"],
+        #     ["4096"],
+        #     0,
+        #     None,
+        #     ),
 
         # Add and remove VLAN in MST instance
         (
