@@ -1861,10 +1861,12 @@ def mst_instance():
     """Configure MSTP instance settings"""
     pass
 
+
 @mst_instance.group('interface')
 def mst_instance_interface():
     """Configure MSTP instance interface settings"""
     pass
+
 
 @mst_instance_interface.command('priority')
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
