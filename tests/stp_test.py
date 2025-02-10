@@ -169,7 +169,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "PVST is already configured" in result.output
+        assert "PVST is already enabled" in result.output
 
     def test_stp_validate_interface_params(self):
         runner = CliRunner()
@@ -386,7 +386,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 1-200000000" in result.output
+        assert "STP interface path cost must be in range 20000000-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -398,7 +398,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 1-200000000" in result.output
+        assert "STP interface path cost must be in range 20000000-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -422,7 +422,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP is already enabled for" in result.output
+        assert "STP is already configured" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -523,7 +523,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 1-200000000" in result.output
+        assert "STP interface path cost must be in range 20000000-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -536,7 +536,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 1-200000000" in result.output
+        assert "STP interface path cost must be in range 20000000-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -549,7 +549,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP per vlan port priority must be in range 0-240" in result.output
+        assert "STP per vlan port priority must be in range 0-240 (multiples of 16)" in result.output
 
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["101"], obj=db)
         print(result.exit_code)
