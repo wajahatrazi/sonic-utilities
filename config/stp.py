@@ -1307,10 +1307,8 @@ def spanning_tree_interface_edgeport(_db):
     pass
 
 # config spanning_tree interface edgeport enable <interface_name>
-# MST CONFIGURATION IN THE STP_PORT TABLE
-# It should the mode attribute in the STP global table
-# If the mode is PVST, then it should tell that the mode if PVST, and not allow to configure edgeport
-
+# This should check the mode attribute in the STP global table.
+# If the mode is PVST, it should not allow configuring edgeport.
 
 @spanning_tree_interface_edgeport.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
@@ -1319,9 +1317,26 @@ def stp_interface_edgeport_enable(_db, interface_name):
     """Enable STP edgeport for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+
+    # Check if STP is enabled globally
+    check_if_global_stp_enabled(db, ctx)
+
+    # Get the global STP mode
+    current_mode = get_global_stp_mode(db)
+
+    # Ensure mode is MSTP, otherwise fail
+    if current_mode == "pvst":
+        ctx.fail("Edgeport configuration is not supported in PVST mode. This command is only allowed in MSTP mode.")
+
+    # Validate the interface
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
+
+    # Enable edgeport for the interface
     db.mod_entry('STP_PORT', interface_name, {'edgeport': 'true'})
+
+    click.echo(f"Edgeport enabled on {interface_name} in MSTP mode.")
+
 
 # config spanning_tree interface edgeport disable <interface_name>
 # MST CONFIGURATION IN THE STP_PORT TABLE
