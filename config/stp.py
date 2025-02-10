@@ -1310,6 +1310,7 @@ def spanning_tree_interface_edgeport(_db):
 # This should check the mode attribute in the STP global table.
 # If the mode is PVST, it should not allow configuring edgeport.
 
+
 @spanning_tree_interface_edgeport.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
