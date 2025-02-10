@@ -1504,111 +1504,6 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 # if __name__ == '__main__':
 #    spanning_tree()
 
-# INSTANCE-LEVEL COMMANDS
-# config spanning_tree mst instance <instance-id> priority <priority-value>
-
-
-# @mst.command('instance-vlan')
-# @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
-# @click.argument('action', metavar='(add|del)', required=True, type=click.Choice(['add', 'del']))
-# @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
-# @clicommon.pass_db
-# def stp_mst_instance_vlan(_db, instance_id, action, vlan_id):
-#     """Map or unmap VLAN to/from an MST instance"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-
-#     # Validate instance ID
-#     if instance_id not in range(MST_MIN_INSTANCES, MST_MAX_INSTANCES + 1):
-#         ctx.fail(f"Invalid instance ID. Must be between {MST_MIN_INSTANCES} and {MST_MAX_INSTANCES}.")
-
-#     # Validate VLAN ID
-#     if vlan_id not in range(1, 4095):
-#         ctx.fail("Invalid VLAN ID. Must be between 1 and 4094.")
-
-#     # Check if instance exists
-#     mst_instance_key = f"MST_INSTANCE:{instance_id}"
-#     mst_instance = db.get_entry('STP_MST_INST', mst_instance_key)
-#     if not mst_instance:
-#         ctx.fail(f"MST instance {instance_id} does not exist.")
-
-#     # Check if VLAN exists
-#     vlan_name = f"Vlan{vlan_id}"
-#     vlan_entry = db.get_entry('VLAN', vlan_name)
-#     if not vlan_entry:
-#         ctx.fail(f"VLAN {vlan_id} does not exist.")
-
-#     # Get the current VLAN list for the instance
-#     vlan_list = mst_instance.get('vlan_list', '')
-#     vlan_set = set(filter(None, vlan_list.split(',')))
-
-#     if action == 'add':
-#         # Add VLAN to the instance
-#         if str(vlan_id) in vlan_set:
-#             ctx.fail(f"VLAN {vlan_id} is already mapped to MST instance {instance_id}.")
-#         vlan_set.add(str(vlan_id))
-#     elif action == 'del':
-#         # Remove VLAN from the instance
-#         if str(vlan_id) not in vlan_set:
-#             ctx.fail(f"VLAN {vlan_id} is not mapped to MST instance {instance_id}.")
-#         vlan_set.remove(str(vlan_id))
-
-#     # Update the VLAN list in the database
-#     new_vlan_list = ','.join(sorted(vlan_set))
-#     db.mod_entry('STP_MST_INST', mst_instance_key, {'vlan_list': new_vlan_list})
-
-
-# # config spanning_tree mst instance <instance-id> vlan (add|del) <vlan-id>
-# @mst.command('instance-vlan')
-# @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
-# @click.argument('action', metavar='(add|del)', required=True, type=click.Choice(['add', 'del']))
-# @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
-# @clicommon.pass_db
-# def stp_mst_instance_vlan(_db, instance_id, action, vlan_id):
-#     """Map or unmap VLAN to/from an MST instance"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-
-#     # Validate instance ID
-#     if instance_id not in range(MST_MIN_INSTANCES, MST_MAX_INSTANCES + 1):
-#         ctx.fail(f"Invalid instance ID. Must be between {MST_MIN_INSTANCES} and {MST_MAX_INSTANCES}.")
-
-#     # Validate VLAN ID
-#     if vlan_id not in range(1, 4095):
-#         ctx.fail(f"Invalid VLAN ID. Must be between 1 and 4094.")
-
-#     # Check if instance exists
-#     mst_instance_key = f"MST_INSTANCE:{instance_id}"
-#     mst_instance = db.get_entry('STP_MST_INST', mst_instance_key)
-#     if not mst_instance:
-#         ctx.fail(f"MST instance {instance_id} does not exist.")
-
-#     # Check if VLAN exists
-#     vlan_name = f"Vlan{vlan_id}"
-#     vlan_entry = db.get_entry('VLAN', vlan_name)
-#     if not vlan_entry:
-#         ctx.fail(f"VLAN {vlan_id} does not exist.")
-
-#     # Get the current VLAN list for the instance
-#     vlan_list = mst_instance.get('vlan_list', '')
-#     vlan_set = set(filter(None, vlan_list.split(',')))
-
-#     if action == 'add':
-#         # Add VLAN to the instance
-#         if str(vlan_id) in vlan_set:
-#             ctx.fail(f"VLAN {vlan_id} is already mapped to MST instance {instance_id}.")
-#         vlan_set.add(str(vlan_id))
-#     elif action == 'del':
-#         # Remove VLAN from the instance
-#         if str(vlan_id) not in vlan_set:
-#             ctx.fail(f"VLAN {vlan_id} is not mapped to MST instance {instance_id}.")
-#         vlan_set.remove(str(vlan_id))
-
-#     # Update the VLAN list in the database
-#     new_vlan_list = ','.join(sorted(vlan_set))
-#     db.mod_entry('STP_MST_INST', mst_instance_key, {'vlan_list': new_vlan_list})
-
-
 # INTERFACE-LEVEL COMMANDS
 # Command: config spanning_tree interface {enable} <ifname>
 # Configure an interface for MSTP.
@@ -1952,155 +1847,86 @@ def stp_interface_link_type_set(_db, link_type, interface_name):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-# # config spanning_tree interface bpdu_guard {enable|disable} <ifname>
-# # This command allow enabling or disabling of bpdu_guard on an interface.
-# @click.group()
-# def config():
-#     """Config group"""
-#     pass
+# INSTANCE INTERFACE LEVEL COMMANDS
+
+# first instance-interface command
+# config spanning_tree mst instance <instance-id> interface <ifname> priority <priority-value>
+
+# Configure priority of an interface for an instance.
+# priority-value: Default: 128, range: 0-240
+# Supported Instances : 64
+
+@mst.group('instance')
+def mst_instance():
+    """Configure MSTP instance settings"""
+    pass
+
+@mst_instance.group('interface')
+def mst_instance_interface():
+    """Configure MSTP instance interface settings"""
+    pass
+
+@mst_instance_interface.command('priority')
+@click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.argument('priority', metavar='<0-240>', required=True, type=int)
+@clicommon.pass_db
+def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
+    """Configure priority of an interface for an MST instance"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
+
+    # Validate instance_id
+    if instance_id < 0 or instance_id >= MST_MAX_INSTANCES:
+        ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES-1}")
+
+    # Validate priority value
+    if priority < MST_MIN_PORT_PRIORITY or priority > MST_MAX_PORT_PRIORITY:
+        ctx.fail(f"Priority value must be in range {MST_MIN_PORT_PRIORITY}-{MST_MAX_PORT_PRIORITY}")
+
+    # Validate if the interface is valid
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    # Construct the key and field-value dictionary
+    mst_instance_interface_key = f"MST_INSTANCE|{instance_id}|{interface_name}"
+    fvs = {'priority': str(priority)}
+
+    # Update the database entry
+    db.mod_entry('STP_MST_PORT', mst_instance_interface_key, fvs)
+    click.echo(f"Priority {priority} set for interface {interface_name} in MST instance {instance_id}")
 
 
-# @config.group()
-# def spanning_tree():
-#     """Spanning Tree Protocol (STP) configuration"""
-#     pass
+# config spanning_tree mst instance <instance-id> interface <ifname> cost <cost-value>
 
+# second instance-interface command
+# Configure path cost of an interface for an instance.
+# cost-value: Range: 1-200000000
 
-# @spanning_tree.group()
-# @click.pass_context
-# def interface(ctx):
-#     """STP interface configuration"""
-#     pass
+@mst_instance_interface.command('cost')
+@click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.argument('cost', metavar='<1-200000000>', required=True, type=int)
+@clicommon.pass_db
+def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
+    """Configure path cost of an interface for an MST instance"""
+    ctx = click.get_current_context()
+    db = _db.cfgdb
 
+    # Validate instance_id
+    if instance_id < 0 or instance_id >= MST_MAX_INSTANCES:
+        ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES-1}")
 
-# @interface.command('bpdu_guard')
-# @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.option('-s', '--shutdown', is_flag=True)
-# @clicommon.pass_db
-# def mstp_bpdu_guard_interface(_db, state, interface_name, shutdown):
-#     """Enable/Disable BPDU guard on interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     bpdu_guard_do_disable = 'true' if shutdown else 'false'
-#     fvs = {'bpdu_guard': 'true' if state == 'enable' else 'false',
-#            'bpdu_guard_do_disable': bpdu_guard_do_disable}
-#     db.mod_entry('STP_PORT', interface_name, fvs)
+    # Validate cost value
+    if cost < MST_MIN_PORT_PATH_COST or cost > MST_MAX_PORT_PATH_COST:
+        ctx.fail(f"Path cost must be in range {MST_MIN_PORT_PATH_COST}-{MST_MAX_PORT_PATH_COST}")
 
+    # Validate if the interface is valid
+    check_if_interface_is_valid(ctx, db, interface_name)
 
-# config spanning_tree interface root_guard {enable|disable} <ifname>
-# This command allow enabling or disabling of root_guard on an interface.
-# STP interface bpdu guard
-# config spanning_tree interface bpdu_guard
-# @spanning_tree_interface.group('bpdu_guard')
-# @clicommon.pass_db
-# def spanning_tree_interface_bpdu_guard(_db):
-#     """Configure STP bpdu guard for interface"""
-#     pass
+    # Construct the key and field-value dictionary
+    mst_instance_interface_key = f"MST_INSTANCE|{instance_id}|{interface_name}"
+    fvs = {'path_cost': str(cost)}
 
-
-# # config spanning_tree interface bpdu_guard enable <interface_name> [-s]
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_bpdu_guard.command('enable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.option('-s', '--shutdown', is_flag=True)
-# @clicommon.pass_db
-# def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
-#     """Enable STP bpdu guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     bpdu_guard_do_disable = 'true' if shutdown else 'false'
-#     fvs = {'bpdu_guard': 'true',
-#            'bpdu_guard_do_disable': bpdu_guard_do_disable}
-#     db.mod_entry('STP_PORT', interface_name, fvs)
-
-
-# # config spanning_tree interface bpdu_guard disable <interface_name>
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_bpdu_guard.command('disable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_bpdu_guard_disable(_db, interface_name):
-#     """Disable STP bpdu guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
-
-
-# # config spanning_tree interface priority <ifname> <port_priority-value>
-# # Specify configuring the port level priority for root bridge in seconds.
-# # Default: 128, range 0-240
-# @spanning_tree_interface.command('priority')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.argument('priority', metavar='<0-240>', required=True, type=int)
-# @clicommon.pass_db
-# def mstp_interface_priority(_db, interface_name, priority):
-#     """Configure MSTP port priority for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     is_valid_interface_priority(ctx, priority)
-#     curr_intf_proirty = db.get_entry('STP_PORT', interface_name).get('priority')
-#     db.mod_entry('STP_PORT', interface_name, {'priority': priority})
-#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
-#         if intf == interface_name:
-#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
-#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
-#             if len(vlan_intf_entry) != 0:
-#                 vlan_intf_priority = vlan_intf_entry.get('priority')
-#                 if curr_intf_proirty == vlan_intf_priority:
-#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'priority': priority})
-
-
-# # config spanning_tree interface cost <ifname> <cost-value>
-# # Specify configuring the port level priority for root bridge in seconds.
-# # Default: 0, range 1-200000000
-# @spanning_tree_interface.command('cost')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
-# @clicommon.pass_db
-# def mstp_interface_path_cost(_db, interface_name, cost):
-#     """Configure MSTP path cost for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     is_valid_interface_path_cost(ctx, cost)
-#     curr_intf_cost = db.get_entry('STP_PORT', interface_name).get('path_cost')
-#     db.mod_entry('STP_PORT', interface_name, {'path_cost': cost})
-#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
-#         if intf == interface_name:
-#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
-#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
-#             if len(vlan_intf_entry) != 0:
-#                 vlan_intf_cost = vlan_intf_entry.get('path_cost')
-#                 if curr_intf_cost == vlan_intf_cost:
-#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'path_cost': cost})
-
-
-# # config spanning_tree interface link-type {P2P|Shared-Lan|Auto} <ifname>
-# # Specify configuring the interface at different link types.
-# # Default : Auto
-# @spanning_tree_interface.command('link-type')
-# @click.argument(
-#     'link_type',
-#     metavar='<P2P|Shared-Lan|Auto>',
-#     required=True,
-#     type=click.Choice(['P2P', 'Shared-Lan', 'Auto'])
-# )
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def mstp_interface_link_type(_db, link_type, interface_name):
-#     """Configure link-type for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'link_type': link_type})
+    # Update the database entry
+    db.mod_entry('STP_MST_PORT', mst_instance_interface_key, fvs)
+    click.echo(f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}")
