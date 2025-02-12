@@ -1,8 +1,8 @@
-import pytest
 from click.testing import CliRunner
 from utilities_common.db import Db
 import show.main as show
 import config.main as config
+
 
 class TestStp:
     def test_show_spanning_tree(self):
@@ -73,7 +73,12 @@ Ethernet4        10             15             15             5
     def test_show_spanning_tree_statistics_vlan(self):
         runner = CliRunner()
         db = Db()
-        result = runner.invoke(show.cli.commands["spanning-tree"].commands["statistics"].commands["vlan"], ["100"], obj=db)
+        result = runner.invoke(
+            show.cli.commands["spanning-tree"].commands["statistics"].commands["vlan"], 
+            ["100"],
+            obj=db
+        )
+
         assert result.exit_code == 0
         expected_output = """VLAN 100 - STP instance 0
 --------------------------------------------------------------------
@@ -201,11 +206,25 @@ Ethernet4        100    Consistent state
         assert result.exit_code == 0
 
         # Testing invalid path cost
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "300000000"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet4", "300000000"],
+            obj=db
+        )
+
         assert "STP interface path cost must be in range 1-200000000" in result.output
 
         # Testing invalid priority
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["priority"], ["Ethernet4", "256"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet4", "256"],
+            obj=db
+        )
+
         assert "STP per VLAN port priority must be in range 0-240" in result.output
 
     def test_stp_interface_vlan_membership(self):
