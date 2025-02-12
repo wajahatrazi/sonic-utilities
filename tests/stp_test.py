@@ -5,6 +5,9 @@ from click.testing import CliRunner
 import config.main as config
 import show.main as show
 from utilities_common.db import Db
+import unittest
+from unittest.mock import patch, MagicMock
+from click.testing import CliRunner
 
 show_spanning_tree = """\
 Spanning-tree Mode: PVST
