@@ -74,7 +74,7 @@ Ethernet4        10             15             15             5
         runner = CliRunner()
         db = Db()
         result = runner.invoke(
-            show.cli.commands["spanning-tree"].commands["statistics"].commands["vlan"], 
+            show.cli.commands["spanning-tree"].commands["statistics"].commands["vlan"],
             ["100"],
             obj=db
         )
