@@ -132,28 +132,64 @@ Ethernet4        100    Consistent state
         result = runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["enable"],
+            ["Ethernet4"],
+            obj=db
+        )
         assert "Global STP is not enabled" in result.output
 
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["vlan"].commands["member"].commands["add"], ["100", "Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["vlan"]
+            .commands["member"]
+            .commands["add"],
+            ["100", "Ethernet4"],
+            obj=db
+        )
         assert result.exit_code == 0
 
         result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["priority"], ["Ethernet4", "16"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet4", "16"],
+            obj=db
+        )
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "100"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet4", "100"],
+            obj=db
+        )
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["disable"], ["Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet4"],
+            obj=db
+        )
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["enable"],
+            ["Ethernet4"],
+            obj=db
+        )
         assert result.exit_code == 0
 
     def test_stp_vlan_deletion(self):
@@ -205,7 +241,13 @@ Ethernet4        100    Consistent state
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
         assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["vlan"].commands["member"].commands["add"], ["100", "Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["vlan"]
+            .commands["member"]
+            .commands["add"],
+            ["100", "Ethernet4"],
+            obj=db
+        )
         assert result.exit_code == 0
 
         result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
@@ -241,5 +283,11 @@ Ethernet4        100    Consistent state
         assert result.exit_code == 0
 
         # Testing interface not a member of VLAN
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet8"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["enable"],
+            ["Ethernet8"],
+            obj=db
+        )
         assert "Interface not a member of VLAN" in result.output
