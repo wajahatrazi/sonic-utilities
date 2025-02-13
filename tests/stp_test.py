@@ -1,6 +1,4 @@
-
 import os
-from unittest import runner
 from click.testing import CliRunner
 
 import config.main as config
