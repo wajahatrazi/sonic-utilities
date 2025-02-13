@@ -130,6 +130,7 @@ class TestStp(object):
             assert result.output == show_spanning_tree_statistics
 
     def test_show_spanning_tree_bpdu_guard(self):
+        runner = CliRunner()
         db = Db()
         result = runner.invoke(show.cli.commands["spanning-tree"].commands["bpdu_guard"], [], obj=db)
         print(result.exit_code)
@@ -140,6 +141,7 @@ class TestStp(object):
             assert result.output == show_spanning_tree_bpdu_guard
 
     def test_show_spanning_tree_root_guard(self):
+        runner = CliRunner()
         db = Db()
         result = runner.invoke(show.cli.commands["spanning-tree"].commands["root_guard"], [], obj=db)
         print(result.exit_code)
@@ -150,6 +152,7 @@ class TestStp(object):
             assert result.output == show_spanning_tree_root_guard
 
     def test_disable_enable_global_pvst(self):
+        runner = CliRunner()
         db = Db()
 
         result = runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
