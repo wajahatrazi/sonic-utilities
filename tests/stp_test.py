@@ -215,7 +215,6 @@ class TestStp(object):
             or "Global STP is not enabled - first configure STP mode" in result.output
         )
 
-
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
         print(result.exit_code)
         assert result.exit_code == 0
@@ -387,7 +386,6 @@ class TestStp(object):
         print("result code {}".format(result.output))
         assert result.exit_code != 0
         assert "has no VLAN configured" in result.output
-
 
     def test_stp_validate_vlan_timer_and_priority_params(self):
         runner = CliRunner()
