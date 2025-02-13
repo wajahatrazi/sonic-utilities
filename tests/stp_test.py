@@ -162,20 +162,20 @@ class TestStp(object):
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         if result.exit_code != 0:
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
+        result = cli_runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
         print(result.exit_code)
         if result.exit_code != 0:
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
-        result = runner.invoke(
+        result = cli_runner.invoke(
             config.config.commands["vlan"]
             .commands["member"]
             .commands["add"],
@@ -187,7 +187,7 @@ class TestStp(object):
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
@@ -444,7 +444,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 20000000-200000000" in result.output
+        assert "STP interface path cost must be in range 1-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -456,7 +456,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 20000000-200000000" in result.output
+        assert "STP interface path cost must be in range 1-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -593,7 +593,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 20000000-200000000" in result.output
+        assert "STP interface path cost must be in range 1-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -606,7 +606,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 20000000-200000000" in result.output
+        assert "STP interface path cost must be in range 1-200000000" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -838,7 +838,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP bridge priority must be in range 0-61440" in result.output
+        assert "STP bridge priority must be multiple of 4096" in result.output
 
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -1046,7 +1046,7 @@ class TestStp(object):
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "STP bridge priority must be in range 0-61440" in result.output
+        assert "STP bridge priority must be multiple of 4096" in result.output
 
         result = runner.invoke(config.config.commands["spanning-tree"].commands["priority"], ["8000"], obj=db)
         print("exit code {}".format(result.exit_code))
