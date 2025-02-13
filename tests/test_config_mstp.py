@@ -662,9 +662,9 @@ class TestSpanningTreeInterfaceEdgeportEnable:
             # Verify command failed
             assert result.exit_code != 0
             expected_error = (
-            "Edgeport configuration is not supported in PVST mode. "
-            "This command is only allowed in MSTP mode."
-        )
+                "Edgeport configuration is not supported in PVST mode. "
+                "This command is only allowed in MSTP mode."
+            )
             assert expected_error in result.output
 
             # Verify database was not updated
