@@ -661,7 +661,11 @@ class TestSpanningTreeInterfaceEdgeportEnable:
 
             # Verify command failed
             assert result.exit_code != 0
-            assert "Edgeport configuration is not supported in PVST mode. This command is only allowed in MSTP mode." in result.output
+            expected_error = (
+            "Edgeport configuration is not supported in PVST mode. "
+            "This command is only allowed in MSTP mode."
+        )
+            assert expected_error in result.output
 
             # Verify database was not updated
             mock_db.cfgdb.mod_entry.assert_not_called()
