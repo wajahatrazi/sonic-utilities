@@ -219,7 +219,10 @@ class TestStp(object):
             result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
 
         print("STP mode check result:", result.output)
-        assert "Current STP mode: pvst" in result.output or "PVST is already configured" in result.output, f"STP Mode not set correctly: {result.output}"
+        assert (
+            "Current STP mode: pvst" in result.output 
+            or "PVST is already configured" in result.output
+        ), f"STP Mode not set correctly: {result.output}"
 
         # Add VLAN 100
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
@@ -247,7 +250,7 @@ class TestStp(object):
         )
         print("exit code:", result.exit_code)
         print("result code:", result.output)
-        
+
         # Verify STP enabled on the interface
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
@@ -286,7 +289,6 @@ class TestStp(object):
         print("exit code:", result.exit_code)
         print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
-
 
     def test_add_vlan_enable_pvst(self):
         runner = CliRunner()
