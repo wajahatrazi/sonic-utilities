@@ -220,7 +220,7 @@ class TestStp(object):
             stp_mode_output = result.output
 
         print("STP mode check result:", stp_mode_output)
-        
+
         assert (
             "Current STP mode: pvst" in stp_mode_output
             or "PVST is already configured" in stp_mode_output
