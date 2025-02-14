@@ -203,7 +203,7 @@ class TestStp(object):
             result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
             print("exit code:", result.exit_code)
             print("result code:", result.output)
-            
+
             if result.exit_code == 0 or "PVST is already configured" in result.output:
                 break
             time.sleep(1)  # Wait before retrying
