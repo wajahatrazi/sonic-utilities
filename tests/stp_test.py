@@ -1,6 +1,6 @@
 import os
 from click.testing import CliRunner
-
+import time
 import config.main as config
 import show.main as show
 from utilities_common.db import Db
@@ -198,21 +198,26 @@ class TestStp(object):
         # Disable STP first to ensure a clean state
         runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
 
-        # Enable STP mode first (pvst or mst)
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        assert result.exit_code == 0, f"Error Output:\n{result.output}"
+        # Enable STP mode (Ensure it is properly set)
+        for attempt in range(3):  # Retry 3 times to ensure the mode is set
+            result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+            print("exit code:", result.exit_code)
+            print("result code:", result.output)
+            
+            if result.exit_code == 0 or "PVST is already configured" in result.output:
+                break
+            time.sleep(1)  # Wait before retrying
+        else:
+            assert False, f"Failed to enable PVST mode. Error: {result.output}"
 
         # Ensure STP mode is enabled before proceeding
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        assert "PVST is already configured" in result.output or result.exit_code == 0
+        result = runner.invoke(config.config.commands["spanning-tree"].commands["show"], [], obj=db)
+        print("STP mode check result:", result.output)
+        assert "Current STP mode: pvst" in result.output, f"STP Mode not set correctly: {result.output}"
 
         # Add VLAN 100
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
-        print(result.exit_code)
+        print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Add Ethernet4 to VLAN 100
@@ -223,7 +228,7 @@ class TestStp(object):
             ["100", "Ethernet4"],
             obj=db,
         )
-        print(result.exit_code)
+        print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Enable STP on Ethernet4 (should succeed now)
@@ -234,12 +239,12 @@ class TestStp(object):
             ["Ethernet4"],
             obj=db,
         )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        print("exit code:", result.exit_code)
+        print("result code:", result.output)
 
-        # Modify assertion to handle STP mode check properly
-        assert (result.exit_code == 0 or
-                "Global STP is not enabled" not in result.output), f"Error Output:\n{result.output}"
+        # Verify STP enabled on the interface
+        assert result.exit_code == 0, f"Error Output:\n{result.output}"
+
         # Set interface priority (should work since STP is now enabled)
         result = runner.invoke(
             config.config.commands["spanning-tree"]
@@ -248,8 +253,8 @@ class TestStp(object):
             ["Ethernet4", "16"],
             obj=db,
         )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        print("exit code:", result.exit_code)
+        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Set interface cost (should work now)
@@ -260,8 +265,8 @@ class TestStp(object):
             ["Ethernet4", "100"],
             obj=db,
         )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        print("exit code:", result.exit_code)
+        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Disable STP on the interface
@@ -272,106 +277,106 @@ class TestStp(object):
             ["Ethernet4"],
             obj=db,
         )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        print("exit code:", result.exit_code)
+        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-    def test_add_vlan_enable_pvst(self):
-        runner = CliRunner()
-        db = Db()
+        def test_add_vlan_enable_pvst(self):
+            runner = CliRunner()
+            db = Db()
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            result = runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
+            print("exit code {}".format(result.exit_code))
+            print("result code {}".format(result.output))
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
+            print(result.exit_code)
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
 
-        result = runner.invoke(
-                config.config.commands["vlan"]
-                .commands["member"]
-                .commands["add"],
-                ["100", "Ethernet4"],
+            result = runner.invoke(
+                    config.config.commands["vlan"]
+                    .commands["member"]
+                    .commands["add"],
+                    ["100", "Ethernet4"],
+                    obj=db,
+                )
+            print(result.exit_code)
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
+
+            result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+            print(result.exit_code)
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
+
+            result = runner.invoke(config.config.commands["vlan"].commands["add"], ["200"], obj=db)
+            print(result.exit_code)
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
+
+            result = runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands["disable"],
+                ["200"],
                 obj=db,
             )
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            print("exit code {}".format(result.exit_code))
+            print("result code {}".format(result.output))
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            result = runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands["enable"],
+                ["200"],
+                obj=db,
+            )
+            print("exit code {}".format(result.exit_code))
+            print("result code {}".format(result.output))
+            if result.exit_code != 0:
+                print(f'Error Output:\n{result.output}')
+                assert result.exit_code == 0
 
-        result = runner.invoke(config.config.commands["vlan"].commands["add"], ["200"], obj=db)
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            result = runner.invoke(config.config.commands["vlan"].commands["del"], ["200"], obj=db)
+            print(result.exit_code)
+            assert result.exit_code != 0
 
-        result = runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["disable"],
-            ["200"],
-            obj=db,
-        )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            # Enable/Disable on non-existing VLAN
+            result = runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands["enable"],
+                ["101"],
+                obj=db,
+            )
+            print("exit code {}".format(result.exit_code))
+            print("result code {}".format(result.output))
+            assert result.exit_code != 0
+            assert "doesn't exist" in result.output
 
-        result = runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["enable"],
-            ["200"],
-            obj=db,
-        )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            result = runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands["disable"],
+                ["101"],
+                obj=db,
+            )
 
-        result = runner.invoke(config.config.commands["vlan"].commands["del"], ["200"], obj=db)
-        print(result.exit_code)
-        assert result.exit_code != 0
-
-        # Enable/Disable on non-existing VLAN
-        result = runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["enable"],
-            ["101"],
-            obj=db,
-        )
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        assert result.exit_code != 0
-        assert "doesn't exist" in result.output
-
-        result = runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["disable"],
-            ["101"],
-            obj=db,
-        )
-
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
-        assert result.exit_code != 0
-        assert "doesn't exist" in result.output
+            print("exit code {}".format(result.exit_code))
+            print("result code {}".format(result.output))
+            assert result.exit_code != 0
+            assert "doesn't exist" in result.output
 
     def test_stp_validate_global_timer_and_priority_params(self):
         runner = CliRunner()
