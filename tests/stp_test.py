@@ -191,7 +191,7 @@ class TestStp(object):
         assert result.exit_code != 0
         assert "PVST is already configured" in result.output
 
-    def test_stp_validate_interface_params(self):  
+    def test_stp_validate_interface_params(self):
         runner = CliRunner()
         db = Db()
 
