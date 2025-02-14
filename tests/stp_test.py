@@ -292,7 +292,6 @@ class TestStp(object):
         print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-
     def test_add_vlan_enable_pvst(self):
         runner = CliRunner()
         db = Db()
