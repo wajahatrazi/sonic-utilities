@@ -191,7 +191,7 @@ class TestStp(object):
         assert result.exit_code != 0
         assert "PVST is already configured" in result.output
 
-    def test_stp_validate_interface_params():
+    def test_stp_validate_interface_params(self):  # Added `self`
         runner = CliRunner()
         db = Db()
 
@@ -220,7 +220,7 @@ class TestStp(object):
             stp_mode_output = result.output
 
         print("STP mode check result:", stp_mode_output)
-
+        
         assert (
             "Current STP mode: pvst" in stp_mode_output
             or "PVST is already configured" in stp_mode_output
