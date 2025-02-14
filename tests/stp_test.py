@@ -216,30 +216,60 @@ class TestStp(object):
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Add Ethernet4 to VLAN 100
-        result = runner.invoke(config.config.commands["vlan"].commands["member"].commands["add"], ["100", "Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["vlan"]
+            .commands["member"]
+            .commands["add"],
+            ["100", "Ethernet4"],
+            obj=db,
+        )
         print(result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Enable STP on Ethernet4 (should succeed now)
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["enable"], ["Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["enable"],
+            ["Ethernet4"],
+            obj=db,
+        )
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Set interface priority (should work since STP is now enabled)
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["priority"], ["Ethernet4", "16"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet4", "16"],
+            obj=db,
+        )
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Set interface cost (should work now)
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["cost"], ["Ethernet4", "100"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet4", "100"],
+            obj=db,
+        )
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Disable STP on the interface
-        result = runner.invoke(config.config.commands["spanning-tree"].commands["interface"].commands["disable"], ["Ethernet4"], obj=db)
+        result = runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet4"],
+            obj=db,
+        )
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
