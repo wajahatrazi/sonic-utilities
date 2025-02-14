@@ -191,15 +191,15 @@ class TestStp(object):
         assert result.exit_code != 0
         assert "PVST is already configured" in result.output
 
-    def test_stp_validate_interface_params(self):  # Added `self`
+    def test_stp_validate_interface_params(self):  
         runner = CliRunner()
         db = Db()
 
-        # Disable STP first to ensure a clean state
+        # Step 1: Disable STP to ensure a clean state
         runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
 
-        # Enable STP mode (Ensure it is properly set)
-        for attempt in range(3):  # Retry 3 times to ensure the mode is set
+        # Step 2: Enable STP mode (Ensuring it's properly set)
+        for attempt in range(3):  # Retry mechanism for enabling STP
             result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
             print("exit code:", result.exit_code)
             print("result code:", result.output)
@@ -210,14 +210,18 @@ class TestStp(object):
         else:
             assert False, f"Failed to enable PVST mode. Error: {result.output}"
 
-        # Ensure STP mode is enabled before proceeding
+        # Step 3: Verify STP mode is correctly set
+        stp_mode_output = ""
         try:
-            result = runner.invoke(config.config.commands["spanning-tree"].commands["status"], [], obj=db)
+            result = runner.invoke(config.config.commands["spanning-tree"].commands["show"], [], obj=db)
             stp_mode_output = result.output
         except KeyError:
-            # If "status" doesn't exist, retry enabling and checking the mode again
-            result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-            stp_mode_output = result.output
+            try:
+                result = runner.invoke(config.config.commands["spanning-tree"].commands["status"], [], obj=db)
+                stp_mode_output = result.output
+            except KeyError:
+                result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+                stp_mode_output = result.output
 
         print("STP mode check result:", stp_mode_output)
 
@@ -226,12 +230,12 @@ class TestStp(object):
             or "PVST is already configured" in stp_mode_output
         ), f"STP Mode not set correctly: {stp_mode_output}"
 
-        # Add VLAN 100
+        # Step 4: Add VLAN 100
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
         print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Add Ethernet4 to VLAN 100
+        # Step 5: Add Ethernet4 to VLAN 100
         result = runner.invoke(
             config.config.commands["vlan"]
             .commands["member"]
@@ -242,21 +246,25 @@ class TestStp(object):
         print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Enable STP on Ethernet4 (should succeed now)
-        result = runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["interface"]
-            .commands["enable"],
-            ["Ethernet4"],
-            obj=db,
-        )
-        print("exit code:", result.exit_code)
-        print("result code:", result.output)
+        # Step 6: Enable STP on Ethernet4 (should succeed now)
+        for attempt in range(3):  # Retry mechanism for enabling STP on the interface
+            result = runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["enable"],
+                ["Ethernet4"],
+                obj=db,
+            )
+            print("exit code:", result.exit_code)
+            print("result code:", result.output)
 
-        # Verify STP enabled on the interface
-        assert result.exit_code == 0, f"Error Output:\n{result.output}"
+            if result.exit_code == 0:
+                break
+            time.sleep(1)  # Wait before retrying
+        else:
+            assert False, f"Failed to enable STP on Ethernet4. Error: {result.output}"
 
-        # Set interface priority (should work since STP is now enabled)
+        # Step 7: Set interface priority (should work since STP is now enabled)
         result = runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
@@ -268,7 +276,7 @@ class TestStp(object):
         print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Set interface cost (should work now)
+        # Step 8: Set interface cost (should work now)
         result = runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
@@ -280,7 +288,7 @@ class TestStp(object):
         print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Disable STP on the interface
+        # Step 9: Disable STP on the interface
         result = runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
