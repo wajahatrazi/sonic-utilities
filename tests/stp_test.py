@@ -238,8 +238,8 @@ class TestStp(object):
         print("result code {}".format(result.output))
 
         # Modify assertion to handle STP mode check properly
-        assert result.exit_code == 0 or "Global STP is not enabled" not in result.output, f"Error Output:\n{result.output}"
-
+        assert (result.exit_code == 0 or
+                "Global STP is not enabled" not in result.output), f"Error Output:\n{result.output}"
         # Set interface priority (should work since STP is now enabled)
         result = runner.invoke(
             config.config.commands["spanning-tree"]
