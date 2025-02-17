@@ -213,12 +213,17 @@ class TestStp(object):
             assert False, f"Failed to enable PVST mode. Error: {result.output}"
 
         # Step 3: Verify STP mode is correctly set
-        for attempt in range(5):
-            result = runner.invoke(config.config.commands["spanning-tree"].commands["show"], [], obj=db)
-            print(f"STP mode check attempt {attempt + 1}: {result.output}")
+        for attempt in range(5):  # Retry checking STP mode
+            try:
+                result = runner.invoke(config.config.commands["spanning-tree"].commands["status"], [], obj=db)
+                print(f"STP mode check attempt {attempt + 1}: {result.output}")
 
-            if "Current STP mode: pvst" in result.output or "PVST is already configured" in result.output:
-                break
+                if "Current STP mode: pvst" in result.output or "PVST is already configured" in result.output:
+                    break
+            except KeyError:
+                print(f"Attempt {attempt + 1}: 'status' command not found, retrying STP enable...")
+                runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+
             time.sleep(1)
         else:
             assert False, f"STP Mode not set correctly: {result.output}"
@@ -237,7 +242,7 @@ class TestStp(object):
         )
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Step 6: Enable STP on Ethernet4
+        # Step 6: Enable STP on Ethernet4 (should succeed now)
         for attempt in range(5):
             result = runner.invoke(
                 config.config.commands["spanning-tree"]
