@@ -220,7 +220,7 @@ class TestStp(object):
                     result = runner.invoke(config.config.commands["spanning-tree"].commands["status"], [], obj=db)
                 except KeyError:
                     result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-            
+
             print(f"STP mode check attempt {attempt + 1}: {result.output}")
 
             if "Current STP mode: pvst" in result.output or "PVST is already configured" in result.output:
