@@ -197,41 +197,34 @@ class TestStp(object):
 
         # Step 1: Disable STP to ensure a clean state
         runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
+        time.sleep(1)  # Allow system time to process
 
         # Step 2: Enable STP mode and confirm it's properly set
-        for attempt in range(5):  # Increased retries for STP mode setting
+        for attempt in range(5):  # Retry enabling STP mode
             result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
             print(f"Attempt {attempt + 1}: exit code = {result.exit_code}")
             print(f"result code: {result.output}")
 
             if result.exit_code == 0 or "PVST is already configured" in result.output:
-                time.sleep(2)  # Give the system time to apply changes
+                time.sleep(2)  # Allow system time to process
                 break
-            time.sleep(1)  # Wait before retrying
+            time.sleep(1)  # Retry delay
         else:
             assert False, f"Failed to enable PVST mode. Error: {result.output}"
 
         # Step 3: Verify STP mode is correctly set
-        for attempt in range(5):  # Ensuring STP mode is applied
-            try:
-                result = runner.invoke(config.config.commands["spanning-tree"].commands["show"], [], obj=db)
-            except KeyError:
-                try:
-                    result = runner.invoke(config.config.commands["spanning-tree"].commands["status"], [], obj=db)
-                except KeyError:
-                    result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-
+        for attempt in range(5):
+            result = runner.invoke(config.config.commands["spanning-tree"].commands["show"], [], obj=db)
             print(f"STP mode check attempt {attempt + 1}: {result.output}")
 
             if "Current STP mode: pvst" in result.output or "PVST is already configured" in result.output:
                 break
-            time.sleep(1)  # Wait before retrying
+            time.sleep(1)
         else:
             assert False, f"STP Mode not set correctly: {result.output}"
 
         # Step 4: Add VLAN 100
         result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
-        print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Step 5: Add Ethernet4 to VLAN 100
@@ -242,11 +235,10 @@ class TestStp(object):
             ["100", "Ethernet4"],
             obj=db,
         )
-        print("exit code:", result.exit_code)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
-        # Step 6: Enable STP on Ethernet4 (should succeed now)
-        for attempt in range(5):  # Increased retries for enabling STP on interface
+        # Step 6: Enable STP on Ethernet4
+        for attempt in range(5):
             result = runner.invoke(
                 config.config.commands["spanning-tree"]
                 .commands["interface"]
@@ -259,7 +251,7 @@ class TestStp(object):
 
             if result.exit_code == 0:
                 break
-            time.sleep(1)  # Wait before retrying
+            time.sleep(1)
         else:
             assert False, f"Failed to enable STP on Ethernet4. Error: {result.output}"
 
@@ -271,8 +263,6 @@ class TestStp(object):
             ["Ethernet4", "16"],
             obj=db,
         )
-        print("exit code:", result.exit_code)
-        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Step 8: Set interface cost
@@ -283,8 +273,6 @@ class TestStp(object):
             ["Ethernet4", "100"],
             obj=db,
         )
-        print("exit code:", result.exit_code)
-        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
         # Step 9: Disable STP on the interface
@@ -295,8 +283,6 @@ class TestStp(object):
             ["Ethernet4"],
             obj=db,
         )
-        print("exit code:", result.exit_code)
-        print("result code:", result.output)
         assert result.exit_code == 0, f"Error Output:\n{result.output}"
 
     def test_add_vlan_enable_pvst(self):
