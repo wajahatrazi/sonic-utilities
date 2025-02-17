@@ -202,25 +202,18 @@ class TestStp(object):
 
         # Step 2: Enable STP mode and confirm it's properly set
         print("Enabling STP mode (PVST)...")
-        for attempt in range(5):  # Retry enabling STP mode
-            result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-            print(f"Attempt {attempt + 1}: exit code = {result.exit_code}")
-            print(f"result code: {result.output}")
+        result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+        assert result.exit_code == 0 or "PVST is already configured" in result.output, \
+            f"❌ Failed to enable PVST mode. Error: {result.output}"
+        time.sleep(2)  # Ensure STP state is stable
 
-            if result.exit_code == 0 or "PVST is already configured" in result.output:
-                time.sleep(2)  # Allow system time to process
-                break
-            time.sleep(1)  # Retry delay
-        else:
-            assert False, f"❌ Failed to enable PVST mode. Error: {result.output}"
-
-        # Step 3: Verify STP mode is correctly set by checking "enable" output
+        # Step 3: Verify STP mode using the correct `show` command
         print("Verifying STP mode...")
         for attempt in range(5):
-            result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+            result = runner.invoke(show.cli.commands["spanning-tree"], [], obj=db)
             print(f"STP mode check attempt {attempt + 1}: {result.output}")
 
-            if "PVST is already configured" in result.output or "Current STP mode: pvst" in result.output:
+            if "Spanning-tree Mode: PVST" in result.output:
                 break
             time.sleep(1)
         else:
@@ -240,7 +233,7 @@ class TestStp(object):
         )
         assert result.exit_code == 0, f"❌ Failed to add Ethernet4 to VLAN 100. Error Output:\n{result.output}"
 
-        # Step 6: Enable STP on Ethernet4 (should succeed now)
+        # Step 6: Enable STP on Ethernet4
         print("Enabling STP on Ethernet4...")
         for attempt in range(5):  # Retry enabling STP on the interface
             result = runner.invoke(
