@@ -542,8 +542,8 @@ class TestStp(object):
         cost = "20000"
 
         result = runner.invoke(
-            mst_instance_interface_cost, 
-            [instance_id, interface_name, cost], 
+            mst_instance_interface_cost,
+            [instance_id, interface_name, cost],
             obj=db
         )
 
@@ -566,8 +566,8 @@ class TestStp(object):
         cost = "20000"
 
         result = runner.invoke(
-            mst_instance_interface_cost, 
-            [instance_id, interface_name, cost], 
+            mst_instance_interface_cost,
+            [instance_id, interface_name, cost],
             obj=db
         )
 
@@ -587,8 +587,8 @@ class TestStp(object):
         cost = "999999999"  # Invalid cost, out of range
 
         result = runner.invoke(
-            mst_instance_interface_cost, 
-            [instance_id, interface_name, cost], 
+            mst_instance_interface_cost,
+            [instance_id, interface_name, cost],
             obj=db
         )
 
