@@ -7,12 +7,13 @@ from click.testing import CliRunner
 # import pytest
 from config.stp import (
     mst_instance_interface_cost
+)
 #     get_global_stp_mode,
 #     check_if_vlan_exist_in_db,
 #     is_valid_forward_delay,
 #     is_valid_stp_vlan_parameters,
 #     check_if_stp_enabled_for_vlan
-)
+
 
 # import time
 import config.main as config
