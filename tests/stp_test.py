@@ -1,17 +1,18 @@
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 # from unittest.mock import MagicMock
 import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-# from config.stp import (
+from config.stp import (
+    mst_instance_interface_cost
 #     get_global_stp_mode,
 #     check_if_vlan_exist_in_db,
 #     is_valid_forward_delay,
 #     is_valid_stp_vlan_parameters,
 #     check_if_stp_enabled_for_vlan
-# )
+)
 
 # import time
 import config.main as config
@@ -524,6 +525,75 @@ class TestStp(object):
                 assert "Configuration not supported for MST" in result.output, "MST mode check failed"
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
+
+    def test_mst_instance_interface_cost_success(self):
+        """Test setting the MST instance interface cost successfully."""
+        runner = CliRunner()
+        db = MagicMock()
+
+        # Mock the global STP mode
+        db.get_entry.return_value = {"mode": "mst"}
+
+        # Mock successful database modification
+        db.mod_entry.return_value = None
+
+        instance_id = "1"
+        interface_name = "Ethernet0"
+        cost = "20000"
+
+        result = runner.invoke(
+            mst_instance_interface_cost, 
+            [instance_id, interface_name, cost], 
+            obj=db
+        )
+
+        # Assertions
+        assert result.exit_code == 0
+        db.mod_entry.assert_called_once_with(
+            'STP_MST_PORT', f'MST_INSTANCE|{instance_id}|{interface_name}', {'path_cost': cost}
+        )
+
+    def test_mst_instance_interface_cost_invalid_mode(self):
+        """Test failure when MST is not enabled."""
+        runner = CliRunner()
+        db = MagicMock()
+
+        # Mock STP mode as PVST instead of MST
+        db.get_entry.return_value = {"mode": "pvst"}
+
+        instance_id = "1"
+        interface_name = "Ethernet0"
+        cost = "20000"
+
+        result = runner.invoke(
+            mst_instance_interface_cost, 
+            [instance_id, interface_name, cost], 
+            obj=db
+        )
+
+        assert result.exit_code != 0
+        assert "Configuration not supported for PVST" in result.output
+
+    def test_mst_instance_interface_cost_invalid_cost(self):
+        """Test failure for out-of-range cost values."""
+        runner = CliRunner()
+        db = MagicMock()
+
+        # Mock the global STP mode
+        db.get_entry.return_value = {"mode": "mst"}
+
+        instance_id = "1"
+        interface_name = "Ethernet0"
+        cost = "999999999"  # Invalid cost, out of range
+
+        result = runner.invoke(
+            mst_instance_interface_cost, 
+            [instance_id, interface_name, cost], 
+            obj=db
+        )
+
+        assert result.exit_code != 0
+        assert "STP interface path cost must be in range 1-200000000" in result.output
 
     @classmethod
     def teardown_class(cls):
