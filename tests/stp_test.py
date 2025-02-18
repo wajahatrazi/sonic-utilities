@@ -506,7 +506,10 @@ class TestStp(object):
         # Mock database behavior for MST mode
         with patch.object(db, "get_entry", return_value={"mode": "mst"}):
             result = runner.invoke(
-                config.config.commands["spanning-tree"].commands["vlan"].commands.get("forward-delay", lambda *args, **kwargs: None),
+                config.config.commands["spanning-tree"].commands["vlan"].commands.get(
+                    "forward-delay",
+                    lambda *args, **kwargs: None
+                    ),
                 [vlan_id, forward_delay], obj=db
             )
 
