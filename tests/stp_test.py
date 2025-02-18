@@ -480,10 +480,9 @@ class TestStp(object):
         runner = CliRunner()
         db = Db()
 
-        # Simulate setting the global STP mode
-        db.mod_entry('STP', 'GLOBAL', {'mode': 'pvst'})
+        # Mock global STP mode in the correct way
+        db.set("STP|GLOBAL", "mode", "pvst")  # Use correct method
 
-        # Set forward delay
         vlan_id = "100"
         forward_delay = "15"
         result = runner.invoke(config.config.commands["spanning-tree"].commands["vlan"].commands["forward-delay"],
@@ -495,10 +494,9 @@ class TestStp(object):
         runner = CliRunner()
         db = Db()
 
-        # Simulate setting the global STP mode to MST
-        db.mod_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        # Mock global STP mode to MST
+        db.set("STP|GLOBAL", "mode", "mst")  # Use correct method
 
-        # Try to configure STP VLAN settings, expecting it to fail
         vlan_id = "100"
         forward_delay = "15"
         result = runner.invoke(config.config.commands["spanning-tree"].commands["vlan"].commands["forward-delay"],
