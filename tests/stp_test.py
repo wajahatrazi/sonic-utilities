@@ -1,16 +1,16 @@
 import os
-from unittest.mock import MagicMock
+# from unittest.mock import MagicMock
 # import pytest
-from click import ClickException, Context
+# from click import ClickException, Context
 from click.testing import CliRunner
-import pytest
-from config.stp import (
-    get_global_stp_mode,
-    check_if_vlan_exist_in_db,
-    is_valid_forward_delay,
-    is_valid_stp_vlan_parameters,
-    check_if_stp_enabled_for_vlan
-)
+# import pytest
+# from config.stp import (
+#     get_global_stp_mode,
+#     check_if_vlan_exist_in_db,
+#     is_valid_forward_delay,
+#     is_valid_stp_vlan_parameters,
+#     check_if_stp_enabled_for_vlan
+# )
 
 # import time
 import config.main as config
