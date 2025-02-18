@@ -487,7 +487,10 @@ class TestStp(object):
         # Mock database set_entry function if available
         with patch.object(db, "set_entry", return_value=None):
             result = runner.invoke(
-                config.config.commands["spanning-tree"].commands["vlan"].commands.get("forward-delay", lambda *args, **kwargs: None),
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands.get("forward-delay", lambda *args, **kwargs: None),
+
                 [vlan_id, forward_delay], obj=db
             )
 
