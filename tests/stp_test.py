@@ -5,11 +5,11 @@ from click import ClickException, Context
 from click.testing import CliRunner
 import pytest
 from config.stp import (
-get_global_stp_mode,
-check_if_vlan_exist_in_db,
-is_valid_forward_delay,
-is_valid_stp_vlan_parameters,
-check_if_stp_enabled_for_vlan
+    get_global_stp_mode,
+    check_if_vlan_exist_in_db,
+    is_valid_forward_delay,
+    is_valid_stp_vlan_parameters,
+    check_if_stp_enabled_for_vlan
 )
 
 # import time
@@ -475,22 +475,22 @@ class TestStp(object):
         print("result code {}".format(result.output))
         assert result.exit_code != 0
         assert "STP bridge priority must be multiple of 4096" in result.output
-    
+
     def test_stp_forward_delay_configuration():
         db = MagicMock(spec=Db)
         ctx = MagicMock(spec=Context)
-        
+
         # Mocking database return values
         db.cfgdb.get_entry.return_value = {"mode": "pvst"}  # Mock STP mode as PVST
         db.mod_entry = MagicMock()  # Mock database modification
-        
+
         # Mock external functions
         get_global_stp_mode.return_value = "pvst"
         check_if_vlan_exist_in_db.return_value = True
         check_if_stp_enabled_for_vlan.return_value = True
         is_valid_forward_delay.return_value = True
         is_valid_stp_vlan_parameters.return_value = True
-        
+
         vid = 100
         forward_delay = "15"
         vlan_name = f"Vlan{vid}"
