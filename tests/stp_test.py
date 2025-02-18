@@ -1,6 +1,17 @@
 import os
+from unittest.mock import MagicMock
 # import pytest
+from click import ClickException, Context
 from click.testing import CliRunner
+import pytest
+from config.stp import (
+get_global_stp_mode,
+check_if_vlan_exist_in_db,
+is_valid_forward_delay,
+is_valid_stp_vlan_parameters,
+check_if_stp_enabled_for_vlan
+)
+
 # import time
 import config.main as config
 import show.main as show
@@ -464,6 +475,57 @@ class TestStp(object):
         print("result code {}".format(result.output))
         assert result.exit_code != 0
         assert "STP bridge priority must be multiple of 4096" in result.output
+    
+    def test_stp_forward_delay_configuration():
+        db = MagicMock(spec=Db)
+        ctx = MagicMock(spec=Context)
+        
+        # Mocking database return values
+        db.cfgdb.get_entry.return_value = {"mode": "pvst"}  # Mock STP mode as PVST
+        db.mod_entry = MagicMock()  # Mock database modification
+        
+        # Mock external functions
+        get_global_stp_mode.return_value = "pvst"
+        check_if_vlan_exist_in_db.return_value = True
+        check_if_stp_enabled_for_vlan.return_value = True
+        is_valid_forward_delay.return_value = True
+        is_valid_stp_vlan_parameters.return_value = True
+        
+        vid = 100
+        forward_delay = "15"
+        vlan_name = f"Vlan{vid}"
+
+        # Call the function
+        try:
+            current_mode = get_global_stp_mode(db)
+            if current_mode == "mst":
+                ctx.fail("Configuration not supported for MST")
+            elif current_mode == "pvst":
+                check_if_vlan_exist_in_db(db, ctx, vid)
+                check_if_stp_enabled_for_vlan(ctx, db, vlan_name)
+                is_valid_forward_delay(ctx, forward_delay)
+                is_valid_stp_vlan_parameters(ctx, db, vlan_name, "forward_delay", forward_delay)
+                db.mod_entry("STP_VLAN", vlan_name, {"forward_delay": forward_delay})
+        except ClickException as e:
+            pytest.fail(f"Unexpected error: {str(e)}")
+
+        # Assertions to verify expected behavior
+        check_if_vlan_exist_in_db.assert_called_once_with(db, ctx, vid)
+        check_if_stp_enabled_for_vlan.assert_called_once_with(ctx, db, vlan_name)
+        is_valid_forward_delay.assert_called_once_with(ctx, forward_delay)
+        is_valid_stp_vlan_parameters.assert_called_once_with(ctx, db, vlan_name, "forward_delay", forward_delay)
+        db.mod_entry.assert_called_once_with("STP_VLAN", vlan_name, {"forward_delay": forward_delay})
+
+    def test_stp_mode_mst_fails():
+        db = MagicMock(spec=Db)
+        ctx = MagicMock(spec=Context)
+
+        get_global_stp_mode.return_value = "mst"
+
+        with pytest.raises(ClickException, match="Configuration not supported for MST"):
+            current_mode = get_global_stp_mode(db)
+            if current_mode == "mst":
+                ctx.fail("Configuration not supported for MST")
 
     @classmethod
     def teardown_class(cls):
