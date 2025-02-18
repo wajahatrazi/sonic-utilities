@@ -532,7 +532,7 @@ class TestStp(object):
         runner = CliRunner()
         db = MagicMock()
 
-        # Mock the global STP mode
+        # Mock the global STP mode as MST
         db.get_entry.return_value = {"mode": "mst"}
 
         # Mock successful database modification
@@ -549,13 +549,15 @@ class TestStp(object):
         )
 
         # Assertions
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Unexpected error: {result.output}"
         db.mod_entry.assert_called_once_with(
-            'STP_MST_PORT', f'MST_INSTANCE|{instance_id}|{interface_name}', {'path_cost': cost}
+            'STP_MST_PORT',
+            f'MST_INSTANCE|{instance_id}|{interface_name}',
+            {'path_cost': cost}
         )
 
     def test_mst_instance_interface_cost_invalid_mode(self):
-        """Test failure when MST is not enabled."""
+        """Test failure when MST is not enabled (PVST is configured)."""
         runner = CliRunner()
         db = MagicMock()
 
@@ -573,7 +575,7 @@ class TestStp(object):
         )
 
         assert result.exit_code != 0
-        assert "Configuration not supported for PVST" in result.output
+        assert "Configuration not supported for PVST" in result.output, f"Unexpected error: {result.output}"
 
     def test_mst_instance_interface_cost_invalid_cost(self):
         """Test failure for out-of-range cost values."""
@@ -585,16 +587,18 @@ class TestStp(object):
 
         instance_id = "1"
         interface_name = "Ethernet0"
-        cost = "999999999"  # Invalid cost, out of range
+        invalid_cost = "999999999"  # Invalid cost, out of range
 
         result = runner.invoke(
             mst_instance_interface_cost,
-            [instance_id, interface_name, cost],
+            [instance_id, interface_name, invalid_cost],
             obj=db
         )
 
         assert result.exit_code != 0
-        assert "STP interface path cost must be in range 1-200000000" in result.output
+        expected_error_msg = "STP interface path cost must be in range 1-200000000"
+        assert expected_error_msg in result.output, f"Unexpected error: {result.output}"
+
 
     @classmethod
     def teardown_class(cls):
