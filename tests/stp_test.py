@@ -553,7 +553,6 @@ class TestStp(object):
             {'path_cost': str(cost)}
         )
 
-
     def test_mst_instance_interface_cost_invalid_instance_id():
         """Test failure when instance ID is out of range."""
         runner = CliRunner()
@@ -571,7 +570,6 @@ class TestStp(object):
         expected_error = "Instance ID must be in range"
         assert result.exit_code != 0, f"Unexpected success: {result.output}"
         assert expected_error in result.output, f"Expected error message not found. Got: {result.output}"
-
 
     def test_mst_instance_interface_cost_invalid_cost():
         """Test failure when cost value is out of range."""
@@ -591,7 +589,6 @@ class TestStp(object):
         expected_error = "Path cost must be in range"
         assert result.exit_code != 0, f"Unexpected success: {result.output}"
         assert expected_error in result.output, f"Expected error message not found. Got: {result.output}"
-
 
     def test_mst_instance_interface_cost_invalid_interface():
         """Test failure when the interface is invalid."""
