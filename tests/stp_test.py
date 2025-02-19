@@ -529,15 +529,13 @@ class TestStp(object):
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
 
-    def test_mst_instance_interface_cost_success():
-        """Test setting the MST instance interface cost successfully."""
+    @pytest.mark.parametrize("instance_id, interface_name, cost", [(1, "Ethernet0", 20000)])
+    def test_mst_instance_interface_cost_success(instance_id, interface_name, cost):
         runner = CliRunner()
         db = MagicMock()
-        db.get_entry.return_value = {"mode": "mst"}
 
-        instance_id = 1
-        interface_name = "Ethernet0"
-        cost = 20000
+        # Mocking database entry to simulate MST instance exists
+        db.get_entry.return_value = {"mode": "mst"}
 
         with patch('config.stp.check_if_interface_is_valid', return_value=True):
             result = runner.invoke(
@@ -546,87 +544,68 @@ class TestStp(object):
                 obj={'cfgdb': db}
             )
 
-        assert result.exit_code == 0, f"Unexpected error: {result.output}"
-        assert (
-            f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
-        ), f"Expected success message not found. Got: {result.output}"
-        db.mod_entry.assert_called_once_with(
+        assert result.exit_code == 0
+        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
+        db.mod_entry.assert_called_with(
             'STP_MST_PORT',
             f'MST_INSTANCE|{instance_id}|{interface_name}',
             {'path_cost': str(cost)}
         )
 
-    def test_mst_instance_interface_cost_invalid_instance_id():
-        """Test failure when instance ID is out of range."""
+
+    @pytest.mark.parametrize("instance_id, interface_name", [(4096, "Ethernet0")])
+    def test_mst_instance_interface_cost_invalid_instance_id(instance_id, interface_name):
         runner = CliRunner()
         db = MagicMock()
+
         db.get_entry.return_value = {"mode": "mst"}
 
-        invalid_instance_id = 100  # Assuming MST_MAX_INSTANCES is less than 100
-
-        with patch('config.stp.check_instance_id', side_effect=click.ClickException("Instance ID must be in range")):
+        with patch('config.stp.check_if_interface_is_valid', return_value=True):
             result = runner.invoke(
                 mst_instance_interface_cost,
-                [str(invalid_instance_id), "Ethernet0", "20000"],
+                [str(instance_id), interface_name, "20000"],
                 obj={'cfgdb': db}
             )
 
-        expected_error = "Instance ID must be in range"
-        assert result.exit_code != 0, f"Unexpected success: {result.output}"
-        assert expected_error in result.output, (
-            f"Expected error message not found. Got: {result.output}"
-        )
+        assert result.exit_code != 0
+        assert f"Invalid MST instance ID: {instance_id}" in result.output
 
-    def test_mst_instance_interface_cost_invalid_cost():
-        """Test failure when cost value is out of range."""
+
+    @pytest.mark.parametrize("instance_id, interface_name, cost", [(1, "Ethernet0", 200001)])
+    def test_mst_instance_interface_cost_invalid_cost(instance_id, interface_name, cost):
         runner = CliRunner()
         db = MagicMock()
+
         db.get_entry.return_value = {"mode": "mst"}
 
-        instance_id = 1
-        invalid_cost = 999999999  # Above maximum allowed range
-
-        with patch('config.stp.validate_cost', side_effect=click.ClickException("Path cost must be in range")):
-            result = runner.invoke(
-                mst_instance_interface_cost,
-                [str(instance_id), "Ethernet0", str(invalid_cost)],
-                obj={'cfgdb': db}
-            )
-
-        expected_error = "Path cost must be in range"
-        assert result.exit_code != 0, f"Unexpected success: {result.output}"
-        assert expected_error in result.output, (
-            f"Expected error message not found. Got: {result.output}"
-        )
-
-    def test_mst_instance_interface_cost_invalid_interface():
-        """Test failure when the interface is invalid."""
-        runner = CliRunner()
-        db = MagicMock()
-        db.get_entry.return_value = {"mode": "mst"}
-
-        instance_id = 1
-        interface_name = "InvalidInterface"
-        cost = 20000
-
-        with patch(
-            'config.stp.check_if_interface_is_valid',
-            side_effect=click.ClickException(
-                f"Interface name '{interface_name}' is invalid."
-            )
-        ):
-
+        with patch('config.stp.check_if_interface_is_valid', return_value=True):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
                 obj={'cfgdb': db}
             )
 
-        expected_error = f"Interface name '{interface_name}' is invalid."
-        assert result.exit_code != 0, f"Unexpected success: {result.output}"
-        assert expected_error in result.output, (
-            f"Expected error message not found. Got: {result.output}"
-        )
+        assert result.exit_code != 0
+        assert "Error: Invalid path cost. It must be between 1 and 200000." in result.output
+
+
+    @pytest.mark.parametrize("instance_id, interface_name", [(1, "InvalidInterface")])
+    def test_mst_instance_interface_cost_invalid_interface(instance_id, interface_name):
+        runner = CliRunner()
+        db = MagicMock()
+
+        db.get_entry.return_value = {"mode": "mst"}
+
+        with patch('config.stp.check_if_interface_is_valid', side_effect=Exception(f"Interface name '{interface_name}' is invalid.")):
+            result = runner.invoke(
+                mst_instance_interface_cost,
+                [str(instance_id), interface_name, "20000"],
+                obj={'cfgdb': db}
+            )
+
+        assert result.exit_code != 0
+        assert f"Interface name '{interface_name}' is invalid." in result.output
+
 
     @classmethod
     def teardown_class(cls):
