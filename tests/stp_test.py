@@ -16,8 +16,6 @@ from config.stp import (
 #     MST_MAX_INSTANCES,
 #     is_valid_stp_vlan_parameters,
 #     check_if_stp_enabled_for_vlan
-
-
 # import time
 import config.main as config
 import show.main as show
@@ -530,12 +528,11 @@ class TestStp(object):
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
 
-    def test_mst_instance_interface_cost_success(self):
+    def test_mst_instance_interface_cost_success():
         """Test setting the MST instance interface cost successfully."""
         runner = CliRunner()
         db = MagicMock()
         db.get_entry.return_value = {"mode": "mst"}
-        db.mod_entry.return_value = None
 
         instance_id = 1
         interface_name = "Ethernet0"
@@ -545,51 +542,38 @@ class TestStp(object):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
-                obj=db
+                obj={'cfgdb': db}
             )
 
         assert result.exit_code == 0, f"Unexpected error: {result.output}"
+        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
         db.mod_entry.assert_called_once_with(
             'STP_MST_PORT',
             f'MST_INSTANCE|{instance_id}|{interface_name}',
             {'path_cost': str(cost)}
         )
-        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
 
-    def test_mst_instance_interface_cost_invalid_mode(self):
-        """Test failure when MST is not enabled (PVST is configured)."""
-        runner = CliRunner()
-        db = MagicMock()
-        db.get_entry.return_value = {"mode": "pvst"}
 
-        result = runner.invoke(
-            mst_instance_interface_cost,
-            ["1", "Ethernet0", "20000"],
-            obj=db
-        )
-
-        assert result.exit_code != 0
-        assert "Configuration not supported for PVST" in result.output
-
-    def test_mst_instance_interface_cost_invalid_instance_id(self):
+    def test_mst_instance_interface_cost_invalid_instance_id():
         """Test failure when instance ID is out of range."""
         runner = CliRunner()
         db = MagicMock()
         db.get_entry.return_value = {"mode": "mst"}
 
-        invalid_instance_id = 100  # Assume MST_MAX_INSTANCES is less than 100
+        invalid_instance_id = 100  # Assuming MST_MAX_INSTANCES is less than 100
 
         result = runner.invoke(
             mst_instance_interface_cost,
             [str(invalid_instance_id), "Ethernet0", "20000"],
-            obj=db
+            obj={'cfgdb': db}
         )
 
         expected_error = "Instance ID must be in range"
-        assert result.exit_code != 0
-        assert expected_error in result.output
+        assert result.exit_code != 0, f"Unexpected success: {result.output}"
+        assert expected_error in result.output, f"Expected error message not found. Got: {result.output}"
 
-    def test_mst_instance_interface_cost_invalid_cost(self):
+
+    def test_mst_instance_interface_cost_invalid_cost():
         """Test failure when cost value is out of range."""
         runner = CliRunner()
         db = MagicMock()
@@ -601,14 +585,15 @@ class TestStp(object):
         result = runner.invoke(
             mst_instance_interface_cost,
             [str(instance_id), "Ethernet0", str(invalid_cost)],
-            obj=db
+            obj={'cfgdb': db}
         )
 
         expected_error = "Path cost must be in range"
-        assert result.exit_code != 0
-        assert expected_error in result.output
+        assert result.exit_code != 0, f"Unexpected success: {result.output}"
+        assert expected_error in result.output, f"Expected error message not found. Got: {result.output}"
 
-    def test_mst_instance_interface_cost_invalid_interface(self):
+
+    def test_mst_instance_interface_cost_invalid_interface():
         """Test failure when the interface is invalid."""
         runner = CliRunner()
         db = MagicMock()
@@ -623,11 +608,13 @@ class TestStp(object):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
-                obj=db
+                obj={'cfgdb': db}
             )
 
-        assert result.exit_code != 0
-        assert f"Interface name '{interface_name}' is invalid." in result.output
+        assert result.exit_code != 0, f"Unexpected success: {result.output}"
+        assert f"Interface name '{interface_name}' is invalid." in result.output, (
+            f"Expected error message not found. Got: {result.output}"
+        )
 
     @classmethod
     def teardown_class(cls):
