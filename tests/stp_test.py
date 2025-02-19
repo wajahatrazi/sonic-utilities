@@ -536,7 +536,7 @@ class TestStp(object):
         cost = 20000
 
         with patch('config.stp.check_if_interface_is_valid', return_value=True), \
-            patch('config.stp.click.get_current_context') as mock_get_ctx:
+             patch('config.stp.click.get_current_context') as mock_get_ctx:
 
             mock_ctx = MagicMock()
             mock_get_ctx.return_value = mock_ctx
@@ -551,7 +551,7 @@ class TestStp(object):
 
         assert result.exit_code == 0, f"Unexpected error: {result.output}"
         assert (
-            f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" 
+            f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}"
             in result.output
         ), f"Expected success message not found. Got: {result.output}"
         mock_ctx.obj['cfgdb'].mod_entry.assert_called_once_with(
@@ -618,7 +618,7 @@ class TestStp(object):
         cost = 20000
 
         with patch('config.stp.click.get_current_context') as mock_get_ctx, \
-            patch('config.stp.check_if_interface_is_valid') as mock_check_interface:
+             patch('config.stp.check_if_interface_is_valid') as mock_check_interface:
 
             mock_ctx = MagicMock()
             mock_get_ctx.return_value = mock_ctx
