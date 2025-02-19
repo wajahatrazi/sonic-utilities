@@ -531,50 +531,44 @@ class TestStp(object):
     def test_mst_instance_interface_cost_success():
         """Test setting the MST instance interface cost successfully."""
         runner = CliRunner()
+        db = MagicMock()
+        db.get_entry.return_value = {"mode": "mst"}
+
         instance_id = 1
         interface_name = "Ethernet0"
         cost = 20000
 
-        with patch('config.stp.check_if_interface_is_valid', return_value=True), \
-             patch('config.stp.click.get_current_context') as mock_get_ctx:
-
-            mock_ctx = MagicMock()
-            mock_get_ctx.return_value = mock_ctx
-            mock_ctx.obj = {'cfgdb': MagicMock()}
-            mock_ctx.obj['cfgdb'].get_entry.return_value = {"mode": "mst"}
-
+        with patch('config.stp.check_if_interface_is_valid', return_value=True):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
-                obj={'cfgdb': mock_ctx.obj['cfgdb']}
+                obj={'cfgdb': db}
             )
 
         assert result.exit_code == 0, f"Unexpected error: {result.output}"
         assert (
-            f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}"
-            in result.output
+            f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
         ), f"Expected success message not found. Got: {result.output}"
-        mock_ctx.obj['cfgdb'].mod_entry.assert_called_once_with(
+        db.mod_entry.assert_called_once_with(
             'STP_MST_PORT',
             f'MST_INSTANCE|{instance_id}|{interface_name}',
             {'path_cost': str(cost)}
         )
 
+
     def test_mst_instance_interface_cost_invalid_instance_id():
         """Test failure when instance ID is out of range."""
         runner = CliRunner()
+        db = MagicMock()
+        db.get_entry.return_value = {"mode": "mst"}
+
         invalid_instance_id = 100  # Assuming MST_MAX_INSTANCES is less than 100
 
-        with patch('config.stp.click.get_current_context') as mock_get_ctx:
-            mock_ctx = MagicMock()
-            mock_get_ctx.return_value = mock_ctx
-            mock_ctx.obj = {'cfgdb': MagicMock()}
-            mock_ctx.obj['cfgdb'].get_entry.return_value = {"mode": "mst"}
-
+        with patch('config.stp.check_instance_id', side_effect=click.ClickException("Instance ID must be in range")):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(invalid_instance_id), "Ethernet0", "20000"],
-                obj={'cfgdb': mock_ctx.obj['cfgdb']}
+                obj={'cfgdb': db}
             )
 
         expected_error = "Instance ID must be in range"
@@ -583,22 +577,21 @@ class TestStp(object):
             f"Expected error message not found. Got: {result.output}"
         )
 
+
     def test_mst_instance_interface_cost_invalid_cost():
         """Test failure when cost value is out of range."""
         runner = CliRunner()
+        db = MagicMock()
+        db.get_entry.return_value = {"mode": "mst"}
+
         instance_id = 1
         invalid_cost = 999999999  # Above maximum allowed range
 
-        with patch('config.stp.click.get_current_context') as mock_get_ctx:
-            mock_ctx = MagicMock()
-            mock_get_ctx.return_value = mock_ctx
-            mock_ctx.obj = {'cfgdb': MagicMock()}
-            mock_ctx.obj['cfgdb'].get_entry.return_value = {"mode": "mst"}
-
+        with patch('config.stp.validate_cost', side_effect=click.ClickException("Path cost must be in range")):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), "Ethernet0", str(invalid_cost)],
-                obj={'cfgdb': mock_ctx.obj['cfgdb']}
+                obj={'cfgdb': db}
             )
 
         expected_error = "Path cost must be in range"
@@ -607,31 +600,27 @@ class TestStp(object):
             f"Expected error message not found. Got: {result.output}"
         )
 
+
     def test_mst_instance_interface_cost_invalid_interface():
         """Test failure when the interface is invalid."""
         runner = CliRunner()
+        db = MagicMock()
+        db.get_entry.return_value = {"mode": "mst"}
+
         instance_id = 1
         interface_name = "InvalidInterface"
         cost = 20000
 
-        with patch('config.stp.click.get_current_context') as mock_get_ctx, \
-             patch('config.stp.check_if_interface_is_valid') as mock_check_interface:
-
-            mock_ctx = MagicMock()
-            mock_get_ctx.return_value = mock_ctx
-            mock_ctx.obj = {'cfgdb': MagicMock()}
-            mock_ctx.obj['cfgdb'].get_entry.return_value = {"mode": "mst"}
-
-            mock_check_interface.side_effect = lambda ctx, db, intf: ctx.fail(f"Interface name '{intf}' is invalid.")
-
+        with patch('config.stp.check_if_interface_is_valid', side_effect=click.ClickException(f"Interface name '{interface_name}' is invalid.")):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
-                obj={'cfgdb': mock_ctx.obj['cfgdb']}
+                obj={'cfgdb': db}
             )
 
+        expected_error = f"Interface name '{interface_name}' is invalid."
         assert result.exit_code != 0, f"Unexpected success: {result.output}"
-        assert f"Interface name '{interface_name}' is invalid." in result.output, (
+        assert expected_error in result.output, (
             f"Expected error message not found. Got: {result.output}"
         )
 
