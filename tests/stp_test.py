@@ -2,6 +2,7 @@ import os
 from unittest.mock import MagicMock, patch
 # from unittest.mock import MagicMock
 import pytest
+import click
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
@@ -611,7 +612,13 @@ class TestStp(object):
         interface_name = "InvalidInterface"
         cost = 20000
 
-        with patch('config.stp.check_if_interface_is_valid', side_effect=click.ClickException(f"Interface name '{interface_name}' is invalid.")):
+        with patch(
+            'config.stp.check_if_interface_is_valid',
+            side_effect=click.ClickException(
+                f"Interface name '{interface_name}' is invalid."
+            )
+        ):
+
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
