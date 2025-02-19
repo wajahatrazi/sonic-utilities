@@ -2,7 +2,6 @@ import os
 from unittest.mock import MagicMock, patch
 # from unittest.mock import MagicMock
 import pytest
-import click
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
@@ -534,16 +533,20 @@ class TestStp(object):
         runner = CliRunner()
         db = MagicMock()
 
-        # Mocking database entry to simulate MST instance exists
+        # Ensure parameters are used in the mocks and command invocation
         db.get_entry.return_value = {"mode": "mst"}
 
-        with patch('config.stp.check_if_interface_is_valid', return_value=True):
+        with patch(
+            'config.stp.check_if_interface_is_valid',
+            return_value=True
+        ):
             result = runner.invoke(
                 mst_instance_interface_cost,
                 [str(instance_id), interface_name, str(cost)],
                 obj={'cfgdb': db}
             )
 
+        # Use parameters in assertions to avoid unused parameter warnings
         assert result.exit_code == 0
         assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
         db.mod_entry.assert_called_with(
