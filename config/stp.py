@@ -104,8 +104,8 @@ MST_MIN_INSTANCES = 0
 MST_MAX_INSTANCES = 63
 MST_DEFAULT_INSTANCE = 0
 
-MST_MIN_PORT_PATH_COST = 20000000
-MST_MAX_PORT_PATH_COST = 20000000
+MST_MIN_PORT_PATH_COST = 1
+MST_MAX_PORT_PATH_COST = 200000000
 MST_DEFAULT_PORT_PATH_COST = 1
 
 MST_AUTO_LINK_TYPE = 'auto'
@@ -1910,25 +1910,30 @@ def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
 def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
-    """Configure path cost of an interface for an MST instance"""
+    """Configure path cost of an interface for an MST instance."""
     ctx = click.get_current_context()
     db = _db.cfgdb
 
-    # Validate instance_id
-    if instance_id < 0 or instance_id >= MST_MAX_INSTANCES:
-        ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES-1}")
+    # Validate MST mode
+    mode = get_global_stp_mode(db)
+    if mode != "mst":
+        ctx.fail("Configuration not supported for PVST")
 
-    # Validate cost value
-    if cost < MST_MIN_PORT_PATH_COST or cost > MST_MAX_PORT_PATH_COST:
+    # Validate instance_id range
+    if not (0 <= instance_id < MST_MAX_INSTANCES):
+        ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES - 1}")
+
+    # Validate cost range
+    if not (MST_MIN_PORT_PATH_COST <= cost <= MST_MAX_PORT_PATH_COST):
         ctx.fail(f"Path cost must be in range {MST_MIN_PORT_PATH_COST}-{MST_MAX_PORT_PATH_COST}")
 
-    # Validate if the interface is valid
+    # Validate interface name
     check_if_interface_is_valid(ctx, db, interface_name)
 
-    # Construct the key and field-value dictionary
+    # Prepare key and value for database update
     mst_instance_interface_key = f"MST_INSTANCE|{instance_id}|{interface_name}"
     fvs = {'path_cost': str(cost)}
 
-    # Update the database entry
+    # Update database entry
     db.mod_entry('STP_MST_PORT', mst_instance_interface_key, fvs)
     click.echo(f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}")

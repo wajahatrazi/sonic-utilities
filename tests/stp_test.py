@@ -6,7 +6,13 @@ import pytest
 from click.testing import CliRunner
 # import pytest
 from config.stp import (
-    mst_instance_interface_cost
+    mst_instance_interface_cost,
+    MST_MIN_PORT_PATH_COST,
+    MST_MAX_PORT_PATH_COST,
+    MST_MAX_INSTANCES,
+
+
+
 )
 #     get_global_stp_mode,
 #     check_if_vlan_exist_in_db,
@@ -527,24 +533,22 @@ class TestStp(object):
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
 
-    def test_mst_instance_interface_cost_success(self):
+    def test_mst_instance_interface_cost_success():
         """Test setting the MST instance interface cost successfully."""
         runner = CliRunner()
         db = MagicMock()
 
-        # Mock the global STP mode as MST
+        # Mock MST mode and successful modification
         db.get_entry.return_value = {"mode": "mst"}
-
-        # Mock successful database modification
         db.mod_entry.return_value = None
 
-        instance_id = "1"
+        instance_id = 1
         interface_name = "Ethernet0"
-        cost = "20000"
+        cost = 20000
 
         result = runner.invoke(
             mst_instance_interface_cost,
-            [instance_id, interface_name, cost],
+            [str(instance_id), interface_name, str(cost)],
             obj=db
         )
 
@@ -553,51 +557,102 @@ class TestStp(object):
         db.mod_entry.assert_called_once_with(
             'STP_MST_PORT',
             f'MST_INSTANCE|{instance_id}|{interface_name}',
-            {'path_cost': cost}
+            {'path_cost': str(cost)}
         )
+        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
 
-    def test_mst_instance_interface_cost_invalid_mode(self):
+    def test_mst_instance_interface_cost_invalid_mode():
         """Test failure when MST is not enabled (PVST is configured)."""
         runner = CliRunner()
         db = MagicMock()
 
-        # Mock STP mode as PVST instead of MST
+        # Mock PVST mode
         db.get_entry.return_value = {"mode": "pvst"}
 
-        instance_id = "1"
+        instance_id = 1
         interface_name = "Ethernet0"
-        cost = "20000"
+        cost = 20000
 
         result = runner.invoke(
             mst_instance_interface_cost,
-            [instance_id, interface_name, cost],
+            [str(instance_id), interface_name, str(cost)],
             obj=db
         )
 
         assert result.exit_code != 0
         assert "Configuration not supported for PVST" in result.output, f"Unexpected error: {result.output}"
 
-    def test_mst_instance_interface_cost_invalid_cost(self):
-        """Test failure for out-of-range cost values."""
+    def test_mst_instance_interface_cost_invalid_instance_id():
+        """Test failure when instance ID is out of range."""
         runner = CliRunner()
         db = MagicMock()
 
-        # Mock the global STP mode
+        # Mock MST mode
         db.get_entry.return_value = {"mode": "mst"}
 
-        instance_id = "1"
+        invalid_instance_id = MST_MAX_INSTANCES + 1
         interface_name = "Ethernet0"
-        invalid_cost = "999999999"  # Invalid cost, out of range
+        cost = 20000
 
         result = runner.invoke(
             mst_instance_interface_cost,
-            [instance_id, interface_name, invalid_cost],
+            [str(invalid_instance_id), interface_name, str(cost)],
             obj=db
         )
 
+        expected_error = f"Instance ID must be in range 0-{MST_MAX_INSTANCES - 1}"
         assert result.exit_code != 0
-        expected_error_msg = "STP interface path cost must be in range 1-200000000"
-        assert expected_error_msg in result.output, f"Unexpected error: {result.output}"
+        assert expected_error in result.output, f"Unexpected error: {result.output}"
+
+    def test_mst_instance_interface_cost_invalid_cost():
+        """Test failure when cost value is out of range."""
+        runner = CliRunner()
+        db = MagicMock()
+
+        # Mock MST mode
+        db.get_entry.return_value = {"mode": "mst"}
+
+        instance_id = 1
+        interface_name = "Ethernet0"
+        invalid_cost = 999999999  # Above maximum range
+
+        result = runner.invoke(
+            mst_instance_interface_cost,
+            [str(instance_id), interface_name, str(invalid_cost)],
+            obj=db
+        )
+
+        expected_error = f"Path cost must be in range {MST_MIN_PORT_PATH_COST}-{MST_MAX_PORT_PATH_COST}"
+        assert result.exit_code != 0
+        assert expected_error in result.output, f"Unexpected error: {result.output}"
+
+    def test_mst_instance_interface_cost_invalid_interface():
+        """Test failure when the interface is invalid."""
+        runner = CliRunner()
+        db = MagicMock()
+
+        # Mock MST mode and interface validation failure
+        db.get_entry.return_value = {"mode": "mst"}
+
+        instance_id = 1
+        interface_name = "InvalidInterface"
+        cost = 20000
+
+        # Patch interface validation to fail
+        def mock_check_if_interface_is_valid(ctx, db, interface_name):
+            ctx.fail(f"Interface name '{interface_name}' is invalid.")
+
+        from unittest.mock import patch
+
+        with patch('config.stp.check_if_interface_is_valid', side_effect=mock_check_if_interface_is_valid):
+            result = runner.invoke(
+                mst_instance_interface_cost,
+                [str(instance_id), interface_name, str(cost)],
+                obj=db
+            )
+
+        assert result.exit_code != 0
+        assert f"Interface name '{interface_name}' is invalid." in result.output, f"Unexpected error: {result.output}"
 
 
     @classmethod
