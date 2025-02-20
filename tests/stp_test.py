@@ -544,7 +544,12 @@ class TestStp(object):
             )
 
         assert result.exit_code == 0
-        assert f"Path cost {test_cost} set for interface {test_interface_name} in MST instance {test_instance_id}" in result.output
+        expected_output = (
+            f"Path cost {test_cost} set for interface "
+            f"{test_interface_name} in MST instance {test_instance_id}"
+        )
+        assert expected_output in result.output
+
         db.mod_entry.assert_called_with(
             'STP_MST_PORT',
             f'MST_INSTANCE|{test_instance_id}|{test_interface_name}',
