@@ -528,49 +528,45 @@ class TestStp(object):
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
 
-    @pytest.mark.parametrize("instance_id, interface_name, cost", [(1, "Ethernet0", 20000)])
-    def test_mst_instance_interface_cost_success(instance_id, interface_name, cost):
+    @pytest.mark.parametrize("test_instance_id, test_interface_name, test_cost", [(1, "Ethernet0", 20000)])
+    def test_mst_instance_interface_cost_success(test_instance_id, test_interface_name, test_cost):
         runner = CliRunner()
         db = MagicMock()
 
-        # Ensure parameters are used in the mocks and command invocation
-        db.get_entry.return_value = {"mode": "mst"}
-
-        with patch(
-            'config.stp.check_if_interface_is_valid',
-            return_value=True
-        ):
-            result = runner.invoke(
-                mst_instance_interface_cost,
-                [str(instance_id), interface_name, str(cost)],
-                obj={'cfgdb': db}
-            )
-
-        # Use parameters in assertions to avoid unused parameter warnings
-        assert result.exit_code == 0
-        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
-        db.mod_entry.assert_called_with(
-            'STP_MST_PORT',
-            f'MST_INSTANCE|{instance_id}|{interface_name}',
-            {'path_cost': str(cost)}
-        )
-
-    @pytest.mark.parametrize("instance_id, interface_name", [(4096, "Ethernet0")])
-    def test_mst_instance_interface_cost_invalid_instance_id(instance_id, interface_name):
-        runner = CliRunner()
-        db = MagicMock()
-
+        # Explicit usage of parameters
         db.get_entry.return_value = {"mode": "mst"}
 
         with patch('config.stp.check_if_interface_is_valid', return_value=True):
             result = runner.invoke(
                 mst_instance_interface_cost,
-                [str(instance_id), interface_name, "20000"],
+                [str(test_instance_id), test_interface_name, str(test_cost)],
                 obj={'cfgdb': db}
             )
 
-        assert result.exit_code != 0
-        assert f"Invalid MST instance ID: {instance_id}" in result.output
+        assert result.exit_code == 0
+        assert f"Path cost {test_cost} set for interface {test_interface_name} in MST instance {test_instance_id}" in result.output
+        db.mod_entry.assert_called_with(
+            'STP_MST_PORT',
+            f'MST_INSTANCE|{test_instance_id}|{test_interface_name}',
+            {'path_cost': str(test_cost)}
+        )
+
+        @pytest.mark.parametrize("instance_id, interface_name", [(4096, "Ethernet0")])
+        def test_mst_instance_interface_cost_invalid_instance_id(instance_id, interface_name):
+            runner = CliRunner()
+            db = MagicMock()
+
+            db.get_entry.return_value = {"mode": "mst"}
+
+            with patch('config.stp.check_if_interface_is_valid', return_value=True):
+                result = runner.invoke(
+                    mst_instance_interface_cost,
+                    [str(instance_id), interface_name, "20000"],
+                    obj={'cfgdb': db}
+                )
+
+            assert result.exit_code != 0
+            assert f"Invalid MST instance ID: {instance_id}" in result.output
 
     @pytest.mark.parametrize("instance_id, interface_name, cost", [(1, "Ethernet0", 200001)])
     def test_mst_instance_interface_cost_invalid_cost(instance_id, interface_name, cost):
