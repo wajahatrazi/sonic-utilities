@@ -1,13 +1,13 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 # from unittest.mock import MagicMock
 import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-from config.stp import (
-    mst_instance_interface_cost,
-)
+# from config.stp import (
+#     mst_instance_interface_cost,
+# )
 #     get_global_stp_mode,
 #     check_if_vlan_exist_in_db,
 #     is_valid_forward_delay,
