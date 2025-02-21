@@ -1058,47 +1058,6 @@ def spanning_tree_interface(_db):
     pass
 
 
-# # config spanning_tree interface enable <interface_name>
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# # It will have a check for global stp mode to figure out for which mode is it working?
-# @spanning_tree_interface.command('enable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_enable(_db, interface_name):
-#     """Enable STP for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_global_stp_enabled(db, ctx)
-#     if is_stp_enabled_for_interface(db, interface_name):
-#         ctx.fail("STP is already enabled for " + interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     stp_intf_entry = db.get_entry('STP_PORT', interface_name)
-#     if len(stp_intf_entry) == 0:
-#         fvs = {'enabled': 'true',
-#                'root_guard': 'false',
-#                'bpdu_guard': 'false',
-#                'bpdu_guard_do_disable': 'false',
-#                'portfast': 'false',
-#                'uplink_fast': 'false'}
-#         db.set_entry('STP_PORT', interface_name, fvs)
-#     else:
-#         db.mod_entry('STP_PORT', interface_name, {'enabled': 'true'})
-
-
-# # config spanning_tree interface disable <interface_name>
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface.command('disable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_disable(_db, interface_name):
-#     """Disable STP for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_global_stp_enabled(db, ctx)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'enabled': 'false'})
-
-
 # STP interface port priority
 STP_INTERFACE_MIN_PRIORITY = 0
 STP_INTERFACE_MAX_PRIORITY = 240
@@ -1108,33 +1067,6 @@ STP_INTERFACE_DEFAULT_PRIORITY = 128
 def is_valid_interface_priority(ctx, intf_priority):
     if intf_priority not in range(STP_INTERFACE_MIN_PRIORITY, STP_INTERFACE_MAX_PRIORITY + 1):
         ctx.fail("STP interface priority must be in range 0-240")
-
-
-# -----------------------OLD PVST INTERFACE PRIORITY COMMAND------------------------
-# config spanning_tree interface priority <interface_name> <value: 0-240>
-# @spanning_tree_interface.command('priority')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.argument('priority', metavar='<0-240>', required=True, type=int)
-# @clicommon.pass_db
-# def stp_interface_priority(_db, interface_name, priority):
-#     """Configure STP port priority for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     is_valid_interface_priority(ctx, priority)
-#     curr_intf_proirty = db.get_entry('STP_PORT', interface_name).get('priority')
-#     db.mod_entry('STP_PORT', interface_name, {'priority': priority})
-#     # update interface priority in all stp_vlan_intf entries if entry exists
-#     for vlan, intf in db.get_table('STP_VLAN_PORT'):
-#         if intf == interface_name:
-#             vlan_intf_key = "{}|{}".format(vlan, interface_name)
-#             vlan_intf_entry = db.get_entry('STP_VLAN_PORT', vlan_intf_key)
-#             if len(vlan_intf_entry) != 0:
-#                 vlan_intf_priority = vlan_intf_entry.get('priority')
-#                 if curr_intf_proirty == vlan_intf_priority:
-#                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'priority': priority})
-    # end
 
 
 # STP interface port path cost
@@ -1171,88 +1103,6 @@ def stp_interface_path_cost(_db, interface_name, cost):
                 if curr_intf_cost == vlan_intf_cost:
                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'path_cost': cost})
     # end
-
-
-# -----------------------OLD PVST INTERFACE_ROOT_GUARD COMMAND------------------------
-# # STP interface root guard
-# @spanning_tree_interface.group('root_guard')
-# @clicommon.pass_db
-# def spanning_tree_interface_root_guard(_db):
-#     """Configure STP root guard for interface"""
-#     pass
-
-
-# # config spanning_tree interface root_guard enable <interface_name>
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_root_guard.command('enable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_root_guard_enable(_db, interface_name):
-#     """Enable STP root guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'true'})
-
-
-# # config spanning_tree interface root_guard disable <interface_name>
-# # mst CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_root_guard.command('disable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_root_guard_disable(_db, interface_name):
-#     """Disable STP root guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'root_guard': 'false'})
-
-
-# -----------------------OLD PVST INTERFACE_BPDU_GUARD COMMAND------------------------
-# STP interface bpdu guard
-# config spanning_tree interface bpdu_guard
-# @spanning_tree_interface.group('bpdu_guard')
-# @clicommon.pass_db
-# def spanning_tree_interface_bpdu_guard(_db):
-#     """Configure STP bpdu guard for interface"""
-#     pass
-
-
-# config spanning_tree interface bpdu_guard enable <interface_name> [-s]
-# MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_bpdu_guard.command('enable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @click.option('-s', '--shutdown', is_flag=True)
-# @clicommon.pass_db
-# def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
-#     """Enable STP bpdu guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     if shutdown is True:
-#         bpdu_guard_do_disable = 'true'
-#     else:
-#         bpdu_guard_do_disable = 'false'
-#     fvs = {'bpdu_guard': 'true',
-#            'bpdu_guard_do_disable': bpdu_guard_do_disable}
-#     db.mod_entry('STP_PORT', interface_name, fvs)
-
-
-# # config spanning_tree interface bpdu_guard disable <interface_name>
-# # MST CONFIGURATION IN THE STP_PORT TABLE
-# @spanning_tree_interface_bpdu_guard.command('disable')
-# @click.argument('interface_name', metavar='<interface_name>', required=True)
-# @clicommon.pass_db
-# def stp_interface_bpdu_guard_disable(_db, interface_name):
-#     """Disable STP bpdu guard for interface"""
-#     ctx = click.get_current_context()
-#     db = _db.cfgdb
-#     check_if_stp_enabled_for_interface(ctx, db, interface_name)
-#     check_if_interface_is_valid(ctx, db, interface_name)
-#     db.mod_entry('STP_PORT', interface_name, {'bpdu_guard': 'false'})
 
 
 # STP interface portfast
@@ -1500,9 +1350,6 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
     vlan_interface = str(vlan_name) + "|" + interface_name
     db.mod_entry('STP_VLAN_PORT', vlan_interface, {'path_cost': cost})
 
-# Invoke main()
-# if __name__ == '__main__':
-#    spanning_tree()
 
 # INTERFACE-LEVEL COMMANDS
 # Command: config spanning_tree interface {enable} <ifname>
