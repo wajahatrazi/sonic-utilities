@@ -536,8 +536,16 @@ class TestStpVlanForwardDelay:
         # Set STP mode to PVST and enable STP for VLAN
         self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
         self.db.cfgdb.set_entry('VLAN', "Vlan100", {"vlanid": "100"})
-        self.db.cfgdb.set_entry('STP_VLAN', "Vlan100", {"enabled": "true"})
 
+        # Ensure VLAN STP entry has all required parameters
+        self.db.cfgdb.set_entry('STP_VLAN', "Vlan100", {
+            "enabled": "true",
+            "forward_delay": "15",  # Default
+            "max_age": "20",  # 🔹 Must be set to avoid NoneType error
+            "hello_time": "2"  # 🔹 Must be set to avoid NoneType error
+        })
+
+        # Run the command to set forward delay
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["vlan"]
@@ -546,7 +554,15 @@ class TestStpVlanForwardDelay:
             obj=self.db,
         )
 
-        assert result.exit_code == 0
+        print("\nCommand Output:", result.output)
+
+        # Ensure the command executed successfully
+        assert result.exit_code == 0, f"Test failed with error: {result.output}"
+
+        # Validate that forward_delay was correctly updated
+        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan100")
+        assert updated_vlan_entry.get("forward_delay") == "10", "Forward delay was not updated!"
+
 
 
     @classmethod
