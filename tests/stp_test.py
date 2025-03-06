@@ -207,77 +207,6 @@ class TestStp(object):
         assert result.exit_code != 0
         assert "PVST is already configured" in result.output
 
-    # def test_stp_validate_interface_params(self):
-    #     runner = CliRunner()
-    #     db = Db()
-
-    #     print("\n🚀 Starting STP Interface Validation Test...")
-
-    #     # Step 1: Disable STP to ensure a clean state
-    #     print("🛑 Disabling STP for a clean test environment...")
-    #     runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["pvst"], obj=db)
-    #     time.sleep(1)  # Allow system time to process
-
-    #     # Step 2: Enable STP mode and confirm it's properly set
-    #     print("✅ Enabling STP mode (PVST)...")
-    #     for attempt in range(5):  # Retry enabling STP mode
-    #         result = runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
-    #         print(f"🔄 Attempt {attempt + 1}: exit code = {result.exit_code}\nResult: {result.output}")
-
-    #         if result.exit_code == 0 or "PVST is already configured" in result.output:
-    #             time.sleep(2)  # Allow system time to process
-    #             break
-    #         time.sleep(1)
-    #     else:
-    #         pytest.fail(f"❌ Failed to enable PVST mode. Error: {result.output}")
-
-    #     # Step 3: Verify STP mode is correctly set
-    #     print("🔍 Verifying STP mode...")
-    #     for attempt in range(5):
-    #         result = runner.invoke(show.cli.commands["spanning-tree"], [], obj=db)
-    #         print(f"STP mode check attempt {attempt + 1}: {result.output}")
-
-    #         if "Spanning-tree Mode: PVST" in result.output:
-    #             break
-    #         time.sleep(1)
-    #     else:
-    #         pytest.fail(f"❌ STP Mode not set correctly. Final Output: {result.output}")
-
-    #     # Step 4: Add VLAN 100
-    #     print("🛠 Adding VLAN 100...")
-    #     result = runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
-    #     assert result.exit_code == 0, f"❌ Failed to add VLAN 100. Error Output:\n{result.output}"
-    #     time.sleep(2)  # Ensure VLAN is ready
-
-    #     # Step 5: Add Ethernet4 to VLAN 100
-    #     print("🔗 Adding Ethernet4 to VLAN 100...")
-    #     result = runner.invoke(
-    #         config.config.commands["vlan"].commands["member"].commands["add"],
-    #         ["100", "Ethernet4"],
-    #         obj=db,
-    #     )
-    #     assert result.exit_code == 0, f"❌ Failed to add Ethernet4 to VLAN 100. Error Output:\n{result.output}"
-    #     time.sleep(2)  # Ensure interface is part of VLAN
-
-    #     # Step 6: Enable STP on Ethernet4 (should succeed now)
-    #     print("⚡ Enabling STP on Ethernet4...")
-    #     for attempt in range(5):  # Retry enabling STP on the interface
-    #         result = runner.invoke(
-    #             config.config.commands["spanning-tree"].commands["interface"].commands["enable"],
-    #             ["Ethernet4"],
-    #             obj=db,
-    #         )
-    #         print(f"🔄 Attempt {attempt + 1}: exit code = {result.exit_code}\nResult: {result.output}")
-
-    #         if result.exit_code == 0:
-    #             print("✅ STP successfully enabled on Ethernet4.")
-    #             break
-    #         time.sleep(1)
-    #     else:
-    #         pytest.fail(f"❌ Failed to enable STP on Ethernet4. Error: {result.output}")
-
-    #     print("🎉 Test passed successfully! STP validation completed.")
-
     def test_add_vlan_enable_pvst(self):
         runner = CliRunner()
         db = Db()
@@ -527,6 +456,112 @@ class TestStp(object):
                 assert "Configuration not supported for MST" in result.output, "MST mode check failed"
         else:
             pytest.skip("Skipping test: `get_entry` not found in Db")
+
+
+class TestStpVlanForwardDelay:
+    def setup_method(self):
+        """Setup test environment."""
+        self.runner = CliRunner()
+        self.db = Db()
+
+    def test_stp_vlan_forward_delay_mst_mode(self):
+        """Test that forward delay configuration fails in MST mode."""
+        # Set STP mode to MST
+        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "mst"})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["forward_delay"],
+            ["100", "10"],
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "Configuration not supported for MST" in result.output
+
+    def test_stp_vlan_forward_delay_vlan_not_exist(self):
+        """Test that forward delay configuration fails if VLAN does not exist."""
+        # Set STP mode to PVST
+        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["forward_delay"],
+            ["999", "10"],  # VLAN 999 does not exist
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "Vlan999 doesn't exist" in result.output
+
+    def test_stp_vlan_forward_delay_stp_not_enabled(self):
+        """Test that forward delay configuration fails if STP is not enabled for VLAN."""
+        # Set STP mode to PVST and create VLAN
+        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
+        self.db.cfgdb.set_entry('VLAN', "Vlan100", {"vlanid": "100"})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["forward_delay"],
+            ["100", "10"],
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "STP is not enabled for VLAN" in result.output
+
+    def test_stp_vlan_forward_delay_invalid_value(self):
+        """Test that forward delay configuration fails with an invalid value."""
+        # Set STP mode to PVST and enable STP for VLAN
+        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
+        self.db.cfgdb.set_entry('VLAN', "Vlan100", {"vlanid": "100"})
+        self.db.cfgdb.set_entry('STP_VLAN', "Vlan100", {"enabled": "true"})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["forward_delay"],
+            ["100", "50"],  # Invalid value, should be in range 4-30
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "STP forward delay value must be in range 4-30" in result.output
+
+    def test_stp_vlan_forward_delay_valid(self):
+        """Test that forward delay configuration succeeds with a valid value."""
+        # Set STP mode to PVST and enable STP for VLAN
+        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
+        self.db.cfgdb.set_entry('VLAN', "Vlan100", {"vlanid": "100"})
+        self.db.cfgdb.set_entry('STP_VLAN', "Vlan100", {"enabled": "true"})
+
+        print("\nBefore Command Execution:")
+        print("STP Mode:", self.db.cfgdb.get_entry('STP', "GLOBAL"))
+        print("VLAN 100:", self.db.cfgdb.get_entry('VLAN', "Vlan100"))
+        print("STP_VLAN 100:", self.db.cfgdb.get_entry('STP_VLAN', "Vlan100"))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["forward_delay"],
+            ["100", "10"],  # Valid value
+            obj=self.db,
+        )
+
+        print("\nAfter Command Execution:")
+        print("STP Mode:", self.db.cfgdb.get_entry('STP', "GLOBAL"))
+        print("VLAN 100:", self.db.cfgdb.get_entry('VLAN', "Vlan100"))
+        print("STP_VLAN 100:", self.db.cfgdb.get_entry('STP_VLAN', "Vlan100"))
+        print("Command Output:", result.output)
+
+        assert result.exit_code == 0, f"Test failed with error: {result.output}"
+
+        # Validate the forward_delay is correctly updated
+        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan100")
+        assert updated_vlan_entry.get("forward_delay") == "10", "Forward delay was not updated!"
 
 
     @classmethod
