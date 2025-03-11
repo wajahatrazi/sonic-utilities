@@ -524,7 +524,7 @@ class TestStpVlanForwardDelay:
             config.config.commands["spanning-tree"]
             .commands["vlan"]
             .commands["forward_delay"],
-            ["100", "50"],  # Invalid value, should be in range 4-30
+            ["100", "50"],  # Invalid value,  should be in range 4-30
             obj=self.db,
         )
 
