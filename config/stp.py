@@ -442,16 +442,6 @@ def get_bridge_mac_address(db):
 
 # K_TESTCASE
 def enable_mst_instance0(db):
-    # """Get VLAN list and create MST instance 0"""
-    # vlan_list = db.get_table('VLAN').keys()
-    # if vlan_list:
-    #    vlan_list_str = ','.join(vlan_list)
-    #    mst_inst_fvs = {
-    #        'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY,
-    #        'vlan_list': vlan_list_str
-    #    }
-    #    db.set_entry('STP_MST', 'MST_INSTANCE|0', mst_inst_fvs)  # Is it STP_MST_INST or STP_MST?
-
     mst_inst_fvs = {
         'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY
     }
@@ -644,8 +634,6 @@ def stp_global_forward_delay(_db, forward_delay):
     elif current_mode == "mst":
         is_valid_forward_delay(ctx, forward_delay)
         db.mod_entry('STP_MST', "GLOBAL", {'forward_delay': forward_delay})
-        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'forward_delay': forward_delay})
-        # update_mst_instance_parameters(ctx, db, 'forward_delay', forward_delay)
 
     else:
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
@@ -676,8 +664,6 @@ def stp_global_hello_interval(_db, hello_interval):
     elif current_mode == "mst":
         is_valid_hello_interval(ctx, hello_interval)
         db.mod_entry('STP_MST', "GLOBAL", {'hello_time': hello_interval})
-        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'hello_time': hello_interval})
-        # update_mst_instance_parameters(ctx, db, 'hello_time', hello_interval)
 
     else:
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
@@ -741,8 +727,6 @@ def stp_global_max_hops(_db, max_hops):
         if max_hops not in range(MST_MIN_HOPS, MST_MAX_HOPS + 1):
             ctx.fail("STP max hops must be in range 1-40")
         db.mod_entry('STP_MST', "GLOBAL", {'max_hops': max_hops})
-        # db.mod_entry('STP_MST', "STP_MST|GLOBAL", {'max_hops': max_hops})
-        # update_mst_instance_parameters(ctx, db, 'max_hops', max_hops)
     else:
         ctx.fail("Invalid STP mode configured")
 
@@ -885,8 +869,6 @@ def stp_vlan_enable(_db, vid):
         if get_stp_enabled_vlan_count(db) >= get_max_stp_instances():
             ctx.fail("Exceeded maximum STP configurable VLAN instances")
         check_if_global_stp_enabled(db, ctx)
-        # when enabled for first time, create VLAN entry with
-        # global values - else update only VLAN STP state
         stp_vlan_entry = db.get_entry('STP_VLAN', vlan_name)
         if len(stp_vlan_entry) == 0:
             fvs = {'enabled': 'true',
@@ -971,6 +953,7 @@ def stp_vlan_hello_interval(_db, vid, hello_interval):
         db.mod_entry('STP_VLAN', vlan_name, {'hello_time': hello_interval})
 
 
+# REMAINING
 # not for MST
 # config spanning_tree vlan max_age <vlan-id> <6-40 seconds>
 @spanning_tree_vlan.command('max_age')
@@ -994,6 +977,7 @@ def stp_vlan_max_age(_db, vid, max_age):
         db.mod_entry('STP_VLAN', vlan_name, {'max_age': max_age})
 
 
+# REMAINING
 # not for MST
 # config spanning_tree vlan priority <vlan-id> <0-61440>
 @spanning_tree_vlan.command('priority')
@@ -1356,6 +1340,7 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 # Configure an interface for MSTP.
 
 
+# REMAINING
 @spanning_tree_interface.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1409,6 +1394,7 @@ def stp_interface_enable(_db, interface_name):
 @spanning_tree_interface.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_disable(_db, interface_name):
     """Disable STP for interface"""
     ctx = click.get_current_context()
@@ -1436,6 +1422,7 @@ def stp_interface_disable(_db, interface_name):
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def mstp_interface_edgeport(_db, state, interface_name):
     """Enable/Disable edge port on interface"""
     ctx = click.get_current_context()
@@ -1461,6 +1448,7 @@ def spanning_tree_interface_bpdu_guard(_db):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
 @clicommon.pass_db
+# REMIANING
 def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     """Enable STP bpdu guard for interface"""
     ctx = click.get_current_context()
@@ -1484,6 +1472,7 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_bpdu_guard_disable(_db, interface_name):
     """Disable STP bpdu guard for interface"""
     ctx = click.get_current_context()
@@ -1513,6 +1502,7 @@ def spanning_tree_interface_root_guard(_db):
 @spanning_tree_interface_root_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_root_guard_enable(_db, interface_name):
     """Enable STP root guard for interface"""
     ctx = click.get_current_context()
@@ -1534,6 +1524,7 @@ def stp_interface_root_guard_enable(_db, interface_name):
 @spanning_tree_interface_root_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_root_guard_disable(_db, interface_name):
     """Disable STP root guard for interface"""
     ctx = click.get_current_context()
@@ -1560,6 +1551,7 @@ def stp_interface_root_guard_disable(_db, interface_name):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority_value', metavar='<0-240>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_priority(_db, interface_name, priority_value):
     """Configure STP port priority for interface"""
     ctx = click.get_current_context()
@@ -1603,6 +1595,7 @@ STP_INTERFACE_MAX_COST = 200000000
 STP_INTERFACE_DEFAULT_COST = 0
 
 
+# REMAINING
 def is_valid_interface_cost(ctx, cost):
     """Validate if the provided cost is within the valid range"""
     if cost < STP_INTERFACE_MIN_COST or cost > STP_INTERFACE_MAX_COST:
@@ -1614,6 +1607,7 @@ def is_valid_interface_cost(ctx, cost):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_cost(_db, interface_name, cost):
     """Configure STP port cost for interface"""
     ctx = click.get_current_context()
@@ -1660,6 +1654,7 @@ def spanning_tree_interface_link_type(_db):
 )
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
+# REMAINING
 def stp_interface_link_type_set(_db, link_type, interface_name):
     """Configure STP link type for interface"""
     ctx = click.get_current_context()
@@ -1719,6 +1714,7 @@ def mst_instance_interface():
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority', metavar='<0-240>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
     """Configure priority of an interface for an MST instance"""
     ctx = click.get_current_context()
@@ -1755,6 +1751,7 @@ def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
     """Configure path cost of an interface for an MST instance."""
     ctx = click.get_current_context()
@@ -1790,6 +1787,7 @@ def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('priority_value', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_priority(_db, instance_id, priority_value):
     """
     Configure bridge priority for an MST instance.
@@ -1828,6 +1826,7 @@ def mst_instance_vlan():
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_vlan_add(_db, instance_id, vlan_id):
     """
     Map a VLAN to an MST instance.
@@ -1872,6 +1871,7 @@ def mst_instance_vlan_add(_db, instance_id, vlan_id):
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_vlan_del(_db, instance_id, vlan_id):
     """
     Remove a VLAN from an MST instance.
