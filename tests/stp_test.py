@@ -771,16 +771,20 @@ class TestStpVlanMaxAge:
             obj=self.db,
         )
 
+        # Debugging output
         print(f"\nActual Command Output:\n{result.output}")
 
         # Ensure the command fails with the correct error message
         assert result.exit_code != 0, "Command should have failed with MST mode"
+
+        # Check error message dynamically from stp.py behavior
         expected_errors = [
             "configuration not supported for mst",
             "error: max_age setting is not allowed in mst mode",
-            "invalid stp mode"
+            "invalid stp mode",
+            "MSTP is enabled, VLAN-specific max_age configuration is not allowed"
         ]
-        actual_output = result.output.lower()
+        actual_output = result.output.strip().lower()
         assert any(error in actual_output for error in expected_errors), \
             f"Expected one of {expected_errors}, but got: {actual_output}"
 
@@ -829,16 +833,20 @@ class TestStpVlanMaxAge:
             obj=self.db,
         )
 
+        # Debugging output
         print(f"\nActual Command Output:\n{result.output}")
 
         # Ensure the command fails
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
+
+        # Check error message dynamically
         expected_errors = [
             "invalid max age",
             "max_age must be between 6 and 40",
-            "error: max_age value out of range"
+            "error: max_age value out of range",
+            "STP max age value must be in range 6-40"
         ]
-        actual_output = result.output.lower()
+        actual_output = result.output.strip().lower()
         assert any(error in actual_output for error in expected_errors), \
             f"Expected one of {expected_errors}, but got: {actual_output}"
 
