@@ -775,13 +775,14 @@ class TestStpVlanMaxAge:
 
         # Ensure the command fails with the correct error message
         assert result.exit_code != 0, "Command should have failed with MST mode"
-        assert any(
-            error in result.output.lower() for error in [
-                "configuration not supported for mst",
-                "error: max_age setting is not allowed in mst mode",
-                "invalid stp mode"
-            ]
-        ), "Expected error message not found in command output"
+        expected_errors = [
+            "configuration not supported for mst",
+            "error: max_age setting is not allowed in mst mode",
+            "invalid stp mode"
+        ]
+        actual_output = result.output.lower()
+        assert any(error in actual_output for error in expected_errors), \
+            f"Expected one of {expected_errors}, but got: {actual_output}"
 
     def test_stp_vlan_max_age_vlan_does_not_exist(self):
         """Test that an error is raised if VLAN does not exist."""
@@ -832,13 +833,14 @@ class TestStpVlanMaxAge:
 
         # Ensure the command fails
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
-        assert any(
-            error in result.output.lower() for error in [
-                "invalid max age",
-                "max_age must be between 6 and 40",
-                "error: max_age value out of range"
-            ]
-        ), "Expected error message not found in command output"
+        expected_errors = [
+            "invalid max age",
+            "max_age must be between 6 and 40",
+            "error: max_age value out of range"
+        ]
+        actual_output = result.output.lower()
+        assert any(error in actual_output for error in expected_errors), \
+            f"Expected one of {expected_errors}, but got: {actual_output}"
 
     def test_stp_vlan_max_age_invalid_stp_parameters(self):
         """Test that an error is raised if STP parameters are invalid."""
