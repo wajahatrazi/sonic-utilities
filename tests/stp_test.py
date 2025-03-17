@@ -759,34 +759,20 @@ class TestStpVlanMaxAge:
     def test_stp_vlan_max_age_invalid_mode(self):
         """Test that max age configuration fails if STP mode is MST."""
 
-        # Set STP mode to MST (unsupported)
         self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "mst"})
 
-        # Run the command
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["vlan"]
             .commands["max_age"],
-            ["200", "20"],  # Setting max_age to 20 seconds
+            ["200", "20"],  # Invalid: STP mode is MST
             obj=self.db,
         )
 
-        # Debugging output
         print(f"\nActual Command Output:\n{result.output}")
 
-        # Ensure the command fails with the correct error message
         assert result.exit_code != 0, "Command should have failed with MST mode"
-
-        # Check error message dynamically from stp.py behavior
-        expected_errors = [
-            "configuration not supported for mst",
-            "error: max_age setting is not allowed in mst mode",
-            "invalid stp mode",
-            "MSTP is enabled, VLAN-specific max_age configuration is not allowed"
-        ]
-        actual_output = result.output.strip().lower()
-        assert any(error in actual_output for error in expected_errors), \
-            f"Expected one of {expected_errors}, but got: {actual_output}"
+        assert "configuration not supported for mst" in result.output.lower()
 
     def test_stp_vlan_max_age_vlan_does_not_exist(self):
         """Test that an error is raised if VLAN does not exist."""
@@ -817,38 +803,24 @@ class TestStpVlanMaxAge:
             mock_check_if_stp_enabled_for_vlan(self.ctx, self.db, "Vlan300")  # STP is disabled
 
     def test_stp_vlan_max_age_invalid_value(self):
-        """Test that invalid max age values are rejected."""
+        """Test that max age values outside valid range (6-40) are rejected."""
 
-        # Set STP mode to PVST and enable STP for VLAN
         self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
         self.db.cfgdb.set_entry('VLAN', "Vlan300", {"vlanid": "300"})
         self.db.cfgdb.set_entry('STP_VLAN', "Vlan300", {"enabled": "true"})
 
-        # Run the command with an invalid max age (out of range)
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["vlan"]
             .commands["max_age"],
-            ["300", "50"],  # Invalid value (valid range: 6-40)
+            ["300", "50"],  # Invalid: max_age should be 6-40
             obj=self.db,
         )
 
-        # Debugging output
         print(f"\nActual Command Output:\n{result.output}")
 
-        # Ensure the command fails
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
-
-        # Check error message dynamically
-        expected_errors = [
-            "invalid max age",
-            "max_age must be between 6 and 40",
-            "error: max_age value out of range",
-            "STP max age value must be in range 6-40"
-        ]
-        actual_output = result.output.strip().lower()
-        assert any(error in actual_output for error in expected_errors), \
-            f"Expected one of {expected_errors}, but got: {actual_output}"
+        assert "max_age must be between 6 and 40" in result.output.lower()
 
     def test_stp_vlan_max_age_invalid_stp_parameters(self):
         """Test that an error is raised if STP parameters are invalid."""
