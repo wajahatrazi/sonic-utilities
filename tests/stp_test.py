@@ -566,154 +566,6 @@ class TestStpVlanForwardDelay:
         assert updated_vlan_entry.get("forward_delay") == "11", "Forward delay was not updated!"
 
 
-class TestStpVlanHelloInterval:
-    """Test cases for STP VLAN hello interval configuration."""
-
-    def setup_method(self):
-        """Setup test environment before each test."""
-        self.db = MagicMock()  # Mock database object
-        self.runner = MagicMock()  # Mock CLI runner
-        self.ctx = MagicMock()  # Mock Click context
-
-    def test_stp_vlan_hello_interval_valid(self):
-        """Test that STP hello interval is correctly set for a VLAN."""
-
-        # Set STP mode to PVST and enable STP for VLAN
-        self.db.cfgdb.set_entry.return_value = None
-
-        # Mock CLI runner to return a successful result
-        self.runner.invoke.return_value = MagicMock(exit_code=0, output="Success")
-
-        # Run the command to update hello interval
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["200", "5"],  # Setting hello_time to 5 seconds
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure the command executed successfully
-        assert result.exit_code == 0, f"Test failed with error: {result.output}"
-
-        # **Explicitly call get_entry() before asserting**
-        self.db.cfgdb.get_entry.return_value = {"hello_time": "5"}
-        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan200")
-
-        # Ensure `get_entry()` was actually called
-        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', "Vlan200")
-
-        # Validate that hello_time was correctly updated
-        assert updated_vlan_entry.get("hello_time") == "5", "Hello interval was not updated correctly!"
-
-    def test_stp_vlan_hello_interval_invalid_mode(self):
-        """Test that hello interval configuration fails if STP mode is MST."""
-
-        self.db.cfgdb.set_entry.return_value = None
-        self.runner.invoke.return_value = MagicMock(exit_code=1, output="Configuration not supported for MST")
-
-        # Run the command
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["200", "5"],  # Setting hello_time to 5 seconds
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure the command fails with the correct error message
-        assert result.exit_code != 0, "Command should have failed with MST mode"
-        assert "Configuration not supported for MST" in result.output
-
-    def test_stp_vlan_hello_interval_invalid_value(self):
-        """Test that invalid hello interval values are rejected."""
-
-        self.db.cfgdb.set_entry.return_value = None
-        self.runner.invoke.return_value = MagicMock(exit_code=1, output="Invalid hello interval")
-
-        # Run the command with an invalid hello interval (out of range)
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["300", "15"],  # Invalid value (should be 1-10)
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure that the command fails
-        assert result.exit_code != 0, "Command should have failed for invalid hello_time"
-        assert "Invalid hello interval" in result.output
-
-    def test_stp_vlan_hello_interval_vlan_not_exist(self):
-        """Test that command fails when VLAN does not exist."""
-
-        self.db.cfgdb.set_entry.return_value = None
-        self.runner.invoke.return_value = MagicMock(exit_code=1, output="VLAN does not exist")
-
-        # Run the command for a non-existing VLAN
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["400", "5"],  # VLAN 400 does not exist
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure the command fails
-        assert result.exit_code != 0, "Command should have failed for non-existent VLAN"
-        assert "VLAN does not exist" in result.output
-
-    def test_stp_vlan_hello_interval_vlan_does_not_exist(self):
-        """Test that an error is raised if VLAN does not exist."""
-
-        # Mock STP mode as PVST
-        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
-
-        # Mock function `check_if_vlan_exist_in_db` to raise SystemExit
-        def mock_check_if_vlan_exist_in_db(db, ctx, vid):
-            ctx.fail("VLAN does not exist")
-            raise SystemExit(1)  # Explicitly raising SystemExit
-
-        with pytest.raises(SystemExit):
-            mock_check_if_vlan_exist_in_db(self.db, self.ctx, 300)  # VLAN 300 does not exist
-
-    def test_stp_vlan_hello_interval_stp_disabled(self):
-        """Test that an error is raised if STP is not enabled for VLAN."""
-
-        # Mock STP mode as PVST
-        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
-
-        # Mock function `check_if_stp_enabled_for_vlan` to raise SystemExit
-        def mock_check_if_stp_enabled_for_vlan(ctx, db, vlan_name):
-            ctx.fail("STP not enabled for VLAN")
-            raise SystemExit(1)  # Explicitly raising SystemExit
-
-        with pytest.raises(SystemExit):
-            mock_check_if_stp_enabled_for_vlan(self.ctx, self.db, "Vlan300")  # STP is disabled
-
-    def test_stp_vlan_hello_interval_invalid_stp_parameters(self):
-        """Test that an error is raised if STP parameters are invalid."""
-
-        # Mock STP mode as PVST
-        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
-
-        # Mock function `is_valid_stp_vlan_parameters` to raise SystemExit
-        def mock_is_valid_stp_vlan_parameters(ctx, db, vlan_name, param, value):
-            ctx.fail("Invalid STP parameters")
-            raise SystemExit(1)  # Explicitly raising SystemExit
-
-        with pytest.raises(SystemExit):
-            mock_is_valid_stp_vlan_parameters(self.ctx, self.db, "Vlan300", "hello_time", 20)  # Invalid hello_time
-
-
 class TestStpVlanMaxAge:
     """Test cases for STP VLAN max age configuration."""
 
@@ -1421,6 +1273,20 @@ class TestStpVlanHelloInterval:
         assert result.exit_code != 0, "Command should have failed with MST mode"
         assert "configuration not supported for mst" in actual_output
 
+    def test_stp_vlan_hello_interval_stp_disabled(self):
+        """Test that an error is raised if STP is not enabled for VLAN."""
+
+        # Mock STP mode as PVST
+        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
+
+        # Mock function `check_if_stp_enabled_for_vlan` to raise SystemExit
+        def mock_check_if_stp_enabled_for_vlan(ctx, db, vlan_name):
+            ctx.fail("STP not enabled for VLAN")
+            raise SystemExit(1)  # Explicitly raising SystemExit
+
+        with pytest.raises(SystemExit):
+            mock_check_if_stp_enabled_for_vlan(self.ctx, self.db, "Vlan300")  # STP is disabled
+
     def test_stp_vlan_hello_interval_vlan_not_exist(self):
         """Test that configuring hello interval fails if VLAN does not exist."""
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
@@ -1442,6 +1308,27 @@ class TestStpVlanHelloInterval:
 
         assert result.exit_code != 0, "Command should have failed for VLAN not existing"
         assert "vlan does not exist" in actual_output
+    
+    # def test_stp_vlan_hello_interval_vlan_not_exist(self):
+    #     """Test that command fails when VLAN does not exist."""
+
+    #     self.db.cfgdb.set_entry.return_value = None
+    #     self.runner.invoke.return_value = MagicMock(exit_code=1, output="VLAN does not exist")
+
+    #     # Run the command for a non-existing VLAN
+    #     result = self.runner.invoke(
+    #         config.config.commands["spanning-tree"]
+    #         .commands["vlan"]
+    #         .commands["hello"],
+    #         ["400", "5"],  # VLAN 400 does not exist
+    #         obj=self.db,
+    #     )
+
+    #     print("\nCommand Output:", result.output)
+
+    #     # Ensure the command fails
+    #     assert result.exit_code != 0, "Command should have failed for non-existent VLAN"
+    #     assert "VLAN does not exist" in result.output
 
     def test_stp_vlan_hello_interval_stp_not_enabled(self):
         """Test that configuring hello interval fails if STP is not enabled for VLAN."""
@@ -1466,6 +1353,20 @@ class TestStpVlanHelloInterval:
         assert result.exit_code != 0, "Command should have failed because STP is not enabled"
         assert "stp is not enabled for vlan 300" in actual_output
 
+    def test_stp_vlan_hello_interval_vlan_does_not_exist(self):
+        """Test that an error is raised if VLAN does not exist."""
+
+        # Mock STP mode as PVST
+        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
+
+        # Mock function `check_if_vlan_exist_in_db` to raise SystemExit
+        def mock_check_if_vlan_exist_in_db(db, ctx, vid):
+            ctx.fail("VLAN does not exist")
+            raise SystemExit(1)  # Explicitly raising SystemExit
+
+        with pytest.raises(SystemExit):
+            mock_check_if_vlan_exist_in_db(self.db, self.ctx, 300)  # VLAN 300 does not exist
+
     def test_stp_vlan_hello_interval_invalid_value(self):
         """Test that configuring an invalid hello interval (out of range) fails."""
 
@@ -1489,12 +1390,66 @@ class TestStpVlanHelloInterval:
         assert result.exit_code != 0, "Command should have failed for invalid hello interval"
         assert "hello interval must be between 1 and 10 seconds" in actual_output
 
+    # def test_stp_vlan_hello_interval_invalid_value(self):
+    #     """Test that invalid hello interval values are rejected."""
+
+    #     self.db.cfgdb.set_entry.return_value = None
+    #     self.runner.invoke.return_value = MagicMock(exit_code=1, output="Invalid hello interval")
+
+    #     # Run the command with an invalid hello interval (out of range)
+    #     result = self.runner.invoke(
+    #         config.config.commands["spanning-tree"]
+    #         .commands["vlan"]
+    #         .commands["hello"],
+    #         ["300", "15"],  # Invalid value (should be 1-10)
+    #         obj=self.db,
+    #     )
+
+    #     print("\nCommand Output:", result.output)
+
+    #     # Ensure that the command fails
+    #     assert result.exit_code != 0, "Command should have failed for invalid hello_time"
+    #     assert "Invalid hello interval" in result.output
+
+    def test_stp_vlan_hello_interval_valid(self):
+        """Test that STP hello interval is correctly set for a VLAN."""
+
+        # Set STP mode to PVST and enable STP for VLAN
+        self.db.cfgdb.set_entry.return_value = None
+
+        # Mock CLI runner to return a successful result
+        self.runner.invoke.return_value = MagicMock(exit_code=0, output="Success")
+
+        # Run the command to update hello interval
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["200", "5"],  # Setting hello_time to 5 seconds
+            obj=self.db,
+        )
+
+        print("\nCommand Output:", result.output)
+
+        # Ensure the command executed successfully
+        assert result.exit_code == 0, f"Test failed with error: {result.output}"
+
+        # **Explicitly call get_entry() before asserting**
+        self.db.cfgdb.get_entry.return_value = {"hello_time": "5"}
+        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan200")
+
+        # Ensure `get_entry()` was actually called
+        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', "Vlan200")
+
+        # Validate that hello_time was correctly updated
+        assert updated_vlan_entry.get("hello_time") == "5", "Hello interval was not updated correctly!"
+
     def test_stp_vlan_hello_interval_success(self):
         """Test that hello interval is successfully configured for a VLAN."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=0, 
+            exit_code=0,
             output="Hello interval set to 4 seconds for VLAN 100"
         ))
 
@@ -1511,6 +1466,55 @@ class TestStpVlanHelloInterval:
 
         assert result.exit_code == 0, "Command should have succeeded"
         assert "hello interval set to 4 seconds for vlan 100" in actual_output
+
+    def test_stp_vlan_hello_interval_invalid_mode(self):
+        """Test that hello interval configuration fails if STP mode is MST."""
+
+        self.db.cfgdb.set_entry.return_value = None
+        self.runner.invoke.return_value = MagicMock(exit_code=1, output="Configuration not supported for MST")
+
+        # Run the command
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["200", "5"],  # Setting hello_time to 5 seconds
+            obj=self.db,
+        )
+
+        print("\nCommand Output:", result.output)
+
+        # Ensure the command fails with the correct error message
+        assert result.exit_code != 0, "Command should have failed with MST mode"
+        assert "Configuration not supported for MST" in result.output
+
+    def test_stp_vlan_hello_interval_invalid_stp_parameters(self):
+        """Test that an error is raised if STP parameters are invalid."""
+
+        # Mock STP mode as PVST
+        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
+
+        # Mock function `is_valid_stp_vlan_parameters` to raise SystemExit
+        def mock_is_valid_stp_vlan_parameters(ctx, db, vlan_name, param, value):
+            ctx.fail("Invalid STP parameters")
+            raise SystemExit(1)  # Explicitly raising SystemExit
+
+        with pytest.raises(SystemExit):
+            mock_is_valid_stp_vlan_parameters(self.ctx, self.db, "Vlan300", "hello_time", 20)  # Invalid hello_time
+
+    # def test_stp_vlan_hello_interval_vlan_does_not_exist(self):
+    #     """Test that an error is raised if VLAN does not exist."""
+
+    #     # Mock STP mode as PVST
+    #     self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
+
+    #     # Mock function `check_if_vlan_exist_in_db` to raise SystemExit
+    #     def mock_check_if_vlan_exist_in_db(db, ctx, vid):
+    #         ctx.fail("VLAN does not exist")
+    #         raise SystemExit(1)  # Explicitly raising SystemExit
+
+    #     with pytest.raises(SystemExit):
+    #         mock_check_if_vlan_exist_in_db(self.db, self.ctx, 300)  # VLAN 300 does not exist
 
     @classmethod
     def teardown_class(cls):
