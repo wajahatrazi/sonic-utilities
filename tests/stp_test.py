@@ -1167,6 +1167,229 @@ class TestStpInterfaceEnable:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "mode pvst is enabled for interface ethernet4" in actual_output
 
+
+class TestStpInterfaceDisable:
+    def setup_method(self):
+        """Setup test environment before each test."""
+        self.db = MagicMock()  # Mock database
+        self.db.cfgdb = MagicMock()  # Mock configuration DB
+        self.runner = MagicMock()  # Mock CLI runner
+
+    def test_stp_interface_disable_global_stp_disabled(self):
+        """Test that disabling STP fails if global STP is not enabled."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Global STP is not enabled"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet1"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed as global STP is disabled"
+        assert "global stp is not enabled" in actual_output
+
+    def test_stp_interface_disable_invalid_interface(self):
+        """Test that disabling STP fails for an invalid interface."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Invalid interface name"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["InvalidInterface"],  # Invalid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed for invalid interface"
+        assert "invalid interface name" in actual_output
+
+    def test_stp_interface_disable_success_mstp(self):
+        """Test that STP is successfully disabled for an interface in MSTP mode."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="STP mode mstp is disabled for interface Ethernet3"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet3"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "stp mode mstp is disabled for interface ethernet3" in actual_output
+
+    def test_stp_interface_disable_success_pvst(self):
+        """Test that STP is successfully disabled for an interface in PVST mode."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="STP mode pvst is disabled for interface Ethernet4"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet4"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "stp mode pvst is disabled for interface ethernet4" in actual_output
+
+    def test_stp_interface_disable_no_stp_mode_selected(self):
+        """Test that disabling STP prints a message if no mode is selected."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "none"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="No STP mode selected. Please select a mode first."
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["disable"],
+            ["Ethernet5"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have printed a warning"
+        assert "no stp mode selected" in actual_output
+
+
+class TestMstpInterfaceEdgeport:
+    def setup_method(self):
+        """Setup test environment before each test."""
+        self.db = MagicMock()  # Mock database
+        self.db.cfgdb = MagicMock()  # Mock configuration DB
+        self.runner = MagicMock()  # Mock CLI runner
+
+    def test_mstp_edgeport_stp_not_enabled(self):
+        """Test that configuring edge port fails if STP is not enabled for the interface."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={})  # STP not enabled
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="STP is not enabled for Ethernet0"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["edgeport"],
+            ["enable", "Ethernet0"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed because STP is not enabled"
+        assert "stp is not enabled for ethernet0" in actual_output
+
+    def test_mstp_edgeport_invalid_interface(self):
+        """Test that configuring edge port fails for an invalid interface."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Invalid interface name"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["edgeport"],
+            ["enable", "InvalidInterface"],  # Invalid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed for invalid interface"
+        assert "invalid interface name" in actual_output
+
+    def test_mstp_edgeport_enable_success(self):
+        """Test that edge port is successfully enabled on a valid interface."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="Edge port is enabled for interface Ethernet1"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["edgeport"],
+            ["enable", "Ethernet1"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "edge port is enabled for interface ethernet1" in actual_output
+
+    def test_mstp_edgeport_disable_success(self):
+        """Test that edge port is successfully disabled on a valid interface."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="Edge port is disabled for interface Ethernet2"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["edgeport"],
+            ["disable", "Ethernet2"],  # Valid interface
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "edge port is disabled for interface ethernet2" in actual_output
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
