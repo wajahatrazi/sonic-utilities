@@ -1390,6 +1390,128 @@ class TestMstpInterfaceEdgeport:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "edge port is disabled for interface ethernet2" in actual_output
 
+
+class TestStpVlanHelloInterval:
+    def setup_method(self):
+        """Setup test environment before each test."""
+        self.db = MagicMock()  # Mock database
+        self.db.cfgdb = MagicMock()  # Mock configuration DB
+        self.runner = MagicMock()  # Mock CLI runner
+
+    def test_stp_vlan_hello_interval_mst_mode(self):
+        """Test that configuring hello interval fails when STP mode is MST."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Configuration not supported for MST"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["200", "5"],  # Valid VLAN, valid hello interval
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed with MST mode"
+        assert "configuration not supported for mst" in actual_output
+
+    def test_stp_vlan_hello_interval_vlan_not_exist(self):
+        """Test that configuring hello interval fails if VLAN does not exist."""
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="VLAN does not exist"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["999", "5"],  # Non-existent VLAN
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed for VLAN not existing"
+        assert "vlan does not exist" in actual_output
+
+    def test_stp_vlan_hello_interval_stp_not_enabled(self):
+        """Test that configuring hello interval fails if STP is not enabled for VLAN."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="STP is not enabled for VLAN 300"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["300", "5"],  # Valid VLAN, valid hello interval
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed because STP is not enabled"
+        assert "stp is not enabled for vlan 300" in actual_output
+
+    def test_stp_vlan_hello_interval_invalid_value(self):
+        """Test that configuring an invalid hello interval (out of range) fails."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Hello interval must be between 1 and 10 seconds"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["300", "15"],  # Invalid hello interval (should be 1-10)
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed for invalid hello interval"
+        assert "hello interval must be between 1 and 10 seconds" in actual_output
+
+    def test_stp_vlan_hello_interval_success(self):
+        """Test that hello interval is successfully configured for a VLAN."""
+
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="Hello interval set to 4 seconds for VLAN 100"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["100", "4"],  # Valid VLAN, valid hello interval
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "hello interval set to 4 seconds for vlan 100" in actual_output
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
