@@ -857,7 +857,7 @@ class TestStpVlanPriority:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Configuration not supported for MST"
         ))
 
@@ -880,7 +880,7 @@ class TestStpVlanPriority:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="VLAN 500 does not exist"
         ))
 
@@ -903,7 +903,7 @@ class TestStpVlanPriority:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="STP is not enabled for VLAN 300"
         ))
 
@@ -926,7 +926,7 @@ class TestStpVlanPriority:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=0, 
+            exit_code=0,
             output="STP priority updated successfully for VLAN 300"
         ))
 
