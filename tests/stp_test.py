@@ -803,7 +803,7 @@ class TestStpVlanMaxAge:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Configuration not supported for MST"
         ))
 
@@ -826,7 +826,7 @@ class TestStpVlanMaxAge:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="max_age must be between 6 and 40"
         ))
 
@@ -852,7 +852,7 @@ class TestStpVlanPriority:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="VLAN 500 does not exist"
         ))
 
