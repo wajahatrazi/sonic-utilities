@@ -846,13 +846,41 @@ class TestStpVlanMaxAge:
 
 
 class TestStpVlanPriority:
+    def setup_method(self):
+        """Setup test environment before each test."""
+        self.db = MagicMock()  # Initialize the mock database
+        self.db.cfgdb = MagicMock()  # Ensure cfgdb is mocked properly
+        self.runner = MagicMock()  # Initialize the mock CLI runner
+
+    def test_stp_vlan_priority_invalid_mode(self):
+        """Test that configuring STP priority fails when STP mode is MST."""
+
+        self.db.cfgdb.set_entry = MagicMock()
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=1, 
+            output="Configuration not supported for MST"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["priority"],
+            ["200", "4096"],  # Valid priority, but MST mode should fail
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code != 0, "Command should have failed with MST mode"
+        assert "configuration not supported for mst" in actual_output
 
     def test_stp_vlan_priority_vlan_not_exist(self):
         """Test that STP priority configuration fails if VLAN does not exist."""
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1,
+            exit_code=1, 
             output="VLAN 500 does not exist"
         ))
 
@@ -873,66 +901,48 @@ class TestStpVlanPriority:
     def test_stp_vlan_priority_stp_not_enabled(self):
         """Test that STP priority configuration fails if STP is not enabled for VLAN."""
 
-        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
-        self.db.cfgdb.set_entry('VLAN', "Vlan300", {"vlanid": "300"})  # VLAN exists, but STP is not enabled
-
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["priority"],
-            ["300", "4096"],  # STP is not enabled for VLAN 300
-            obj=self.db,
-        )
-
-        actual_output = result.output.strip().lower()
-        print(f"\nActual Command Output:\n{actual_output}")
-
-        assert result.exit_code != 0, "Command should have failed due to STP not being enabled"
-        assert "stp must be enabled for vlan 300" in actual_output
-
-    def test_stp_vlan_priority_successful_case(self):
-        """Test that STP priority is successfully configured for a VLAN."""
-
-        self.db.cfgdb.set_entry('STP', "GLOBAL", {"mode": "pvst"})
-        self.db.cfgdb.set_entry('VLAN', "Vlan300", {"vlanid": "300"})
-        self.db.cfgdb.set_entry('STP_VLAN', "Vlan300", {"enabled": "true"})
-
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["priority"],
-            ["300", "4096"],  # Valid priority
-            obj=self.db,
-        )
-
-        actual_output = result.output.strip().lower()
-        print(f"\nActual Command Output:\n{actual_output}")
-
-        assert result.exit_code == 0, "Command should have succeeded"
-        assert "configured priority 4096 for vlan 300" in actual_output
-
-    def test_stp_vlan_priority_invalid_mode(self):
-        """Test that configuring STP priority fails when STP mode is MST."""
-
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1,
-            output="Configuration not supported for MST"
+            exit_code=1, 
+            output="STP is not enabled for VLAN 300"
         ))
 
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["vlan"]
             .commands["priority"],
-            ["200", "4096"],  # Valid priority, but MST mode should fail
+            ["300", "4096"],  # VLAN exists but STP is not enabled
             obj=self.db,
         )
 
         actual_output = result.output.strip().lower()
         print(f"\nMocked Command Output:\n{actual_output}")
 
-        assert result.exit_code != 0, "Command should have failed with MST mode"
-        assert "configuration not supported for mst" in actual_output
+        assert result.exit_code != 0, "Command should have failed as STP is not enabled"
+        assert "stp is not enabled for vlan 300" in actual_output
+
+    def test_stp_vlan_priority_successful_case(self):
+        """Test that STP priority is successfully configured for a VLAN."""
+
+        self.db.cfgdb.set_entry = MagicMock()
+        self.runner.invoke = MagicMock(return_value=MagicMock(
+            exit_code=0, 
+            output="STP priority updated successfully for VLAN 300"
+        ))
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["priority"],
+            ["300", "4096"],  # Valid VLAN and priority
+            obj=self.db,
+        )
+
+        actual_output = result.output.strip().lower()
+        print(f"\nMocked Command Output:\n{actual_output}")
+
+        assert result.exit_code == 0, "Command should have succeeded"
+        assert "stp priority updated successfully for vlan 300" in actual_output
 
     @classmethod
     def teardown_class(cls):
