@@ -957,7 +957,7 @@ class TestStpVlanDisable:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Configuration not supported for MST"
         ))
 
@@ -980,7 +980,7 @@ class TestStpVlanDisable:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="VLAN 300 does not exist"
         ))
 
@@ -1003,7 +1003,7 @@ class TestStpVlanDisable:
 
         self.db.cfgdb.set_entry = MagicMock()
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=0, 
+            exit_code=0,
             output="STP disabled successfully for VLAN 400"
         ))
 
@@ -1034,7 +1034,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "none"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Global STP is not enabled - first configure STP mode"
         ))
 
@@ -1057,7 +1057,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Global STP is not enabled"
         ))
 
@@ -1080,7 +1080,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="STP is already enabled for Ethernet2"
         ))
 
@@ -1103,7 +1103,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1, 
+            exit_code=1,
             output="Invalid interface name"
         ))
 
@@ -1126,7 +1126,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=0, 
+            exit_code=0,
             output="Mode mstp is enabled for interface Ethernet3"
         ))
 
@@ -1149,7 +1149,7 @@ class TestStpInterfaceEnable:
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=0, 
+            exit_code=0,
             output="Mode pvst is enabled for interface Ethernet4"
         ))
 
