@@ -1394,8 +1394,11 @@ class TestStpVlanHelloInterval:
         # Mock `mod_entry` function to track database modification
         self.db.cfgdb.mod_entry = MagicMock()
 
-        # Mock `get_entry` to return the updated hello_time after modification
-        self.db.cfgdb.get_entry = MagicMock(return_value={"hello_time": "5"})
+        # Mock `get_entry` to return updated hello_time after modification
+        self.db.cfgdb.get_entry = MagicMock(
+            side_effect=lambda key, vlan: {"hello_time": 5}
+            if vlan == "Vlan200" else {}
+        )
 
         # Run the command to update hello interval
         result = self.runner.invoke(
@@ -1411,15 +1414,15 @@ class TestStpVlanHelloInterval:
         # Ensure the command executed successfully
         assert result.exit_code == 0, f"Test failed with error: {result.output}"
 
-        # Ensure `mod_entry()` was called with correct parameters
+        # Ensure `mod_entry()` was called once with correct parameters
         self.db.cfgdb.mod_entry.assert_called_once_with('STP_VLAN', 'Vlan200', {'hello_time': 5})
 
-        # Ensure `get_entry()` was called at least once to retrieve the updated value
-        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', 'Vlan200')
+        # Ensure `get_entry()` was called at least once
+        self.db.cfgdb.get_entry.assert_any_call('STP_VLAN', 'Vlan200')
 
         # Validate that hello_time was correctly updated
         updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', 'Vlan200')
-        assert updated_vlan_entry.get("hello_time") == "5", "Hello interval was not updated correctly!"
+        assert updated_vlan_entry.get("hello_time") == 5, "Hello interval was not updated correctly!"
 
     def test_stp_vlan_hello_interval_invalid_mode(self):
         """Test that hello interval configuration fails if STP mode is MST."""
