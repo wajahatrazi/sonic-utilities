@@ -1288,8 +1288,6 @@ class TestStpVlanHelloInterval:
         assert result.exit_code != 0, "Command should have failed for VLAN not existing"
         assert "vlan does not exist" in actual_output
 
-    # 
-
     def test_stp_vlan_hello_interval_stp_not_enabled(self):
         """Test that configuring hello interval fails if STP is not enabled for VLAN."""
 
