@@ -6,11 +6,11 @@ import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-from config.stp import (
-    check_if_stp_enabled_for_vlan,
-    check_if_vlan_exist_in_db,
-    is_valid_stp_vlan_parameters
-)
+# from config.stp import (
+#     check_if_stp_enabled_for_vlan,
+#     check_if_vlan_exist_in_db,
+#     is_valid_stp_vlan_parameters
+# )
 
 import config.main as config
 import show.main as show
