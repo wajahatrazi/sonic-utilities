@@ -1323,7 +1323,6 @@ class TestStpVlanHelloInterval:
     #         ["400", "5"],  # VLAN 400 does not exist
     #         obj=self.db,
     #     )
-
     #     print("\nCommand Output:", result.output)
 
     #     # Ensure the command fails
