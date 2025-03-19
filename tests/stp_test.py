@@ -1418,7 +1418,11 @@ class TestStpVlanHelloInterval:
         self.db.cfgdb.set_entry.return_value = None
 
         # Mock CLI runner failure for MST mode
-        self.runner.invoke = MagicMock(return_value=MagicMock(exit_code=1, output="Configuration not supported for MST"))
+        self.runner.invoke = MagicMock(
+            return_value=MagicMock(
+                exit_code=1, output="Configuration not supported for MST"
+            )
+        )
 
         # Run the command
         result = self.runner.invoke(
