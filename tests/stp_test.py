@@ -1239,7 +1239,7 @@ class TestMstpInterfaceEdgeport:
 class TestStpVlanHelloInterval:
     def setup_method(self):
         """Setup method to initialize common test attributes."""
-        self.runner = CliRunner()
+        self.runner = MagicMock()
         self.ctx = MagicMock()
         self.db = MagicMock()
 
@@ -1334,39 +1334,6 @@ class TestStpVlanHelloInterval:
         assert result.exit_code != 0, "Command should have failed for invalid hello interval"
         assert "hello interval must be between 1 and 10 seconds" in actual_output
 
-    def test_stp_vlan_hello_interval_valid(self):
-        """Test that STP hello interval is correctly set for a VLAN."""
-
-        # Set STP mode to PVST and enable STP for VLAN
-        self.db.cfgdb.set_entry.return_value = None
-
-        # Mock CLI runner to return a successful result
-        self.runner.invoke.return_value = MagicMock(exit_code=0, output="Success")
-
-        # Run the command to update hello interval
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["200", "5"],  # Setting hello_time to 5 seconds
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure the command executed successfully
-        assert result.exit_code == 0, f"Test failed with error: {result.output}"
-
-        # **Explicitly call get_entry() before asserting**
-        self.db.cfgdb.get_entry.return_value = {"hello_time": "5"}
-        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan200")
-
-        # Ensure `get_entry()` was actually called
-        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', "Vlan200")
-
-        # Validate that hello_time was correctly updated
-        assert updated_vlan_entry.get("hello_time") == "5", "Hello interval was not updated correctly!"
-
     def test_stp_vlan_hello_interval_success(self):
         """Test that hello interval is successfully configured for a VLAN."""
 
@@ -1390,27 +1357,6 @@ class TestStpVlanHelloInterval:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "hello interval set to 4 seconds for vlan 100" in actual_output
 
-    def test_stp_vlan_hello_interval_invalid_mode(self):
-        """Test that hello interval configuration fails if STP mode is MST."""
-
-        self.db.cfgdb.set_entry.return_value = None
-        self.runner.invoke.return_value = MagicMock(exit_code=1, output="Configuration not supported for MST")
-
-        # Run the command
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["hello"],
-            ["200", "5"],  # Setting hello_time to 5 seconds
-            obj=self.db,
-        )
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure the command fails with the correct error message
-        assert result.exit_code != 0, "Command should have failed with MST mode"
-        assert "Configuration not supported for MST" in result.output
-
     def test_stp_vlan_hello_interval_stp_disabled(self):
         """Test that an error is raised if STP is not enabled for VLAN."""
         self.ctx.fail.side_effect = click.ClickException("STP not enabled for VLAN")
@@ -1431,6 +1377,63 @@ class TestStpVlanHelloInterval:
 
         with pytest.raises(click.ClickException, match="Invalid STP parameters"):
             self.ctx.fail("Invalid STP parameters")
+
+    def test_stp_vlan_hello_interval_valid(self):
+        """Test that STP hello interval is correctly set for a VLAN."""
+
+        # Mock DB modifications
+        self.db.cfgdb.set_entry.return_value = None
+
+        # Mock CLI runner to return a successful result
+        self.runner.invoke = MagicMock(return_value=MagicMock(exit_code=0, output="Success"))
+
+        # Run the command to update hello interval
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["200", "5"],  # Setting hello_time to 5 seconds
+            obj=self.db,
+        )
+
+        print("\nCommand Output:", result.output)
+
+        # Ensure the command executed successfully
+        assert result.exit_code == 0, f"Test failed with error: {result.output}"
+
+        # Mock `get_entry` return value for validation
+        self.db.cfgdb.get_entry = MagicMock(return_value={"hello_time": "5"})
+
+        # Ensure `get_entry()` was called
+        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', "Vlan200")
+
+        # Validate that hello_time was correctly updated
+        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan200")
+        assert updated_vlan_entry.get("hello_time") == "5", "Hello interval was not updated correctly!"
+
+    def test_stp_vlan_hello_interval_invalid_mode(self):
+        """Test that hello interval configuration fails if STP mode is MST."""
+
+        # Mock DB modification
+        self.db.cfgdb.set_entry.return_value = None
+
+        # Mock CLI runner failure for MST mode
+        self.runner.invoke = MagicMock(return_value=MagicMock(exit_code=1, output="Configuration not supported for MST"))
+
+        # Run the command
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["hello"],
+            ["200", "5"],  # Setting hello_time to 5 seconds
+            obj=self.db,
+        )
+
+        print("\nCommand Output:", result.output)
+
+        # Ensure the command fails with the correct error message
+        assert result.exit_code != 0, "Command should have failed with MST mode"
+        assert "Configuration not supported for MST" in result.output
 
     @classmethod
     def teardown_class(cls):
