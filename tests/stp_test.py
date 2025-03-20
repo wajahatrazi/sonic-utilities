@@ -6,11 +6,16 @@ import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-# from config.stp import (
-#     check_if_stp_enabled_for_vlan,
-#     check_if_vlan_exist_in_db,
-#     is_valid_stp_vlan_parameters
-# )
+from config.stp import (
+    stp_vlan_hello_interval,
+    stp_vlan_max_age,
+    stp_vlan_priority,
+    stp_interface_enable,
+    stp_interface_disable,
+    mstp_interface_edgeport,
+    stp_interface_bpdu_guard_enable,
+    stp_interface_bpdu_guard_disable
+)
 
 import config.main as config
 import show.main as show
@@ -689,6 +694,71 @@ class TestStpVlanMaxAge:
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
         assert "max_age must be between 6 and 40" in actual_output
 
+    def test_stp_vlan_max_age_valid(self):
+        """Test STP max age configuration for a VLAN with valid conditions."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN existence check
+            {"enabled": "true"}  # STP enabled check
+        ]
+
+        result = self.runner.invoke(stp_vlan_max_age, ["200", "20"], obj=self.db)
+
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with('STP_VLAN', 'Vlan200', {'max_age': 20})
+
+
+    def test_stp_vlan_max_age_mst_mode(self):
+        """Test failure of STP max age configuration when STP mode is MST."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+
+        result = self.runner.invoke(stp_vlan_max_age, ["200", "20"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "Configuration not supported for MST" in result.output
+
+
+    def test_stp_vlan_max_age_vlan_not_exist(self):
+        """Test failure when VLAN does not exist."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            None  # VLAN does not exist
+        ]
+
+        result = self.runner.invoke(stp_vlan_max_age, ["300", "20"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "VLAN does not exist" in result.output
+
+
+    def test_stp_vlan_max_age_stp_not_enabled(self):
+        """Test failure when STP is not enabled for the VLAN."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN exists
+            None  # STP not enabled for VLAN
+        ]
+
+        result = self.runner.invoke(stp_vlan_max_age, ["200", "20"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "STP not enabled for VLAN" in result.output
+
+
+def test_stp_vlan_max_age_invalid_value(self):
+    """Test failure when the provided max age is invalid (out of range)."""
+    self.db.cfgdb.get_entry.side_effect = [
+        {"mode": "pvst"},  # STP mode check
+        {},  # VLAN exists
+        {"enabled": "true"}  # STP enabled check
+    ]
+
+    result = self.runner.invoke(stp_vlan_max_age, ["200", "50"], obj=self.db)  # Out of range
+
+    assert result.exit_code != 0
+    assert "Invalid STP max age" in result.output
+
+
 
 class TestStpVlanPriority:
     def setup_method(self):
@@ -788,6 +858,41 @@ class TestStpVlanPriority:
 
         assert result.exit_code == 0, "Command should have succeeded"
         assert "stp priority updated successfully for vlan 300" in actual_output
+
+    def test_stp_vlan_priority_invalid_mode(self):
+        """Test that setting VLAN priority fails when STP mode is MST."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        result = self.runner.invoke(stp_vlan_priority, ["200", "4096"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Configuration not supported for MST" in result.output
+
+    def test_stp_vlan_priority_vlan_does_not_exist(self):
+        """Test that setting VLAN priority fails if VLAN does not exist."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, None]
+        result = self.runner.invoke(stp_vlan_priority, ["200", "4096"], obj=self.db)
+        assert result.exit_code != 0
+        assert "VLAN does not exist" in result.output
+
+    def test_stp_vlan_priority_stp_not_enabled(self):
+        """Test that setting VLAN priority fails if STP is not enabled for VLAN."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, None]
+        result = self.runner.invoke(stp_vlan_priority, ["200", "4096"], obj=self.db)
+        assert result.exit_code != 0
+        assert "STP not enabled for VLAN" in result.output
+
+    def test_stp_vlan_priority_invalid_priority(self):
+        """Test that setting VLAN priority fails if priority is not a valid multiple of 4096."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {"enabled": "true"}]
+        result = self.runner.invoke(stp_vlan_priority, ["200", "1234"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid bridge priority" in result.output
+
+    def test_stp_vlan_priority_valid(self):
+        """Test that VLAN priority is successfully set when conditions are met."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {"enabled": "true"}]
+        result = self.runner.invoke(stp_vlan_priority, ["200", "4096"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with('STP_VLAN', 'Vlan200', {'priority': 4096})
 
 
 class TestStpVlanDisable:
@@ -1011,6 +1116,55 @@ class TestStpInterfaceEnable:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "mode pvst is enabled for interface ethernet4" in actual_output
 
+    def test_stp_interface_enable_global_stp_disabled(self):
+        """Test that enabling STP for an interface fails if global STP is not enabled."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "none"}
+        result = self.runner.invoke(stp_interface_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Global STP is not enabled - first configure STP mode" in result.output
+
+    def test_stp_interface_enable_already_enabled(self):
+        """Test that enabling STP fails if STP is already enabled for the interface."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {}]
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {"enabled": "true"}]
+        result = self.runner.invoke(stp_interface_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code != 0
+        assert "STP is already enabled for Ethernet0" in result.output
+
+    def test_stp_interface_enable_invalid_interface(self):
+        """Test that enabling STP fails if the interface is invalid."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {}]
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, None]
+        result = self.runner.invoke(stp_interface_enable, ["InvalidInterface"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output  # Assuming the function checks validity
+
+    def test_stp_interface_enable_pvst_mode(self):
+        """Test enabling STP on an interface in PVST mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}, {}]
+        result = self.runner.invoke(stp_interface_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.set_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'enabled': 'true', 'portfast': 'false', 'uplink_fast': 'false'}
+        )
+
+    def test_stp_interface_enable_mstp_mode(self):
+        """Test enabling STP on an interface in MSTP mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}, {}]
+        result = self.runner.invoke(stp_interface_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.set_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'enabled': 'true', 'edge_port': 'false', 'link_type': 'auto'}
+        )
+
+    def test_stp_interface_enable_invalid_mode(self):
+        """Test enabling STP when STP mode is invalid or unselected."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "unknown"}
+        result = self.runner.invoke(stp_interface_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        assert "No STP mode selected. Please select a mode first." in result.output
 
 class TestStpInterfaceDisable:
     def setup_method(self):
@@ -1134,6 +1288,44 @@ class TestStpInterfaceDisable:
         assert result.exit_code == 0, "Command should have printed a warning"
         assert "no stp mode selected" in actual_output
 
+    def test_stp_interface_disable_global_stp_disabled(self):
+        """Test that disabling STP for an interface fails if global STP is not enabled."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "none"}
+        result = self.runner.invoke(stp_interface_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        assert "Current STP mode: none" in result.output
+        assert "No STP mode selected. Please select a mode first." in result.output
+
+    def test_stp_interface_disable_invalid_interface(self):
+        """Test that disabling STP fails if the interface is invalid."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, None]
+        result = self.runner.invoke(stp_interface_disable, ["InvalidInterface"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output  # Assuming function validation
+
+    def test_stp_interface_disable_pvst_mode(self):
+        """Test disabling STP on an interface in PVST mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}]
+        result = self.runner.invoke(stp_interface_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.set_entry.assert_called_with('STP_PORT', 'Ethernet0', {'enabled': 'false'})
+        assert "STP mode pvst is disabled for Ethernet0" in result.output
+
+    def test_stp_interface_disable_mstp_mode(self):
+        """Test disabling STP on an interface in MSTP mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}]
+        result = self.runner.invoke(stp_interface_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.set_entry.assert_called_with('STP_PORT', 'Ethernet0', {'enabled': 'false'})
+        assert "STP mode mstp is disabled for Ethernet0" in result.output
+
+    def test_stp_interface_disable_no_stp_mode(self):
+        """Test disabling STP when no STP mode is selected."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "unknown"}
+        result = self.runner.invoke(stp_interface_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        assert "No STP mode selected. Please select a mode first." in result.output
+
 
 class TestMstpInterfaceEdgeport:
     def setup_method(self):
@@ -1233,6 +1425,34 @@ class TestMstpInterfaceEdgeport:
 
         assert result.exit_code == 0, "Command should have succeeded"
         assert "edge port is disabled for interface ethernet2" in actual_output
+
+    def test_mstp_interface_edgeport_enable_valid(self):
+        """Test enabling edge port for a valid interface with STP enabled."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}]  # STP enabled and valid interface
+        result = self.runner.invoke(mstp_interface_edgeport, ["enable", "Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet0', {'edge_port': 'true'})
+
+    def test_mstp_interface_edgeport_disable_valid(self):
+        """Test disabling edge port for a valid interface with STP enabled."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}]  # STP enabled and valid interface
+        result = self.runner.invoke(mstp_interface_edgeport, ["disable", "Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet0', {'edge_port': 'false'})
+
+    def test_mstp_interface_edgeport_stp_disabled(self):
+        """Test that enabling edge port fails if STP is not enabled for the interface."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "none"}]  # STP disabled
+        result = self.runner.invoke(mstp_interface_edgeport, ["enable", "Ethernet0"], obj=self.db)
+        assert result.exit_code != 0
+        assert "STP is not enabled" in result.output  # Assuming STP validation message
+
+    def test_mstp_interface_edgeport_invalid_interface(self):
+        """Test that enabling edge port fails if the interface is invalid."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, None]  # Valid STP mode but invalid interface
+        result = self.runner.invoke(mstp_interface_edgeport, ["enable", "InvalidInterface"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output  # Assuming function validation
 
 
 class TestStpVlanHelloInterval:
@@ -1384,45 +1604,6 @@ class TestStpVlanHelloInterval:
         with pytest.raises(click.ClickException, match="Invalid STP parameters"):
             self.ctx.fail("Invalid STP parameters")
 
-    # def test_stp_vlan_hello_interval_valid(self):
-    #     """Test that STP hello interval is correctly set for a VLAN."""
-
-    #     # Simulate successful command execution
-    #     self.runner.invoke = MagicMock(return_value=MagicMock(exit_code=0, output="Success"))
-
-    #     # Mock `mod_entry` function to track database modification
-    #     self.db.cfgdb.mod_entry = MagicMock()
-
-    #     # Mock `get_entry` to return updated hello_time after modification
-    #     self.db.cfgdb.get_entry = MagicMock(
-    #         side_effect=lambda key, vlan: {"hello_time": 5}
-    #         if vlan == "Vlan200" else {}
-    #     )
-
-    #     # Run the command to update hello interval
-    #     result = self.runner.invoke(
-    #         config.config.commands["spanning-tree"]
-    #         .commands["vlan"]
-    #         .commands["hello"],
-    #         ["200", "5"],  # Setting hello_time to 5 seconds
-    #         obj=self.db,
-    #     )
-
-    #     print("\nCommand Output:", result.output)
-
-    #     # Ensure the command executed successfully
-    #     assert result.exit_code == 0, f"Test failed with error: {result.output}"
-
-    #     # Ensure `mod_entry()` was called once with correct parameters
-    #     self.db.cfgdb.mod_entry.assert_called_once_with('STP_VLAN', 'Vlan200', {'hello_time': 5})
-
-    #     # Ensure `get_entry()` was called at least once
-    #     self.db.cfgdb.get_entry.assert_any_call('STP_VLAN', 'Vlan200')
-
-    #     # Validate that hello_time was correctly updated
-    #     updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', 'Vlan200')
-    #     assert updated_vlan_entry.get("hello_time") == 5, "Hello interval was not updated correctly!"
-
     def test_stp_vlan_hello_interval_invalid_mode(self):
         """Test that hello interval configuration fails if STP mode is MST."""
 
@@ -1450,6 +1631,149 @@ class TestStpVlanHelloInterval:
         # Ensure the command fails with the correct error message
         assert result.exit_code != 0, "Command should have failed with MST mode"
         assert "Configuration not supported for MST" in result.output
+
+    def test_stp_vlan_hello_interval_valid(self):
+        """Test STP hello interval configuration for a VLAN with valid conditions."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN existence check
+            {"enabled": "true"}  # STP enabled check
+        ]
+
+        result = self.runner.invoke(stp_vlan_hello_interval, ["200", "5"], obj=self.db)
+
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with('STP_VLAN', 'Vlan200', {'hello_time': 5})
+
+
+    def test_stp_vlan_hello_interval_mst_mode(self):
+        """Test failure of STP hello interval configuration when STP mode is MST."""
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+
+        result = self.runner.invoke(stp_vlan_hello_interval, ["200", "5"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "Configuration not supported for MST" in result.output
+
+
+    def test_stp_vlan_hello_interval_vlan_not_exist(self):
+        """Test failure when VLAN does not exist."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            None  # VLAN does not exist
+        ]
+
+        result = self.runner.invoke(stp_vlan_hello_interval, ["300", "5"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "VLAN does not exist" in result.output
+
+
+    def test_stp_vlan_hello_interval_stp_not_enabled(self):
+        """Test failure when STP is not enabled for the VLAN."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN exists
+            None  # STP not enabled for VLAN
+        ]
+
+        result = self.runner.invoke(stp_vlan_hello_interval, ["200", "5"], obj=self.db)
+
+        assert result.exit_code != 0
+        assert "STP not enabled for VLAN" in result.output
+
+
+    def test_stp_vlan_hello_interval_invalid_value(self):
+        """Test failure when the provided hello interval is invalid (out of range)."""
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN exists
+            {"enabled": "true"}  # STP enabled check
+        ]
+
+        result = self.runner.invoke(stp_vlan_hello_interval, ["200", "15"], obj=self.db)  # Out of range
+
+        assert result.exit_code != 0
+        assert "Invalid STP hello interval" in result.output
+
+
+class TestStpBpduGuard:
+    """Test cases for STP BPDU Guard enable and disable commands."""
+
+    def setup_method(self):
+        """Setup method to initialize common test attributes."""
+        self.runner = CliRunner()
+        self.ctx = MagicMock()
+        self.db = MagicMock()
+        self.db.cfgdb.get_entry = MagicMock()
+        self.db.cfgdb.mod_entry = MagicMock()
+
+    # ✅ BPDU GUARD ENABLE TESTS
+    def test_stp_interface_bpdu_guard_enable_without_shutdown(self):
+        """Test enabling BPDU Guard without shutdown option."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}]  # Valid STP mode and valid interface
+        result = self.runner.invoke(stp_interface_bpdu_guard_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'bpdu_guard': 'true', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'}
+        )
+
+    def test_stp_interface_bpdu_guard_enable_with_shutdown(self):
+        """Test enabling BPDU Guard with shutdown option."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}]
+        result = self.runner.invoke(stp_interface_bpdu_guard_enable, ["Ethernet0", "--shutdown"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'bpdu_guard': 'true', 'bpdu_guard_do_disable': 'true', 'portfast': 'false', 'uplink_fast': 'false'}
+        )
+
+    def test_stp_interface_bpdu_guard_enable_mstp(self):
+        """Test enabling BPDU Guard on MSTP mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}]
+        result = self.runner.invoke(stp_interface_bpdu_guard_enable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'bpdu_guard': 'true', 'bpdu_guard_do_disable': 'false', 'edge_port': 'false', 'link_type': 'auto'}
+        )
+
+    def test_stp_interface_bpdu_guard_enable_invalid_interface(self):
+        """Test BPDU Guard enabling failure due to an invalid interface."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, None]  # Invalid interface
+        result = self.runner.invoke(stp_interface_bpdu_guard_enable, ["InvalidInterface"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output  # Assuming validation error message
+
+    # ✅ BPDU GUARD DISABLE TESTS
+    def test_stp_interface_bpdu_guard_disable_valid(self):
+        """Test disabling BPDU Guard for a valid interface."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, {}]
+        result = self.runner.invoke(stp_interface_bpdu_guard_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'portfast': 'false', 'uplink_fast': 'false'}
+        )
+
+    def test_stp_interface_bpdu_guard_disable_mstp(self):
+        """Test disabling BPDU Guard for an interface in MSTP mode."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "mstp"}, {}]
+        result = self.runner.invoke(stp_interface_bpdu_guard_disable, ["Ethernet0"], obj=self.db)
+        assert result.exit_code == 0
+        self.db.cfgdb.mod_entry.assert_called_with(
+            'STP_PORT', 'Ethernet0',
+            {'bpdu_guard': 'false', 'bpdu_guard_do_disable': 'false', 'edge_port': 'false', 'link_type': 'auto'}
+        )
+
+    def test_stp_interface_bpdu_guard_disable_invalid_interface(self):
+        """Test BPDU Guard disabling failure due to an invalid interface."""
+        self.db.cfgdb.get_entry.side_effect = [{"mode": "pvst"}, None]  # Invalid interface
+        result = self.runner.invoke(stp_interface_bpdu_guard_disable, ["InvalidInterface"], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output  # Assuming validation error message
+
 
     @classmethod
     def teardown_class(cls):
