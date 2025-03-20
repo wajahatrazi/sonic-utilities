@@ -1426,6 +1426,20 @@ class TestMstInstanceVlanDel:
         global MST_MAX_INSTANCES
         MST_MAX_INSTANCES = 64  # Define MST max instances for testing
 
+        # Mock database responses
+        def mock_get_entry(table, key):
+            """Simulated database get_entry behavior."""
+            if table == "STP_MST_INST" and key.startswith("MST_INSTANCE"):
+                # Return a mock MST instance entry with VLANs
+                return {"vlan_list": "100,200,300"} if key == "MST_INSTANCE|2" else None
+            return None
+
+        # Set side effect for the mock database
+        self.db.cfgdb.get_entry.side_effect = mock_get_entry
+
+        # Mock database modification function (mod_entry)
+        self.db.cfgdb.mod_entry = MagicMock()
+
     def test_mst_instance_vlan_del_valid(self):
         """Test successful VLAN removal from MST instance."""
 
