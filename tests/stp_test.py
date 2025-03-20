@@ -576,35 +576,23 @@ class TestStpVlanMaxAge:
     def test_stp_vlan_max_age_valid(self):
         """Test that STP max age is correctly set for a VLAN."""
 
-        # Set STP mode to PVST and enable STP for VLAN
-        self.db.cfgdb.set_entry.return_value = None
+        # Mock database entries
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},  # STP mode check
+            {},  # VLAN existence check
+            {"enabled": "true"}  # STP enabled check
+        ]
 
-        # Mock CLI runner to return a successful result
-        self.runner.invoke.return_value = MagicMock(exit_code=0, output="Success")
-
-        # Run the command to update max age
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["max_age"],
-            ["200", "20"],  # Setting max_age to 20 seconds
-            obj=self.db,
-        )
+        # Run the command with valid inputs
+        result = self.runner.invoke(stp_vlan_max_age, ["200", "20"], obj=self.db)
 
         print("\nCommand Output:", result.output)
 
         # Ensure the command executed successfully
         assert result.exit_code == 0, f"Test failed with error: {result.output}"
 
-        # Explicitly call get_entry() before asserting
-        self.db.cfgdb.get_entry.return_value = {"max_age": "20"}
-        updated_vlan_entry = self.db.cfgdb.get_entry('STP_VLAN', "Vlan200")
-
-        # Ensure `get_entry()` was actually called
-        self.db.cfgdb.get_entry.assert_called_with('STP_VLAN', "Vlan200")
-
-        # Validate that max_age was correctly updated
-        assert updated_vlan_entry.get("max_age") == "20", "Max age was not updated correctly!"
+        # Validate the database update
+        self.db.cfgdb.mod_entry.assert_called_with('STP_VLAN', "Vlan200", {'max_age': 20})
 
     def test_stp_vlan_max_age_vlan_does_not_exist(self):
         """Test that an error is raised if VLAN does not exist."""
@@ -612,13 +600,13 @@ class TestStpVlanMaxAge:
         # Mock STP mode as PVST
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        # Mock function `check_if_vlan_exist_in_db` to raise SystemExit
+        # Mock function `check_if_vlan_exist_in_db` to raise an exception
         def mock_check_if_vlan_exist_in_db(db, ctx, vid):
             ctx.fail("VLAN does not exist")
-            raise SystemExit(1)  # Explicitly raising SystemExit
 
+        # Apply the mock and run the command
         with pytest.raises(SystemExit):
-            mock_check_if_vlan_exist_in_db(self.db, self.ctx, 300)  # VLAN 300 does not exist
+            mock_check_if_vlan_exist_in_db(self.db, None, 300)
 
     def test_stp_vlan_max_age_stp_disabled(self):
         """Test that an error is raised if STP is not enabled for VLAN."""
@@ -626,13 +614,13 @@ class TestStpVlanMaxAge:
         # Mock STP mode as PVST
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        # Mock function `check_if_stp_enabled_for_vlan` to raise SystemExit
+        # Mock function `check_if_stp_enabled_for_vlan` to raise an exception
         def mock_check_if_stp_enabled_for_vlan(ctx, db, vlan_name):
             ctx.fail("STP not enabled for VLAN")
-            raise SystemExit(1)  # Explicitly raising SystemExit
 
+        # Apply the mock and run the command
         with pytest.raises(SystemExit):
-            mock_check_if_stp_enabled_for_vlan(self.ctx, self.db, "Vlan300")  # STP is disabled
+            mock_check_if_stp_enabled_for_vlan(None, self.db, "Vlan300")
 
     def test_stp_vlan_max_age_invalid_stp_parameters(self):
         """Test that an error is raised if STP parameters are invalid."""
@@ -640,59 +628,46 @@ class TestStpVlanMaxAge:
         # Mock STP mode as PVST
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        # Mock function `is_valid_stp_vlan_parameters` to raise SystemExit
+        # Mock function `is_valid_stp_vlan_parameters` to raise an exception
         def mock_is_valid_stp_vlan_parameters(ctx, db, vlan_name, param, value):
             ctx.fail("Invalid STP parameters")
-            raise SystemExit(1)  # Explicitly raising SystemExit
 
+        # Apply the mock and run the command
         with pytest.raises(SystemExit):
-            mock_is_valid_stp_vlan_parameters(self.ctx, self.db, "Vlan300", "max_age", 50)  # Invalid max_age
+            mock_is_valid_stp_vlan_parameters(None, self.db, "Vlan300", "max_age", 50)  # Invalid max_age
 
     def test_stp_vlan_max_age_invalid_mode(self):
         """Test that max age configuration fails if STP mode is MST."""
 
-        self.db.cfgdb.set_entry = MagicMock()
-        self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1,
-            output="Configuration not supported for MST"
-        ))
+        # Mock STP mode as MST
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
 
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["max_age"],
-            ["200", "20"],  # Invalid: STP mode is MST
-            obj=self.db,
-        )
+        # Run the command
+        result = self.runner.invoke(stp_vlan_max_age, ["200", "20"], obj=self.db)
 
-        actual_output = result.output.strip().lower()
-        print(f"\nMocked Command Output:\n{actual_output}")
+        print("\nCommand Output:", result.output)
 
+        # Ensure the command fails with the correct error message
         assert result.exit_code != 0, "Command should have failed with MST mode"
-        assert "configuration not supported for mst" in actual_output
+        assert "Configuration not supported for MST" in result.output
 
     def test_stp_vlan_max_age_invalid_value(self):
-        """Test that max age values outside valid range (6-40) are rejected."""
+        """Test that invalid max age values are rejected."""
 
-        self.db.cfgdb.set_entry = MagicMock()
-        self.runner.invoke = MagicMock(return_value=MagicMock(
-            exit_code=1,
-            output="max_age must be between 6 and 40"
-        ))
+        # Set STP mode to PVST and enable STP for VLAN
+        self.db.cfgdb.get_entry.side_effect = [
+            {"mode": "pvst"},
+            {"enabled": "true"}
+        ]
 
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["max_age"],
-            ["300", "50"],  # Invalid: max_age should be 6-40
-            obj=self.db,
-        )
+        # Run the command with an invalid max age (out of range)
+        result = self.runner.invoke(stp_vlan_max_age, ["300", "50"], obj=self.db)  # Invalid value (should be 6-40)
 
-        actual_output = result.output.strip().lower()
-        print(f"\nMocked Command Output:\n{actual_output}")
+        print("\nCommand Output:", result.output)
 
+        # Ensure the command fails
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
-        assert "max_age must be between 6 and 40" in actual_output
+        assert "Invalid max age" in result.output
 
     def test_stp_vlan_max_age_valid_again(self):
         """Test STP max age configuration for a VLAN with valid conditions."""
@@ -740,20 +715,6 @@ class TestStpVlanMaxAge:
 
         assert result.exit_code != 0
         assert "STP not enabled for VLAN" in result.output
-
-
-def test_stp_vlan_max_age_invalid_value(self):
-    """Test failure when the provided max age is invalid (out of range)."""
-    self.db.cfgdb.get_entry.side_effect = [
-        {"mode": "pvst"},  # STP mode check
-        {},  # VLAN exists
-        {"enabled": "true"}  # STP enabled check
-    ]
-
-    result = self.runner.invoke(stp_vlan_max_age, ["200", "50"], obj=self.db)  # Out of range
-
-    assert result.exit_code != 0
-    assert "Invalid STP max age" in result.output
 
 
 class TestStpVlanPriority:
