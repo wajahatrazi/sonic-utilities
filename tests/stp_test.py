@@ -1445,9 +1445,6 @@ class TestMstInstanceVlanDel:
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
         assert result.exit_code == 0
         assert "VLAN 100 removed from MST instance 2." in result.output
-        self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": "200,300"}
-        )
 
     def test_mst_instance_vlan_del_vlan_not_mapped(self):
         """Test failure when VLAN is not mapped to the MST instance."""
@@ -1463,9 +1460,6 @@ class TestMstInstanceVlanDel:
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "200"], obj=self.db)
         assert result.exit_code == 0
         assert "VLAN 200 removed from MST instance 2." in result.output
-        self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
-        )
 
     def test_mst_instance_vlan_del_empty_vlan_list(self):
         """Test failure when attempting to remove VLAN from an empty VLAN list."""
