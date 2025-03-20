@@ -298,6 +298,7 @@ class TestStp(object):
         print("result code {}".format(result.output))
         assert result.exit_code != 0
         assert "doesn't exist" in result.output
+    
 
     def test_stp_validate_global_timer_and_priority_params(self):
         runner = CliRunner()
@@ -898,7 +899,7 @@ class TestStpInterfaceEnable:
         assert "global stp is not enabled" in actual_output
 
     def test_stp_interface_enable_global_stp_disabled(self):
-        """Test that enabling STP fails if global STP is disabled."""
+                """Test that enabling STP fails if global STP is disabled."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mstp"})
         self.runner.invoke = MagicMock(return_value=MagicMock(
