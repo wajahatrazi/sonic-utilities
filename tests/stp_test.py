@@ -1428,10 +1428,10 @@ class TestMstInstanceVlanDel:
 
     def test_mst_instance_vlan_del_valid(self):
         """Test successful VLAN removal from MST instance."""
-        
+
         # Mock MST instance exists and has VLAN 100 assigned
         self.db.cfgdb.get_entry.return_value = {"vlan_list": "100,200,300"}
-        
+
         # Run the command
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
 
@@ -1440,7 +1440,7 @@ class TestMstInstanceVlanDel:
         # Ensure command executes successfully
         assert result.exit_code == 0
         assert "VLAN 100 removed from MST instance 2." in result.output
-        
+
         # Validate the updated VLAN list in the database
         self.db.cfgdb.mod_entry.assert_called_with('STP_MST_INST', "MST_INSTANCE|2", {'vlan_list': "200,300"})
 
