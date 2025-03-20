@@ -1498,7 +1498,7 @@ class TestMstInstanceVlanDel:
 
         # Ensure command fails with appropriate error
         assert result.exit_code != 0
-        assert "Instance ID must be in range 0-63" in result.output
+        assert "Instance ID must be in range 0-62" in result.output
 
     def test_mst_instance_vlan_del_removing_last_vlan(self):
         """Test removing the last VLAN in the instance, should leave empty list."""
