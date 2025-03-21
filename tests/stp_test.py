@@ -7,7 +7,8 @@ import pytest
 from click.testing import CliRunner
 # import pytest
 from config.stp import (
-  mst_instance_vlan_del
+  mst_instance_vlan_del,
+  mst_instance_vlan
  )
 #     check_if_stp_enabled_for_vlan,
 #     check_if_vlan_exist_in_db,
@@ -1469,15 +1470,12 @@ class TestMstInstanceVlanDel:
 
     def test_mst_instance_vlan_del_vlan_not_mapped(self):
         """Test failure when VLAN is not mapped to the MST instance."""
-
         self.db.cfgdb.get_entry = MagicMock()
         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-            {"vlan_list": "100,200,300"}
-            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
-            else None
+            {"vlan_list": "100,200,300"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "400"], obj=self.db)
+        result = self.runner.invoke(mst_instance_vlan, ['del', '2', '400'], obj=self.db)
 
         print("\nCommand Output:", result.output)
 
@@ -1486,15 +1484,12 @@ class TestMstInstanceVlanDel:
 
     def test_mst_instance_vlan_del_successful_removal(self):
         """Test successful removal of VLAN from MST instance."""
-
         self.db.cfgdb.get_entry = MagicMock()
         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-            {"vlan_list": "100,200,300"}
-            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
-            else None
+            {"vlan_list": "100,200,300"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "200"], obj=self.db)
+        result = self.runner.invoke(mst_instance_vlan, ['del', '2', '200'], obj=self.db)
 
         print("\nCommand Output:", result.output)
 
@@ -1507,13 +1502,12 @@ class TestMstInstanceVlanDel:
 
     def test_mst_instance_vlan_del_removal_of_last_vlan(self):
         """Test removal of the only VLAN in the list."""
-
         self.db.cfgdb.get_entry = MagicMock()
         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
             {"vlan_list": "100"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
+        result = self.runner.invoke(mst_instance_vlan, ['del', '2', '100'], obj=self.db)
 
         print("\nCommand Output:", result.output)
 
@@ -1526,13 +1520,12 @@ class TestMstInstanceVlanDel:
 
     def test_mst_instance_vlan_del_empty_vlan_list(self):
         """Test failure when vlan_list is empty."""
-
         self.db.cfgdb.get_entry = MagicMock()
         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
             {"vlan_list": ""} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
+        result = self.runner.invoke(mst_instance_vlan, ['del', '2', '100'], obj=self.db)
 
         print("\nCommand Output:", result.output)
 
