@@ -1525,7 +1525,6 @@ class TestMstInstanceVlanDel:
             "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
         )
 
-
     def test_mst_instance_vlan_del_empty_vlan_list(self):
         """Test failure when vlan_list is empty."""
         self.db.cfgdb.get_entry = MagicMock()
