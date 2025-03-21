@@ -1470,8 +1470,9 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_vlan_not_mapped(self):
         """Test failure when VLAN is not mapped to the MST instance."""
 
-        self.db.cfgdb.get_entry.side_effect = (
-            lambda t, k: {"vlan_list": "100,200,300"}
+        self.db.cfgdb.get_entry = MagicMock()
+        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+            {"vlan_list": "100,200,300"}
             if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
             else None
         )
@@ -1486,8 +1487,9 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_successful_removal(self):
         """Test successful removal of VLAN from MST instance."""
 
-        self.db.cfgdb.get_entry.side_effect = (
-            lambda t, k: {"vlan_list": "100,200,300"}
+        self.db.cfgdb.get_entry = MagicMock()
+        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+            {"vlan_list": "100,200,300"}
             if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
             else None
         )
@@ -1500,18 +1502,15 @@ class TestMstInstanceVlanDel:
         assert "VLAN 200 removed from MST instance 2." in result.output
 
         self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST",
-            "MST_INSTANCE|2",
-            {"vlan_list": "100,300"}
+            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": "100,300"}
         )
 
     def test_mst_instance_vlan_del_removal_of_last_vlan(self):
         """Test removal of the only VLAN in the list."""
 
-        self.db.cfgdb.get_entry.side_effect = (
-            lambda t, k: {"vlan_list": "100"}
-            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
-            else None
+        self.db.cfgdb.get_entry = MagicMock()
+        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+            {"vlan_list": "100"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
@@ -1522,18 +1521,15 @@ class TestMstInstanceVlanDel:
         assert "VLAN 100 removed from MST instance 2." in result.output
 
         self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST",
-            "MST_INSTANCE|2",
-            {"vlan_list": ""}
+            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
         )
 
     def test_mst_instance_vlan_del_empty_vlan_list(self):
         """Test failure when vlan_list is empty."""
 
-        self.db.cfgdb.get_entry.side_effect = (
-            lambda t, k: {"vlan_list": ""}
-            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
-            else None
+        self.db.cfgdb.get_entry = MagicMock()
+        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+            {"vlan_list": ""} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
         )
 
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
