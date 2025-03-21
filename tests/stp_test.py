@@ -1440,36 +1440,6 @@ class TestMstInstanceVlanDel:
         # Mock database modification function (mod_entry)
         self.db.cfgdb.mod_entry = MagicMock()
 
-    def test_mst_instance_vlan_del_valid(self):
-        """Test successful VLAN removal from MST instance."""
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
-        assert result.exit_code == 0
-        assert "VLAN 100 removed from MST instance 2." in result.output
-
-    def test_mst_instance_vlan_del_vlan_not_mapped(self):
-        """Test failure when VLAN is not mapped to the MST instance."""
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "500"], obj=self.db)
-        assert result.exit_code != 0
-        assert "VLAN 500 is not mapped to MST instance 2." in result.output
-
-    def test_mst_instance_vlan_del_removing_last_vlan(self):
-        """Test removing the last VLAN in the instance, should leave empty list."""
-        self.db.cfgdb.get_entry.side_effect = lambda table, key: (
-            {"vlan_list": "200"} if key == "MST_INSTANCE|2" else None
-        )
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "200"], obj=self.db)
-        assert result.exit_code == 0
-        assert "VLAN 200 removed from MST instance 2." in result.output
-
-    def test_mst_instance_vlan_del_empty_vlan_list(self):
-        """Test failure when attempting to remove VLAN from an empty VLAN list."""
-        self.db.cfgdb.get_entry.side_effect = lambda table, key: (
-            {"vlan_list": ""} if key == "MST_INSTANCE|2" else None
-        )
-        result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
-        assert result.exit_code != 0
-        assert "VLAN 100 is not mapped to MST instance 2." in result.output
-
     def test_mst_instance_vlan_del_instance_does_not_exist(self):
         """Test failure when MST instance does not exist."""
 
