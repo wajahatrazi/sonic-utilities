@@ -1470,12 +1470,12 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_vlan_not_mapped(self):
         """Test failure when VLAN is not mapped to the MST instance."""
 
-        # Provide default vlan_list
-        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-            {"vlan_list": "100,200,300"} if k == "MST_INSTANCE|2" else None
+        self.db.cfgdb.get_entry.side_effect = (
+            lambda t, k: {"vlan_list": "100,200,300"}
+            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
+            else None
         )
 
-        # Run the command with a VLAN not in the list
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "400"], obj=self.db)
 
         print("\nCommand Output:", result.output)
@@ -1486,10 +1486,10 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_successful_removal(self):
         """Test successful removal of VLAN from MST instance."""
 
-        # Provide vlan_list that includes VLAN 200
-
         self.db.cfgdb.get_entry.side_effect = (
-            lambda t, k: {"vlan_list": "100,200,300"} if k == "MST_INSTANCE|2" else None
+            lambda t, k: {"vlan_list": "100,200,300"}
+            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
+            else None
         )
 
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "200"], obj=self.db)
@@ -1508,8 +1508,11 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_removal_of_last_vlan(self):
         """Test removal of the only VLAN in the list."""
 
-        # Simulate only one VLAN in the list
-        self.db.cfgdb.get_entry.side_effect = lambda t, k: {"vlan_list": "100"} if k == "MST_INSTANCE|2" else None
+        self.db.cfgdb.get_entry.side_effect = (
+            lambda t, k: {"vlan_list": "100"}
+            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
+            else None
+        )
 
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
 
@@ -1527,8 +1530,11 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_empty_vlan_list(self):
         """Test failure when vlan_list is empty."""
 
-        # Simulate empty vlan_list
-        self.db.cfgdb.get_entry.side_effect = lambda t, k: {"vlan_list": ""} if k == "MST_INSTANCE|2" else None
+        self.db.cfgdb.get_entry.side_effect = (
+            lambda t, k: {"vlan_list": ""}
+            if t == "STP_MST_INST" and k == "MST_INSTANCE|2"
+            else None
+        )
 
         result = self.runner.invoke(mst_instance_vlan_del, ["2", "100"], obj=self.db)
 
@@ -1536,6 +1542,7 @@ class TestMstInstanceVlanDel:
 
         assert result.exit_code != 0
         assert "VLAN 100 is not mapped to MST instance 2." in result.output
+
 
     @classmethod
     def teardown_class(cls):
