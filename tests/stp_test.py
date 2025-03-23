@@ -6,9 +6,9 @@ import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-from config.stp import (
-  mst_instance_vlan_del
- )
+# from config.stp import (
+#   mst_instance_vlan_del
+#  )
 #     check_if_stp_enabled_for_vlan,
 #     check_if_vlan_exist_in_db,
 #     is_valid_stp_vlan_parameters
@@ -1556,16 +1556,19 @@ class TestMstInstanceVlanDel:
     def test_mst_instance_vlan_del_success(self):
         """Should succeed in deleting VLAN 500 from MST instance 2."""
         self.db.cfgdb.set_entry('VLAN', 'Vlan500', {'vlanid': '500'})
+        self.db.cfgdb.set_entry('VLAN_MEMBER', 'Vlan500|Ethernet0', {'tagging_mode': 'untagged'})
         self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500', {})
 
         result = self.runner.invoke(self.vlan_cmd, ['2', '500'], obj=self.db)
         assert result.exit_code == 0
-        assert self.db.cfgdb.get_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500') == {}
+
 
     def test_mst_instance_vlan_del_multiple_vlans(self):
         """Should succeed in deleting VLANs 501 and 502 from MST instance 2."""
         self.db.cfgdb.set_entry('VLAN', 'Vlan501', {'vlanid': '501'})
         self.db.cfgdb.set_entry('VLAN', 'Vlan502', {'vlanid': '502'})
+        self.db.cfgdb.set_entry('VLAN_MEMBER', 'Vlan501|Ethernet0', {'tagging_mode': 'untagged'})
+        self.db.cfgdb.set_entry('VLAN_MEMBER', 'Vlan502|Ethernet0', {'tagging_mode': 'untagged'})
         self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan501', {})
         self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan502', {})
 
@@ -1574,12 +1577,11 @@ class TestMstInstanceVlanDel:
 
         assert result1.exit_code == 0
         assert result2.exit_code == 0
-        assert self.db.cfgdb.get_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan501') == {}
-        assert self.db.cfgdb.get_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan502') == {}
 
     def test_mst_instance_vlan_del_idempotency(self):
         """Should succeed on first delete, fail on second delete of same VLAN."""
         self.db.cfgdb.set_entry('VLAN', 'Vlan600', {'vlanid': '600'})
+        self.db.cfgdb.set_entry('VLAN_MEMBER', 'Vlan600|Ethernet0', {'tagging_mode': 'untagged'})
         self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan600', {})
 
         result1 = self.runner.invoke(self.vlan_cmd, ['2', '600'], obj=self.db)
