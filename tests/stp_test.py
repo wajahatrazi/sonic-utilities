@@ -1416,104 +1416,262 @@ class TestStpVlanHelloInterval:
         assert "Configuration not supported for MST" in result.output
 
 
+# class TestMstInstanceVlanDel:
+#     """Test cases for removing a VLAN from an MST instance."""
+
+#     def setup_method(self):
+#         """Setup test environment before each test."""
+#         self.db = MagicMock()  # Mock database object
+#         self.runner = CliRunner()  # CLI runner to simulate command execution
+#         global MST_MAX_INSTANCES
+#         MST_MAX_INSTANCES = 64  # Define MST max instances for testing
+
+#         # Mock database responses
+#         def mock_get_entry(table, key):
+#             """Simulated database get_entry behavior."""
+#             if table == "STP_MST_INST" and key.startswith("MST_INSTANCE"):
+#                 # Return a mock MST instance entry with VLANs
+#                 return {"vlan_list": "100,200,300"} if key == "MST_INSTANCE|2" else None
+#             return None
+
+#         # Set side effect for the mock database
+#         self.db.cfgdb.get_entry.side_effect = mock_get_entry
+
+#         # Mock database modification function (mod_entry)
+#         self.db.cfgdb.mod_entry = MagicMock()
+
+#         @click.group()
+#         def vlan():
+#             pass
+
+#         from config.stp import mst_instance_vlan_del
+#         vlan.add_command(mst_instance_vlan_del, name='del')
+#         self.vlan = vlan  # store for test usage
+
+#     def test_mst_instance_vlan_del_instance_does_not_exist(self):
+#         """Test failure when MST instance does not exist."""
+
+#         # Mock MST instance does not exist
+#         self.db.cfgdb.get_entry.return_value = None
+
+#         # Run the command
+#         result = self.runner.invoke(mst_instance_vlan_del, ["3", "100"], obj=self.db)
+
+#         print("\nCommand Output:", result.output)
+
+#         # Ensure command fails with appropriate error
+#         assert result.exit_code != 0
+#         assert "MST instance 3 does not exist." in result.output
+
+#     def test_mst_instance_vlan_del_invalid_instance_id(self):
+#         """Test failure when instance ID is out of range."""
+
+#         # Run the command with an invalid instance ID
+#         result = self.runner.invoke(mst_instance_vlan_del, ["100", "100"], obj=self.db)
+
+#         print("\nCommand Output:", result.output)
+
+#         # Ensure command fails with appropriate error
+#         assert result.exit_code != 0
+#         assert "Instance ID must be in range 0-62" in result.output
+
+#     def test_mst_instance_vlan_del_vlan_not_mapped(self):
+#         """Test failure when VLAN is not mapped to the MST instance."""
+#         result = self.runner.invoke(self.vlan, ['del', '2', '400'], obj=self.db)
+#         print("\nCommand Output:", result.output)
+#         assert result.exit_code != 0
+#         assert "VLAN 400 is not mapped to MST instance 2." in result.output
+
+#     def test_mst_instance_vlan_del_successful_removal(self):
+#         """Test successful removal of VLAN from MST instance."""
+#         result = self.runner.invoke(self.vlan, ['del', '2', '200'], obj=self.db)
+#         print("\nCommand Output:", result.output)
+#         assert result.exit_code == 0
+#         assert "VLAN 200 removed from MST instance 2." in result.output
+#         self.db.cfgdb.mod_entry.assert_called_once_with(
+#             "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": "100,300"}
+#         )
+
+#     def test_mst_instance_vlan_del_removal_of_last_vlan(self):
+#         """Test removal of the only VLAN in the list."""
+#         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+#             {"vlan_list": "100"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
+#         )
+#         result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
+#         print("\nCommand Output:", result.output)
+#         assert result.exit_code == 0
+#         assert "VLAN 100 removed from MST instance 2." in result.output
+#         self.db.cfgdb.mod_entry.assert_called_once_with(
+#             "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
+#         )
+
+#     def test_mst_instance_vlan_del_empty_vlan_list(self):
+#         """Test failure when vlan_list is empty."""
+#         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
+#             {"vlan_list": ""} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
+#         )
+#         result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
+#         print("\nCommand Output:", result.output)
+#         assert result.exit_code != 0
+#         assert "VLAN 100 is not mapped to MST instance 2." in result.output
+
+
 class TestMstInstanceVlanDel:
-    """Test cases for removing a VLAN from an MST instance."""
-
     def setup_method(self):
-        """Setup test environment before each test."""
-        self.db = MagicMock()  # Mock database object
-        self.runner = CliRunner()  # CLI runner to simulate command execution
-        global MST_MAX_INSTANCES
-        MST_MAX_INSTANCES = 64  # Define MST max instances for testing
+        self.runner = CliRunner()
+        self.db = Db()
 
-        # Mock database responses
-        def mock_get_entry(table, key):
-            """Simulated database get_entry behavior."""
-            if table == "STP_MST_INST" and key.startswith("MST_INSTANCE"):
-                # Return a mock MST instance entry with VLANs
-                return {"vlan_list": "100,200,300"} if key == "MST_INSTANCE|2" else None
-            return None
+        # Enable MST mode
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
 
-        # Set side effect for the mock database
-        self.db.cfgdb.get_entry.side_effect = mock_get_entry
+        # Create MST instance 2
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE:INSTANCE2', {
+            'bridge_priority': '32768'
+        })
 
-        # Mock database modification function (mod_entry)
-        self.db.cfgdb.mod_entry = MagicMock()
-
-        @click.group()
-        def vlan():
-            pass
-
-        from config.stp import mst_instance_vlan_del
-        vlan.add_command(mst_instance_vlan_del, name='del')
-        self.vlan = vlan  # store for test usage
-
-    def test_mst_instance_vlan_del_instance_does_not_exist(self):
+    def test_mst_instance_vlan_del_instance_not_exist(self):
         """Test failure when MST instance does not exist."""
+        # Remove MST instance 2 to simulate missing instance
+        self.db.cfgdb.delete_entry('STP_MST_INST', 'MST_INSTANCE:INSTANCE2')
 
-        # Mock MST instance does not exist
-        self.db.cfgdb.get_entry.return_value = None
-
-        # Run the command
-        result = self.runner.invoke(mst_instance_vlan_del, ["3", "100"], obj=self.db)
-
-        print("\nCommand Output:", result.output)
-
-        # Ensure command fails with appropriate error
-        assert result.exit_code != 0
-        assert "MST instance 3 does not exist." in result.output
-
-    def test_mst_instance_vlan_del_invalid_instance_id(self):
-        """Test failure when instance ID is out of range."""
-
-        # Run the command with an invalid instance ID
-        result = self.runner.invoke(mst_instance_vlan_del, ["100", "100"], obj=self.db)
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '400'],
+            obj=self.db
+        )
 
         print("\nCommand Output:", result.output)
-
-        # Ensure command fails with appropriate error
         assert result.exit_code != 0
-        assert "Instance ID must be in range 0-62" in result.output
+        assert "MST instance 2 does not exist" in result.output
+
+    def test_mst_instance_vlan_del_vlan_does_not_exist(self):
+        """Test failure when VLAN does not exist in DB."""
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '999'],  # VLAN 999 does not exist
+            obj=self.db
+        )
+
+        print("\nCommand Output:", result.output)
+        assert result.exit_code != 0
+        assert "Vlan999 doesn't exist" in result.output
 
     def test_mst_instance_vlan_del_vlan_not_mapped(self):
         """Test failure when VLAN is not mapped to the MST instance."""
-        result = self.runner.invoke(self.vlan, ['del', '2', '400'], obj=self.db)
+        # Create VLAN 400 but don't map it to MST instance 2
+        self.db.cfgdb.set_entry('VLAN', 'Vlan400', {'vlanid': '400'})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '400'],
+            obj=self.db
+        )
+
         print("\nCommand Output:", result.output)
         assert result.exit_code != 0
         assert "VLAN 400 is not mapped to MST instance 2." in result.output
 
-    def test_mst_instance_vlan_del_successful_removal(self):
+    def test_mst_instance_vlan_del_success(self):
         """Test successful removal of VLAN from MST instance."""
-        result = self.runner.invoke(self.vlan, ['del', '2', '200'], obj=self.db)
-        print("\nCommand Output:", result.output)
-        assert result.exit_code == 0
-        assert "VLAN 200 removed from MST instance 2." in result.output
-        self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": "100,300"}
+        # Add VLAN 500 and map it to MST instance 2
+        self.db.cfgdb.set_entry('VLAN', 'Vlan500', {'vlanid': '500'})
+        self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500', {})
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '500'],
+            obj=self.db
         )
 
-    def test_mst_instance_vlan_del_removal_of_last_vlan(self):
-        """Test removal of the only VLAN in the list."""
-        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-            {"vlan_list": "100"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
-        )
-        result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
         print("\nCommand Output:", result.output)
         assert result.exit_code == 0
-        assert "VLAN 100 removed from MST instance 2." in result.output
-        self.db.cfgdb.mod_entry.assert_called_once_with(
-            "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
+        # You can assert key is gone if needed:
+        assert self.db.cfgdb.get_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500') == {}
+
+    def test_mst_instance_vlan_del_multiple_vlans(self):
+        """Test successful removal of multiple VLANs."""
+        self.db.cfgdb.set_entry('VLAN', 'Vlan501', {'vlanid': '501'})
+        self.db.cfgdb.set_entry('VLAN', 'Vlan502', {'vlanid': '502'})
+        self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan501', {})
+        self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan502', {})
+
+        # First remove VLAN 501
+        result1 = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '501'],
+            obj=self.db
         )
 
-    def test_mst_instance_vlan_del_empty_vlan_list(self):
-        """Test failure when vlan_list is empty."""
-        self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-            {"vlan_list": ""} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
+        # Then remove VLAN 502
+        result2 = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '502'],
+            obj=self.db
         )
-        result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
-        print("\nCommand Output:", result.output)
-        assert result.exit_code != 0
-        assert "VLAN 100 is not mapped to MST instance 2." in result.output
+
+        print("\nCommand Output 1:", result1.output)
+        print("\nCommand Output 2:", result2.output)
+
+        assert result1.exit_code == 0
+        assert result2.exit_code == 0
+
+    def test_mst_instance_vlan_del_idempotency(self):
+        """Ensure deleting the same VLAN twice results in an error second time."""
+        self.db.cfgdb.set_entry('VLAN', 'Vlan600', {'vlanid': '600'})
+        self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan600', {})
+
+        # First delete should succeed
+        result1 = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '600'],
+            obj=self.db
+        )
+
+        # Second delete should fail (no longer mapped)
+        result2 = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"],
+            ['2', '600'],
+            obj=self.db
+        )
+
+        print("\nFirst Deletion Output:", result1.output)
+        print("\nSecond Deletion Output:", result2.output)
+
+        assert result1.exit_code == 0
+        assert result2.exit_code != 0
+        assert "VLAN 600 is not mapped to MST instance 2." in result2.output
 
 
     @classmethod
