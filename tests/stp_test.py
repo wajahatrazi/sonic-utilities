@@ -1520,7 +1520,13 @@ class TestMstInstanceVlanDel:
     def setup_method(self):
         self.runner = CliRunner()
         self.db = Db()
-        self.vlan_cmd = config.config.commands["spanning-tree"].commands["mst"].commands["instance"].commands["vlan"].commands["del"]
+        self.vlan_cmd = (
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["del"]
+        )
 
         # Set MST mode and create MST instance 2
         self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
