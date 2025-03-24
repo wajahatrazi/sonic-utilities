@@ -1867,6 +1867,8 @@ def mst_instance_vlan_add(_db, instance_id, vlan_id):
     click.echo(f"VLAN {vlan_id} added to MST instance {instance_id}.")
 
 
+mst.add_command(mst_instance, "instance")
+spanning_tree.add_command(mst, "mst")
 @mst_instance_vlan.command('del')
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
