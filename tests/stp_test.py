@@ -1611,6 +1611,66 @@ class TestMstInstanceVlanDel:
         assert "VLAN 500 removed from MST instance 2." in result.output
         assert updated_entry.get('vlan_list') == '400,600'
 
+
+class TestMstInstanceVlanAdd:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+        self.vlan_cmd = (
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["vlan"]
+            .commands["add"]
+        )
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672'
+        })
+
+    def test_invalid_instance_id_range(self):
+        result = self.runner.invoke(self.vlan_cmd, ['999', '100'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Instance ID must be in range" in result.output
+
+    def test_instance_does_not_exist(self):
+        self.db.cfgdb.mod_entry('STP_MST_INST', 'MST_INSTANCE|2', None)
+        result = self.runner.invoke(self.vlan_cmd, ['2', '100'], obj=self.db)
+        assert result.exit_code != 0
+        assert "does not exist" in result.output
+
+    def test_invalid_vlan_id_range(self):
+        result = self.runner.invoke(self.vlan_cmd, ['2', '5000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "VLAN ID must be in range" in result.output
+
+    def test_vlan_does_not_exist(self):
+        result = self.runner.invoke(self.vlan_cmd, ['2', '100'], obj=self.db)
+        assert result.exit_code != 0
+        assert "VLAN 100 does not exist" in result.output
+
+    def test_vlan_already_mapped(self):
+        self.db.cfgdb.set_entry('VLAN', 'Vlan100', {'vlanid': '100'})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672',
+            'vlan_list': '100'
+        })
+        result = self.runner.invoke(self.vlan_cmd, ['2', '100'], obj=self.db)
+        assert result.exit_code != 0
+        assert "already mapped" in result.output
+
+    def test_vlan_add_success(self):
+        self.db.cfgdb.set_entry('VLAN', 'Vlan200', {'vlanid': '200'})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672',
+            'vlan_list': '100,150'
+        })
+        result = self.runner.invoke(self.vlan_cmd, ['2', '200'], obj=self.db)
+        updated = self.db.cfgdb.get_entry('STP_MST_INST', 'MST_INSTANCE|2')
+        assert result.exit_code == 0
+        assert "VLAN 200 added to MST instance 2." in result.output
+        assert updated.get("vlan_list") == "100,150,200"
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
