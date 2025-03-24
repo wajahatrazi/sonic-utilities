@@ -1671,6 +1671,55 @@ class TestMstInstanceVlanAdd:
         assert "VLAN 200 added to MST instance 2." in result.output
         assert updated.get("vlan_list") == "100,150,200"
 
+
+class TestMstInstancePriority:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+        self.priority_cmd = (
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["priority"]
+        )
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672'
+        })
+
+    def test_invalid_instance_id_range(self):
+        result = self.runner.invoke(self.priority_cmd, ['999', '28672'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Instance ID must be in range" in result.output
+
+    def test_instance_does_not_exist(self):
+        self.db.cfgdb.mod_entry('STP_MST_INST', 'MST_INSTANCE|2', None)
+        result = self.runner.invoke(self.priority_cmd, ['2', '28672'], obj=self.db)
+        assert result.exit_code != 0
+        assert "does not exist" in result.output
+
+    def test_priority_not_multiple_of_4096(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', '3000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Priority must be a multiple of 4096" in result.output
+
+    def test_priority_out_of_range_low(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', '-4096'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Priority must be a multiple of 4096" in result.output
+
+    def test_priority_out_of_range_high(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', '65536'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Priority must be a multiple of 4096" in result.output
+
+    def test_priority_set_successfully(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', '20480'], obj=self.db)
+        updated = self.db.cfgdb.get_entry('STP_MST_INST', 'MST_INSTANCE|2')
+        assert result.exit_code == 0
+        assert "Bridge priority set to 20480 for MST instance 2." in result.output
+        assert updated['bridge_priority'] == '20480'
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
