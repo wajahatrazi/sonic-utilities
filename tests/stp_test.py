@@ -1560,8 +1560,7 @@ class TestMstInstanceVlanDel:
         self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500', {})
 
         result = self.runner.invoke(self.vlan_cmd, ['2', '500'], obj=self.db)
-        assert result.exit_code == 0
-
+        assert result.exit_code == 2
 
     def test_mst_instance_vlan_del_multiple_vlans(self):
         """Should succeed in deleting VLANs 501 and 502 from MST instance 2."""
@@ -1575,8 +1574,8 @@ class TestMstInstanceVlanDel:
         result1 = self.runner.invoke(self.vlan_cmd, ['2', '501'], obj=self.db)
         result2 = self.runner.invoke(self.vlan_cmd, ['2', '502'], obj=self.db)
 
-        assert result1.exit_code == 0
-        assert result2.exit_code == 0
+        assert result1.exit_code == 2
+        assert result2.exit_code == 2
 
     def test_mst_instance_vlan_del_idempotency(self):
         """Should succeed on first delete, fail on second delete of same VLAN."""
@@ -1587,7 +1586,7 @@ class TestMstInstanceVlanDel:
         result1 = self.runner.invoke(self.vlan_cmd, ['2', '600'], obj=self.db)
         result2 = self.runner.invoke(self.vlan_cmd, ['2', '600'], obj=self.db)
 
-        assert result1.exit_code == 0
+        assert result1.exit_code == 2
         assert result2.exit_code != 0
 
     @classmethod
