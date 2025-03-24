@@ -1589,6 +1589,28 @@ class TestMstInstanceVlanDel:
         assert result1.exit_code == 2
         assert result2.exit_code != 0
 
+    def test_mst_instance_vlan_del_removes_vlan_from_list(self):
+        """Should remove VLAN 500 from the vlan_list of MST instance 2."""
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+
+        self.db.cfgdb.set_entry('VLAN', 'Vlan500', {'vlanid': '500'})
+        self.db.cfgdb.set_entry('VLAN_MEMBER', 'Vlan500|Ethernet0', {'tagging_mode': 'untagged'})
+
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672',
+            'vlan_list': '400,500,600'
+        })
+
+        self.db.cfgdb.set_entry('STP_MST_VLAN', 'MST_INSTANCE|2|Vlan500', {})
+
+        result = self.runner.invoke(self.vlan_cmd, ['2', '500'], obj=self.db)
+
+        updated_entry = self.db.cfgdb.get_entry('STP_MST_INST', 'MST_INSTANCE|2')
+
+        assert result.exit_code == 0
+        assert "VLAN 500 removed from MST instance 2." in result.output
+        assert updated_entry.get('vlan_list') == '400,600'
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
