@@ -1768,10 +1768,17 @@ class TestMstInstanceInterfaceCost:
         assert "not a L2 interface" in result.output
 
     def test_successful_path_cost_set(self):
-        # Ensure it's treated as Layer 2 by NOT setting 'ip_address'
-        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})  # clean Layer 2
+        # Setup valid Layer 2 interface: must exist in both INTERFACE and PORT
+        self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})         # Required for interface validation
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})    # No IP → Layer 2
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672'
+        })
+
         result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
         updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
+
         assert result.exit_code == 0
         assert "Path cost 2000 set for interface Ethernet0 in MST instance 2" in result.output
         assert updated['path_cost'] == '2000'
