@@ -1762,17 +1762,20 @@ class TestMstInstanceInterfaceCost:
         assert "Path cost must be in range" in result.output
 
     def test_invalid_interface(self):
-        self.db.cfgdb.mod_entry('PORT', 'Ethernet0', None)
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {'ip_address': '14.14.0.1/24'})  # Mark as L3
         result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
         assert result.exit_code != 0
-        assert "Invalid interface" in result.output or "Interface" in result.output
+        assert "not a L2 interface" in result.output
 
     def test_successful_path_cost_set(self):
+        # Ensure it's treated as Layer 2 by NOT setting 'ip_address'
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})  # clean Layer 2
         result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
         updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
         assert result.exit_code == 0
         assert "Path cost 2000 set for interface Ethernet0 in MST instance 2" in result.output
         assert updated['path_cost'] == '2000'
+
 
     @classmethod
     def teardown_class(cls):
