@@ -1767,6 +1767,56 @@ class TestMstInstanceInterfaceCost:
         assert result.exit_code != 0
         assert "not a L2 interface" in result.output
 
+
+class TestMstInstanceInterfacePriority:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+        self.priority_cmd = (
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["interface"]
+            .commands["priority"]
+        )
+
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672'
+        })
+
+    def test_invalid_instance_id(self):
+        result = self.runner.invoke(self.priority_cmd, ['999', 'Ethernet0', '128'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Instance ID must be in range" in result.output
+
+    def test_priority_out_of_range_low(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '-1'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Priority value must be in range" in result.output
+
+    def test_priority_out_of_range_high(self):
+        result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '300'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Priority value must be in range" in result.output
+
+    def test_invalid_interface(self):
+        self.db.cfgdb.mod_entry('PORT', 'Ethernet0', None)
+        result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '128'], obj=self.db)
+        assert result.exit_code != 0
+        assert "not a L2 interface" in result.output or "Invalid interface" in result.output
+
+    def test_successful_priority_set(self):
+        # Clear L3 properties just to be safe
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})
+        result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '128'], obj=self.db)
+        updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
+        assert result.exit_code == 0
+        assert "Priority 128 set for interface Ethernet0 in MST instance 2" in result.output
+        assert updated['priority'] == '128'
+
     # def test_successful_path_cost_set(self):
     #     # Clear any existing L3 config to make this interface Layer 2
     #     self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})  # force Layer 2
