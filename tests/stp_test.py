@@ -1809,22 +1809,21 @@ class TestMstInstanceInterfacePriority:
         assert "not a L2 interface" in result.output or "Invalid interface" in result.output
 
     def test_successful_priority_set(self):
-        self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})         # ensure interface exists
-        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})    # clear L3 config
+        self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})
+        self.db.cfgdb.mod_entry('INTERFACE', 'Ethernet0', None)  # Remove L3 config
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})    # Clean L2 interface
         self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
         self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
             'bridge_priority': '28672'
         })
 
         result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '128'], obj=self.db)
-
         print("Command Output:\n", result.output)
 
         updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
         assert result.exit_code == 0
         assert "Priority 128 set for interface Ethernet0 in MST instance 2" in result.output
         assert updated['priority'] == '128'
-
 
     # def test_successful_path_cost_set(self):
     #     # Clear any existing L3 config to make this interface Layer 2
