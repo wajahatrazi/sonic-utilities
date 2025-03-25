@@ -1704,7 +1704,7 @@ class TestMstInstancePriority:
         assert "Priority must be a multiple of 4096" in result.output
 
     def test_priority_out_of_range_low(self):
-        result = self.runner.invoke(self.priority_cmd, ['2', '-4096'], obj=self.db)
+        result = self.runner.invoke(self.priority_cmd, ['2', '--', '-4096'], obj=self.db)
         assert result.exit_code != 0
         assert "Priority must be a multiple of 4096" in result.output
 
