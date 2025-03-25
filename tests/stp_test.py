@@ -1720,6 +1720,60 @@ class TestMstInstancePriority:
         assert "Bridge priority set to 20480 for MST instance 2." in result.output
         assert updated['bridge_priority'] == '20480'
 
+
+class TestMstInstanceInterfaceCost:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+        self.cost_cmd = (
+            config.config.commands["spanning-tree"]
+            .commands["mst"]
+            .commands["instance"]
+            .commands["interface"]
+            .commands["cost"]
+        )
+
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
+        self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})
+        self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
+            'bridge_priority': '28672'
+        })
+
+    def test_non_mst_mode(self):
+        self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'pvst'})
+        result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Configuration not supported for PVST" in result.output
+
+    def test_invalid_instance_id(self):
+        result = self.runner.invoke(self.cost_cmd, ['999', 'Ethernet0', '2000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Instance ID must be in range" in result.output
+
+    def test_invalid_cost_low(self):
+        result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '0'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Path cost must be in range" in result.output
+
+    def test_invalid_cost_high(self):
+        result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '300000000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Path cost must be in range" in result.output
+
+    def test_invalid_interface(self):
+        self.db.cfgdb.mod_entry('PORT', 'Ethernet0', None)
+        result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output or "Interface" in result.output
+
+    def test_successful_path_cost_set(self):
+        result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
+        updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
+        assert result.exit_code == 0
+        assert "Path cost 2000 set for interface Ethernet0 in MST instance 2" in result.output
+        assert updated['path_cost'] == '2000'
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
