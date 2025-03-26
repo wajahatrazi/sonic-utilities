@@ -1827,6 +1827,7 @@ class TestMstInstanceInterfacePriority:
     #     updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
     #     assert result.exit_code == 0
     #     assert "Priority 128 set for interface Ethernet0 in MST instance 2" in result.output
+    #     assert updated['priority'] == '128'Ethernet0 in MST instance 2" in result.output
     #     assert updated['priority'] == '128'
 
     # def test_successful_path_cost_set(self):
