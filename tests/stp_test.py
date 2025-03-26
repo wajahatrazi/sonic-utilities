@@ -1899,7 +1899,6 @@ class TestStpInterfaceLinkTypeSet:
             'edge_port': 'false'
         })
 
-
     @patch('config.stp.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled"))
     def test_stp_not_enabled(self, mock_check_enabled):
         result = self.runner.invoke(
