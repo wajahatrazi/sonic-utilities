@@ -1908,6 +1908,125 @@ class TestStpInterfaceLinkTypeSet:
         assert result.exit_code != 0
         assert "STP not enabled" in result.output
 
+
+class TestStpInterfaceCost:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.cfgdb = MagicMock()
+        self.db = Db()
+        self.db.cfgdb = self.cfgdb
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.is_valid_interface_cost')
+    def test_cost_set_entry_pvst(self, mock_valid_cost, mock_global_enabled, mock_valid_iface, mock_get_mode):
+        self.cfgdb.get_entry.return_value = {}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet0", "100"],
+            obj=self.db,
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.set_entry.assert_called_with('STP_PORT', 'Ethernet0', {
+            'path_cost': 100,
+            'portfast': 'false',
+            'uplink_fast': 'false'
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.is_valid_interface_cost')
+    def test_cost_set_entry_mst(self, mock_valid_cost, mock_global_enabled, mock_valid_iface, mock_get_mode):
+        self.cfgdb.get_entry.return_value = {}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet1", "200"],
+            obj=self.db,
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.set_entry.assert_called_with('STP_PORT', 'Ethernet1', {
+            'path_cost': 200,
+            'edge_port': 'false',
+            'link_type': 'auto'
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.is_valid_interface_cost')
+    def test_cost_mod_entry_pvst(self, mock_valid_cost, mock_global_enabled, mock_valid_iface, mock_get_mode):
+        self.cfgdb.get_entry.return_value = {'path_cost': '50'}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet2", "150"],
+            obj=self.db,
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet2', {
+            'path_cost': 150
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.is_valid_interface_cost')
+    def test_cost_mod_entry_mst(self, mock_valid_cost, mock_global_enabled, mock_valid_iface, mock_get_mode):
+        self.cfgdb.get_entry.return_value = {'path_cost': '77'}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet3", "175"],
+            obj=self.db,
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet3', {
+            'path_cost': 175
+        })
+
+    def test_invalid_cost_rejected_by_click(self):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet4", "9999999999"],  # Above max
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "Invalid value" in result.output or "out of range" in result.output
+
+    @patch('config.stp.is_valid_interface_cost', side_effect=click.ClickException("Invalid cost"))
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_invalid_interface_or_cost(self, mock_stp_enabled, mock_iface_valid, mock_cost):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["cost"],
+            ["Ethernet5", "0"],
+            obj=self.db,
+        )
+
+        assert result.exit_code != 0
+        assert "Invalid cost" in result.output
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
