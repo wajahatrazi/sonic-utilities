@@ -1810,8 +1810,12 @@ class TestMstInstanceInterfacePriority:
 
     def test_successful_priority_set(self):
         self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})
-        self.db.cfgdb.mod_entry('INTERFACE', 'Ethernet0', None)  # Remove L3 config
-        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})    # Clean L2 interface
+
+        # Completely override the INTERFACE entry to simulate a proper Layer 2 port
+        self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {
+            "admin_status": "up"  # any dummy field to replace ip_address
+        })
+
         self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
         self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
             'bridge_priority': '28672'
