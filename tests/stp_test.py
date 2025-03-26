@@ -1851,56 +1851,49 @@ class TestMstInstanceInterfacePriority:
 
 class TestStpInterfaceLinkTypeSet:
     def setup_method(self):
-        self.db = MagicMock()
-        self.db.cfgdb = MagicMock()
         self.runner = CliRunner()
+        self.cfgdb = MagicMock()
+        self.db = Db()
+        self.db.cfgdb = self.cfgdb
 
     @patch('config.stp.get_global_stp_mode', return_value='pvst')
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.check_if_stp_enabled_for_interface')
-    @patch('config.stp.Db')  # Patch Db to return our mocked DB
-    def test_set_link_type_pvst(self, mock_db_class, _, __, ___):
-        mock_db_class.return_value = self.db
+    def test_set_link_type_pvst(self, mock_enabled, mock_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["link-type"]
+            .commands["set"],
+            ["P2P", "Ethernet4"],
+            obj=self.db,
+        )
 
-        with patch.object(self.db.cfgdb, 'mod_entry') as mock_mod_entry:
-            result = self.runner.invoke(
-                config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["link-type"]
-                .commands["set"],
-                ["P2P", "Ethernet4"],
-                obj=self.db
-            )
-
-            assert result.exit_code == 0
-            mock_mod_entry.assert_called_with("STP_PORT", "Ethernet4", {
-                "link_type": "p2p",
-                "portfast": "false",
-                "uplink_fast": "false"
-            })
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet4', {
+            'link_type': 'p2p',
+            'portfast': 'false',
+            'uplink_fast': 'false'
+        })
 
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.check_if_stp_enabled_for_interface')
-    @patch('config.stp.Db')  # Patch Db to return our mocked DB
-    def test_set_link_type_mst(self, mock_db_class, _, __, ___):
-        mock_db_class.return_value = self.db
+    def test_set_link_type_mst(self, mock_enabled, mock_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["link-type"]
+            .commands["set"],
+            ["Shared-Lan", "Ethernet8"],
+            obj=self.db,
+        )
 
-        with patch.object(self.db.cfgdb, 'mod_entry') as mock_mod_entry:
-            result = self.runner.invoke(
-                config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["link-type"]
-                .commands["set"],
-                ["Shared-Lan", "Ethernet8"],
-                obj=self.db
-            )
-
-            assert result.exit_code == 0
-            mock_mod_entry.assert_called_with("STP_PORT", "Ethernet8", {
-                "link_type": "shared",
-                "edge_port": "false"
-            })
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet8', {
+            'link_type': 'shared',
+            'edge_port': 'false'
+        })
 
     @patch('config.stp.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled"))
     def test_stp_not_enabled(self, mock_check_enabled):
