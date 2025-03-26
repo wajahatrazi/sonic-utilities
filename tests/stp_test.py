@@ -1851,15 +1851,15 @@ class TestMstInstanceInterfacePriority:
 
 class TestStpInterfaceLinkTypeSet:
     def setup_method(self):
-        self.db = MagicMock()
-        self.db.cfgdb = MagicMock()
+        # Properly mock the db and cfgdb for mod_entry assertions
+        self.cfgdb = MagicMock()
+        self.db = MagicMock(cfgdb=self.cfgdb)
         self.runner = CliRunner()
 
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.get_global_stp_mode')
     def test_set_link_type_pvst(self, mock_get_mode, mock_check_valid, mock_check_enabled):
-        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
         mock_get_mode.return_value = "pvst"
 
         result = self.runner.invoke(
@@ -1872,7 +1872,7 @@ class TestStpInterfaceLinkTypeSet:
         )
 
         assert result.exit_code == 0
-        self.db.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet4', {
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet4', {
             'link_type': 'p2p',
             'portfast': 'false',
             'uplink_fast': 'false'
@@ -1882,7 +1882,6 @@ class TestStpInterfaceLinkTypeSet:
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.get_global_stp_mode')
     def test_set_link_type_mst(self, mock_get_mode, mock_check_valid, mock_check_enabled):
-        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
         mock_get_mode.return_value = "mst"
 
         result = self.runner.invoke(
@@ -1895,10 +1894,11 @@ class TestStpInterfaceLinkTypeSet:
         )
 
         assert result.exit_code == 0
-        self.db.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet8', {
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet8', {
             'link_type': 'shared',
             'edge_port': 'false'
         })
+
 
     @patch('config.stp.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled"))
     def test_stp_not_enabled(self, mock_check_enabled):
