@@ -1858,7 +1858,6 @@ class TestStpInterfaceLinkTypeSet:
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.get_global_stp_mode')
-
     def test_set_link_type_pvst(self, mock_get_mode, mock_check_valid, mock_check_enabled):
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
         mock_get_mode.return_value = "pvst"
@@ -1882,7 +1881,6 @@ class TestStpInterfaceLinkTypeSet:
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
     @patch('config.stp.get_global_stp_mode')
-    
     def test_set_link_type_mst(self, mock_get_mode, mock_check_valid, mock_check_enabled):
         self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
         mock_get_mode.return_value = "mst"
