@@ -2044,13 +2044,15 @@ class TestIsValidInterfaceCost:
         is_valid_interface_cost(self.ctx, 200000000)
 
     def test_invalid_cost_below_range(self):
-        with pytest.raises(click.exceptions.Exit) as e:
-            is_valid_interface_cost(self.ctx, 0)
+        ctx = click.Context(click.Command("dummy"))
+        with pytest.raises(click.exceptions.UsageError) as e:
+            is_valid_interface_cost(ctx, 0)
         assert "STP interface path cost must be in range" in str(e.value)
 
     def test_invalid_cost_above_range(self):
-        with pytest.raises(click.exceptions.Exit) as e:
-            is_valid_interface_cost(self.ctx, 200000001)
+        ctx = click.Context(click.Command("dummy"))
+        with pytest.raises(click.exceptions.UsageError) as e:
+            is_valid_interface_cost(ctx, 200000001)
         assert "STP interface path cost must be in range" in str(e.value)
 
 
@@ -2110,7 +2112,7 @@ class TestStpInterfacePriority:
             config.config.commands["spanning-tree"]
             .commands["interface"]
             .commands["priority"],
-            ["Ethernet1", "-1"],
+            ["--", "Ethernet1", "-1"],
             obj=self.db
         )
 
