@@ -2030,27 +2030,108 @@ class TestStpInterfaceCost:
         assert result.exit_code != 0
         assert "Invalid cost" in result.output
 
-    class TestIsValidInterfaceCost:
-        def setup_method(self):
-            self.ctx = click.Context(click.Command("dummy"))
 
-        def test_valid_cost_lower_bound(self):
-            # Should not raise
-            is_valid_interface_cost(self.ctx, 1)
+class TestIsValidInterfaceCost:
+    def setup_method(self):
+        self.ctx = click.Context(click.Command("dummy"))
 
-        def test_valid_cost_upper_bound(self):
-            # Should not raise
-            is_valid_interface_cost(self.ctx, 200000000)
+    def test_valid_cost_lower_bound(self):
+        # Should not raise
+        is_valid_interface_cost(self.ctx, 1)
 
-        def test_invalid_cost_below_range(self):
-            with pytest.raises(click.exceptions.Exit) as e:
-                is_valid_interface_cost(self.ctx, 0)
-            assert "STP interface path cost must be in range" in str(e.value)
+    def test_valid_cost_upper_bound(self):
+        # Should not raise
+        is_valid_interface_cost(self.ctx, 200000000)
 
-        def test_invalid_cost_above_range(self):
-            with pytest.raises(click.exceptions.Exit) as e:
-                is_valid_interface_cost(self.ctx, 200000001)
-            assert "STP interface path cost must be in range" in str(e.value)
+    def test_invalid_cost_below_range(self):
+        with pytest.raises(click.exceptions.Exit) as e:
+            is_valid_interface_cost(self.ctx, 0)
+        assert "STP interface path cost must be in range" in str(e.value)
+
+    def test_invalid_cost_above_range(self):
+        with pytest.raises(click.exceptions.Exit) as e:
+            is_valid_interface_cost(self.ctx, 200000001)
+        assert "STP interface path cost must be in range" in str(e.value)
+
+
+class TestStpInterfacePriority:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.cfgdb = MagicMock()
+        self.db = Db()
+        self.db.cfgdb = self.cfgdb
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_stp_enabled_for_interface')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_priority_valid_pvst(self, mock_global, mock_iface_enabled, mock_iface_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet4", "128"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet4', {
+            'priority': '128',
+            'portfast': 'false',
+            'uplink_fast': 'false'
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_stp_enabled_for_interface')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_priority_valid_mst(self, mock_global, mock_iface_enabled, mock_iface_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet8", "240"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet8', {
+            'priority': '240',
+            'edge_port': 'false',
+            'link_type': 'auto'
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_stp_enabled_for_interface')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_priority_invalid_low(self, mock_global, mock_iface_enabled, mock_iface_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet1", "-1"],
+            obj=self.db
+        )
+
+        assert result.exit_code != 0
+        assert "STP interface priority must be in range 0-240" in result.output
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_stp_enabled_for_interface')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_priority_invalid_high(self, mock_global, mock_iface_enabled, mock_iface_valid, mock_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["interface"]
+            .commands["priority"],
+            ["Ethernet1", "241"],
+            obj=self.db
+        )
+
+        assert result.exit_code != 0
+        assert "STP interface priority must be in range 0-240" in result.output
 
     @classmethod
     def teardown_class(cls):
