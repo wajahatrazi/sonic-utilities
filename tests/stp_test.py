@@ -2029,7 +2029,6 @@ class TestStpInterfaceCost:
 
         assert result.exit_code != 0
         assert "Invalid cost" in result.output
-    
 
     class TestIsValidInterfaceCost:
         def setup_method(self):
