@@ -6,9 +6,9 @@ import pytest
 # from click import ClickException, Context
 from click.testing import CliRunner
 # import pytest
-# from config.stp import (
-#   mst_instance_vlan_del
-#  )
+from config.stp import (
+  is_valid_interface_cost
+ )
 #     check_if_stp_enabled_for_vlan,
 #     check_if_vlan_exist_in_db,
 #     is_valid_stp_vlan_parameters
@@ -2029,6 +2029,29 @@ class TestStpInterfaceCost:
 
         assert result.exit_code != 0
         assert "Invalid cost" in result.output
+    
+
+    class TestIsValidInterfaceCost:
+        def setup_method(self):
+            self.ctx = click.Context(click.Command("dummy"))
+
+        def test_valid_cost_lower_bound(self):
+            # Should not raise
+            is_valid_interface_cost(self.ctx, 1)
+
+        def test_valid_cost_upper_bound(self):
+            # Should not raise
+            is_valid_interface_cost(self.ctx, 200000000)
+
+        def test_invalid_cost_below_range(self):
+            with pytest.raises(click.exceptions.Exit) as e:
+                is_valid_interface_cost(self.ctx, 0)
+            assert "STP interface path cost must be in range" in str(e.value)
+
+        def test_invalid_cost_above_range(self):
+            with pytest.raises(click.exceptions.Exit) as e:
+                is_valid_interface_cost(self.ctx, 200000001)
+            assert "STP interface path cost must be in range" in str(e.value)
 
     @classmethod
     def teardown_class(cls):
