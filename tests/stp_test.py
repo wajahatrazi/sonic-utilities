@@ -2000,17 +2000,20 @@ class TestStpInterfaceCost:
             'path_cost': 175
         })
 
-    def test_invalid_cost_rejected_by_click(self):
+    @patch('config.stp.is_valid_interface_cost', side_effect=click.ClickException("Cost must be in range 1-200000000"))
+    @patch('config.stp.check_if_interface_is_valid')
+    @patch('config.stp.check_if_global_stp_enabled')
+    def test_invalid_cost_rejected_by_click(self, mock_enabled, mock_iface_valid, mock_cost):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
             .commands["cost"],
-            ["Ethernet4", "9999999999"],  # Above max
+            ["Ethernet4", "9999999999"],
             obj=self.db,
         )
 
         assert result.exit_code != 0
-        assert "Invalid value" in result.output or "out of range" in result.output
+        assert "Cost must be in range" in result.output
 
     @patch('config.stp.is_valid_interface_cost', side_effect=click.ClickException("Invalid cost"))
     @patch('config.stp.check_if_interface_is_valid')
