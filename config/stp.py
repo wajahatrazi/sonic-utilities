@@ -1521,6 +1521,12 @@ def stp_interface_root_guard_enable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
+@spanning_tree_interface.group('root-guard')
+def spanning_tree_interface_root_guard():
+    """Root guard subcommands under interface"""
+    pass
+
+
 @spanning_tree_interface_root_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
