@@ -1762,15 +1762,18 @@ def spanning_tree_mst():
     """MST configuration"""
     pass
 
+
 @spanning_tree_mst.group('instance')
 def spanning_tree_mst_instance():
     """MST instance configuration"""
     pass
 
+
 @spanning_tree_mst_instance.group('interface')
 def spanning_tree_mst_instance_interface():
     """MST instance interface configuration"""
     pass
+
 
 @spanning_tree_mst_instance_interface.command('cost')
 @click.argument('instance_id', metavar='<instance_id>', required=True)
