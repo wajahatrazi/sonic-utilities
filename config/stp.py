@@ -1469,6 +1469,11 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
+@spanning_tree_interface.group('bpdu-guard')
+def spanning_tree_interface_bpdu_guard():
+    """BPDU guard subcommands under interface"""
+    pass
+
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
