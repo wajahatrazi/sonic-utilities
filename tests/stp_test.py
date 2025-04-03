@@ -1775,10 +1775,10 @@ class TestMstInstanceInterfaceCost:
 
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["mst"]
-                .commands["instance"]
-                .commands["interface"]
-                .commands["cost"],
+            .commands["mst"]
+            .commands["instance"]
+            .commands["interface"]
+            .commands["cost"],
             [instance_id, interface_name, str(cost)],
             obj=self.db
         )
