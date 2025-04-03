@@ -2208,9 +2208,9 @@ class TestStpInterfaceRootGuardEnable:
     def test_root_guard_enable_pvst(self, mock_check_valid, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["root_guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["root_guard"]
+            .commands["enable"],
             ["Ethernet0"],
             obj=self.db
         )
@@ -2227,9 +2227,9 @@ class TestStpInterfaceRootGuardEnable:
     def test_root_guard_enable_mstp(self, mock_check_valid, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["root_guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["root_guard"]
+            .commands["enable"],
             ["Ethernet4"],
             obj=self.db
         )
@@ -2245,9 +2245,9 @@ class TestStpInterfaceRootGuardEnable:
     def test_root_guard_enable_invalid_interface(self, mock_check_valid):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["root_guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["root_guard"]
+            .commands["enable"],
             ["Ethernet99"],
             obj=self.db
         )
