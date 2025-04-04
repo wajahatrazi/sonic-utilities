@@ -1167,8 +1167,8 @@ class TestStpInterfaceDisable:
 
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["disable"],
+            .commands["interface"]
+            .commands["disable"],
             ["Ethernet0"],
             obj=self.db
         )
@@ -1185,8 +1185,8 @@ class TestStpInterfaceDisable:
 
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["disable"],
+            .commands["interface"]
+            .commands["disable"],
             ["Ethernet2"],
             obj=self.db
         )
@@ -1203,8 +1203,8 @@ class TestStpInterfaceDisable:
 
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["disable"],
+            .commands["interface"]
+            .commands["disable"],
             ["Ethernet9"],
             obj=self.db
         )
