@@ -1214,6 +1214,7 @@ class TestStpInterfaceDisable:
         assert "Current STP mode: none" in result.output
         assert "No STP mode selected" in result.output
 
+
 class TestMstpInterfaceEdgeport:
     def setup_method(self):
         """Setup test environment before each test."""
