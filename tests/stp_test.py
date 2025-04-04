@@ -1044,7 +1044,7 @@ class TestStpInterfaceDisable:
         self.runner = CliRunner()
         self.cfgdb = MagicMock()
         self.db = Db()
-        self.db.cfgdb = self.cfgdb # Mock CLI runner
+        self.db.cfgdb = self.cfgdb
 
     def test_stp_interface_disable_global_stp_disabled(self):
         """Test that disabling STP fails if global STP is not enabled."""
