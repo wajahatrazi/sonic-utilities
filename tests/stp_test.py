@@ -1160,6 +1160,58 @@ class TestStpInterfaceDisable:
         assert result.exit_code == 0, "Command should have printed a warning"
         assert "no stp mode selected" in actual_output
 
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.check_if_interface_is_valid')
+    def test_disable_interface_mstp(self, mock_check_valid, mock_check_global):
+        self.cfgdb.get_entry.return_value = {'mode': 'mstp'}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["disable"],
+            ["Ethernet0"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.set_entry.assert_called_with("STP_PORT", "Ethernet0", {"enabled": "false"})
+        assert "Current STP mode: mstp" in result.output
+        assert "STP mode mstp is disabled for Ethernet0" in result.output
+
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.check_if_interface_is_valid')
+    def test_disable_interface_pvst(self, mock_check_valid, mock_check_global):
+        self.cfgdb.get_entry.return_value = {'mode': 'pvst'}
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["disable"],
+            ["Ethernet2"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.set_entry.assert_called_with("STP_PORT", "Ethernet2", {"enabled": "false"})
+        assert "Current STP mode: pvst" in result.output
+        assert "STP mode pvst is disabled for Ethernet2" in result.output
+
+    @patch('config.stp.check_if_global_stp_enabled')
+    @patch('config.stp.check_if_interface_is_valid')
+    def test_disable_interface_with_no_mode(self, mock_check_valid, mock_check_global):
+        self.cfgdb.get_entry.return_value = {}  # No 'mode' key
+
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["disable"],
+            ["Ethernet9"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        assert "Current STP mode: none" in result.output
+        assert "No STP mode selected" in result.output
 
 class TestMstpInterfaceEdgeport:
     def setup_method(self):
