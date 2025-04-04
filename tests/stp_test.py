@@ -791,28 +791,66 @@ class TestStpVlanPriority:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "stp priority updated successfully for vlan 300" in actual_output
 
-        def test_stp_vlan_priority_successful_case(self):
-            """Test that STP priority is successfully configured for a VLAN."""
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_vlan_exist_in_db')
+    @patch('config.stp.check_if_stp_enabled_for_vlan')
+    @patch('config.stp.is_valid_bridge_priority')
+    def test_vlan_priority_success(self, *_):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["priority"],
+            ["100", "4096"],
+            obj=self.db
+        )
 
-            self.db.cfgdb.set_entry = MagicMock()
-            self.runner.invoke = MagicMock(return_value=MagicMock(
-                exit_code=0,
-                output="STP priority updated successfully for VLAN 300"
-            ))
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with("STP_VLAN", "Vlan100", {"priority": 4096})
 
-            result = self.runner.invoke(
-                config.config.commands["spanning-tree"]
+
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
+    def test_vlan_priority_rejected_for_mst(self, mock_get_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["priority"],
+            ["100", "8192"],
+            obj=self.db
+        )
+
+        assert result.exit_code != 0
+        assert "Configuration not supported for MST" in result.output
+
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_vlan_exist_in_db', side_effect=click.ClickException("VLAN not found"))
+    def test_vlan_priority_vlan_missing(self, mock_vlan_exist, mock_get_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
                 .commands["vlan"]
                 .commands["priority"],
-                ["300", "4096"],  # Valid VLAN and priority
-                obj=self.db,
-            )
+            ["999", "4096"],
+            obj=self.db
+        )
 
-            actual_output = result.output.strip().lower()
-            print(f"\nMocked Command Output:\n{actual_output}")
+        assert result.exit_code != 0
+        assert "VLAN not found" in result.output
 
-            assert result.exit_code == 0, "Command should have succeeded"
-            assert "stp priority updated successfully for vlan 300" in actual_output
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_vlan_exist_in_db')
+    @patch('config.stp.check_if_stp_enabled_for_vlan', side_effect=click.ClickException("STP not enabled"))
+    def test_vlan_priority_stp_not_enabled(self, mock_stp_enabled, mock_vlan_exist, mock_get_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+            .commands["vlan"]
+            .commands["priority"],
+            ["100", "4096"],
+            obj=self.db
+        )
+
+        assert result.exit_code != 0
+        assert "STP not enabled" in result.output
 
 
 class TestStpVlanDisable:
