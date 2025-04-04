@@ -2317,6 +2317,68 @@ class TestStpInterfaceBpduGuardDisable:
         assert result.exit_code != 0
         assert "Invalid interface" in result.output
 
+
+class TestStpInterfaceBpduGuardEnable:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.cfgdb = MagicMock()
+        self.db = Db()
+        self.db.cfgdb = self.cfgdb
+
+    @patch('config.stp.get_global_stp_mode', return_value='pvst')
+    @patch('config.stp.check_if_interface_is_valid')
+    def test_bpdu_guard_enable_pvst_with_shutdown(self, mock_check_valid, mock_get_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["bpdu-guard"]
+                .commands["enable"],
+            ["Ethernet1", "--shutdown"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with("STP_PORT", "Ethernet1", {
+            "bpdu_guard": "true",
+            "bpdu_guard_do_disable": "true",
+            "portfast": "false",
+            "uplink_fast": "false"
+        })
+
+    @patch('config.stp.get_global_stp_mode', return_value='mstp')
+    @patch('config.stp.check_if_interface_is_valid')
+    def test_bpdu_guard_enable_mstp_without_shutdown(self, mock_check_valid, mock_get_mode):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["bpdu-guard"]
+                .commands["enable"],
+            ["Ethernet2"],
+            obj=self.db
+        )
+
+        assert result.exit_code == 0
+        self.cfgdb.mod_entry.assert_called_with("STP_PORT", "Ethernet2", {
+            "bpdu_guard": "true",
+            "bpdu_guard_do_disable": "false",
+            "edge_port": "false",
+            "link_type": "auto"
+        })
+
+    @patch('config.stp.check_if_interface_is_valid', side_effect=click.ClickException("Invalid interface"))
+    def test_bpdu_guard_enable_invalid_interface(self, mock_check_valid):
+        result = self.runner.invoke(
+            config.config.commands["spanning-tree"]
+                .commands["interface"]
+                .commands["bpdu-guard"]
+                .commands["enable"],
+            ["InvalidInt"],
+            obj=self.db
+        )
+
+        assert result.exit_code != 0
+        assert "Invalid interface" in result.output
+
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
