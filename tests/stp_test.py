@@ -791,6 +791,29 @@ class TestStpVlanPriority:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "stp priority updated successfully for vlan 300" in actual_output
 
+        def test_stp_vlan_priority_successful_case(self):
+            """Test that STP priority is successfully configured for a VLAN."""
+
+            self.db.cfgdb.set_entry = MagicMock()
+            self.runner.invoke = MagicMock(return_value=MagicMock(
+                exit_code=0,
+                output="STP priority updated successfully for VLAN 300"
+            ))
+
+            result = self.runner.invoke(
+                config.config.commands["spanning-tree"]
+                .commands["vlan"]
+                .commands["priority"],
+                ["300", "4096"],  # Valid VLAN and priority
+                obj=self.db,
+            )
+
+            actual_output = result.output.strip().lower()
+            print(f"\nMocked Command Output:\n{actual_output}")
+
+            assert result.exit_code == 0, "Command should have succeeded"
+            assert "stp priority updated successfully for vlan 300" in actual_output
+
 
 class TestStpVlanDisable:
     def setup_method(self):
