@@ -805,7 +805,7 @@ class TestStpVlanPriority:
         )
 
         assert result.exit_code == 0
-        self.cfgdb.mod_entry.assert_called_with("STP_VLAN", "Vlan100", {"priority": 4096})
+        self.db.cfgdb.mod_entry.assert_called_with("STP_VLAN", "Vlan100", {"priority": 4096})
 
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     def test_vlan_priority_rejected_for_mst(self, mock_get_mode):
