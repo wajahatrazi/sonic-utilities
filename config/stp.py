@@ -1469,11 +1469,6 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     db.mod_entry('STP_PORT', interface_name, fvs)
 
 
-@spanning_tree_interface.group('bpdu-guard')
-def spanning_tree_interface_bpdu_guard():
-    """BPDU guard subcommands under interface"""
-    pass
-
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1757,37 +1752,38 @@ def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
 # Configure path cost of an interface for an instance.
 # cost-value: Range: 1-200000000
 
-@spanning_tree.group('mst')
-def spanning_tree_mst():
-    """MST configuration"""
-    pass
-
-
-@spanning_tree_mst.group('instance')
-def spanning_tree_mst_instance():
-    """MST instance configuration"""
-    pass
-
-
-@spanning_tree_mst_instance.group('interface')
-def spanning_tree_mst_instance_interface():
-    """MST instance interface configuration"""
-    pass
-
-
-@spanning_tree_mst_instance_interface.command('cost')
-@click.argument('instance_id', metavar='<instance_id>', required=True)
+@mst_instance_interface.command('cost')
+@click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('interface_name', metavar='<interface_name>', required=True)
-@click.argument('cost', metavar='<1-200000000>', type=int, required=True)
+@click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
+# REMAINING
 def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
-    """Configure STP cost for MST instance interface"""
+    """Configure path cost of an interface for an MST instance."""
     ctx = click.get_current_context()
     db = _db.cfgdb
 
+    # Validate MST mode
+    mode = get_global_stp_mode(db)
+    if mode != "mst":
+        ctx.fail("Configuration not supported for PVST")
+
+    # Validate instance_id range
+    if not (0 <= instance_id < MST_MAX_INSTANCES):
+        ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES - 1}")
+
+    # Validate cost range
+    if not (MST_MIN_PORT_PATH_COST <= cost <= MST_MAX_PORT_PATH_COST):
+        ctx.fail(f"Path cost must be in range {MST_MIN_PORT_PATH_COST}-{MST_MAX_PORT_PATH_COST}")
+
+    # Validate interface name
+    check_if_interface_is_valid(ctx, db, interface_name)
+
+    # Prepare key and value for database update
     mst_instance_interface_key = f"MST_INSTANCE|{instance_id}|{interface_name}"
     fvs = {'path_cost': str(cost)}
 
+    # Update database entry
     db.mod_entry('STP_MST_PORT', mst_instance_interface_key, fvs)
     click.echo(f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}")
 

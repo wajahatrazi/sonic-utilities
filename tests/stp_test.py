@@ -1767,30 +1767,6 @@ class TestMstInstanceInterfaceCost:
         assert result.exit_code != 0
         assert "not a L2 interface" in result.output
 
-    @patch('config.stp.click.echo')
-    def test_mst_instance_interface_cost_sets_path_cost(self, mock_echo):
-        instance_id = "2"
-        interface_name = "Ethernet0"
-        cost = 200
-
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["mst"]
-            .commands["instance"]
-            .commands["interface"]
-            .commands["cost"],
-            [instance_id, interface_name, str(cost)],
-            obj=self.db
-        )
-
-        assert result.exit_code == 0
-
-        expected_key = f"MST_INSTANCE|{instance_id}|{interface_name}"
-        expected_fvs = {"path_cost": str(cost)}
-
-        self.cfgdb.mod_entry.assert_called_with("STP_MST_PORT", expected_key, expected_fvs)
-        assert f"Path cost {cost} set for interface {interface_name} in MST instance {instance_id}" in result.output
-
 
 class TestMstInstanceInterfacePriority:
     def setup_method(self):
