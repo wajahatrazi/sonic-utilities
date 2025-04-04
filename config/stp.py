@@ -1437,7 +1437,7 @@ def mstp_interface_edgeport(_db, state, interface_name):
 # config spanning_tree interface bpdu_guard
 
 # STP interface bpdu guard
-@spanning_tree_interface.group('bpdu_guard')
+@spanning_tree_interface.group(name='bpdu-guard')
 @clicommon.pass_db
 def spanning_tree_interface_bpdu_guard(_db):
     """Configure STP bpdu guard for interface"""
