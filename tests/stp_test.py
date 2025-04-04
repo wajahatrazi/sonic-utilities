@@ -1041,9 +1041,10 @@ class TestStpInterfaceEnable:
 class TestStpInterfaceDisable:
     def setup_method(self):
         """Setup test environment before each test."""
-        self.db = MagicMock()  # Mock database
-        self.db.cfgdb = MagicMock()  # Mock configuration DB
-        self.runner = MagicMock()  # Mock CLI runner
+        self.runner = CliRunner()
+        self.cfgdb = MagicMock()
+        self.db = Db()
+        self.db.cfgdb = self.cfgdb # Mock CLI runner
 
     def test_stp_interface_disable_global_stp_disabled(self):
         """Test that disabling STP fails if global STP is not enabled."""
