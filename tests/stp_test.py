@@ -2330,9 +2330,9 @@ class TestStpInterfaceBpduGuardEnable:
     def test_bpdu_guard_enable_pvst_with_shutdown(self, mock_check_valid, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["bpdu-guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["bpdu-guard"]
+            .commands["enable"],
             ["Ethernet1", "--shutdown"],
             obj=self.db
         )
@@ -2350,9 +2350,9 @@ class TestStpInterfaceBpduGuardEnable:
     def test_bpdu_guard_enable_mstp_without_shutdown(self, mock_check_valid, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["bpdu-guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["bpdu-guard"]
+            .commands["enable"],
             ["Ethernet2"],
             obj=self.db
         )
@@ -2369,9 +2369,9 @@ class TestStpInterfaceBpduGuardEnable:
     def test_bpdu_guard_enable_invalid_interface(self, mock_check_valid):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
-                .commands["interface"]
-                .commands["bpdu-guard"]
-                .commands["enable"],
+            .commands["interface"]
+            .commands["bpdu-guard"]
+            .commands["enable"],
             ["InvalidInt"],
             obj=self.db
         )
