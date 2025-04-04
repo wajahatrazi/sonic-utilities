@@ -697,7 +697,7 @@ class TestStpVlanPriority:
         """Setup test environment before each test."""
         self.db = MagicMock()  # Initialize the mock database
         self.db.cfgdb = MagicMock()  # Ensure cfgdb is mocked properly
-        self.runner = MagicMock()  # Initialize the mock CLI runner
+        self.runner = CliRunner()  # Initialize the mock CLI runner
 
     def test_stp_vlan_priority_invalid_mode(self):
         """Test that configuring STP priority fails when STP mode is MST."""
