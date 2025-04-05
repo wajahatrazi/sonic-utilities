@@ -791,22 +791,6 @@ class TestStpVlanPriority:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "stp priority updated successfully for vlan 300" in actual_output
 
-    @patch('config.stp.is_valid_bridge_priority')
-    @patch('config.stp.check_if_stp_enabled_for_vlan')
-    @patch('config.stp.check_if_vlan_exist_in_db')
-    @patch('config.stp.get_global_stp_mode', return_value='pvst')
-    def test_vlan_priority_success(self, mock_get_mode, mock_vlan_exist, mock_stp_enabled, mock_valid_prio):
-        result = self.runner.invoke(
-            config.config.commands["spanning-tree"]
-            .commands["vlan"]
-            .commands["priority"],
-            ["100", "4096"],
-            obj=self.db
-        )
-
-        assert result.exit_code == 0
-        self.db.cfgdb.mod_entry.assert_called_once_with("STP_VLAN", "Vlan100", {"priority": 4096})
-
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     def test_vlan_priority_rejected_for_mst(self, mock_get_mode):
         result = self.runner.invoke(
