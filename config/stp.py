@@ -212,7 +212,7 @@ def is_interface_vlan_member(db, vlan_name, interface_name):
     if len(entry) == 0:  # if empty
         ctx.fail("{} is not member of {}".format(interface_name, vlan_name))
 
-
+# get VLAN list for interface
 def get_vlan_list_for_interface(db, interface_name):
     vlan_intf_info = db.get_table('VLAN_MEMBER')
     vlan_list = []
