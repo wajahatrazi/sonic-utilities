@@ -1,18 +1,11 @@
 import os
 from unittest.mock import MagicMock, patch
-# from unittest.mock import MagicMock
 import click
 import pytest
-# from click import ClickException, Context
 from click.testing import CliRunner
-# import pytest
 from config.stp import (
   is_valid_interface_cost
  )
-#     check_if_stp_enabled_for_vlan,
-#     check_if_vlan_exist_in_db,
-#     is_valid_stp_vlan_parameters
-# )
 
 import config.main as config
 import show.main as show
@@ -1512,106 +1505,6 @@ class TestStpVlanHelloInterval:
         assert "Configuration not supported for MST" in result.output
 
 
-# class TestMstInstanceVlanDel:
-#     """Test cases for removing a VLAN from an MST instance."""
-
-#     def setup_method(self):
-#         """Setup test environment before each test."""
-#         self.db = MagicMock()  # Mock database object
-#         self.runner = CliRunner()  # CLI runner to simulate command execution
-#         global MST_MAX_INSTANCES
-#         MST_MAX_INSTANCES = 64  # Define MST max instances for testing
-
-#         # Mock database responses
-#         def mock_get_entry(table, key):
-#             """Simulated database get_entry behavior."""
-#             if table == "STP_MST_INST" and key.startswith("MST_INSTANCE"):
-#                 # Return a mock MST instance entry with VLANs
-#                 return {"vlan_list": "100,200,300"} if key == "MST_INSTANCE|2" else None
-#             return None
-
-#         # Set side effect for the mock database
-#         self.db.cfgdb.get_entry.side_effect = mock_get_entry
-
-#         # Mock database modification function (mod_entry)
-#         self.db.cfgdb.mod_entry = MagicMock()
-
-#         @click.group()
-#         def vlan():
-#             pass
-
-#         from config.stp import mst_instance_vlan_del
-#         vlan.add_command(mst_instance_vlan_del, name='del')
-#         self.vlan = vlan  # store for test usage
-
-#     def test_mst_instance_vlan_del_instance_does_not_exist(self):
-#         """Test failure when MST instance does not exist."""
-
-#         # Mock MST instance does not exist
-#         self.db.cfgdb.get_entry.return_value = None
-
-#         # Run the command
-#         result = self.runner.invoke(mst_instance_vlan_del, ["3", "100"], obj=self.db)
-
-#         print("\nCommand Output:", result.output)
-
-#         # Ensure command fails with appropriate error
-#         assert result.exit_code != 0
-#         assert "MST instance 3 does not exist." in result.output
-
-#     def test_mst_instance_vlan_del_invalid_instance_id(self):
-#         """Test failure when instance ID is out of range."""
-
-#         # Run the command with an invalid instance ID
-#         result = self.runner.invoke(mst_instance_vlan_del, ["100", "100"], obj=self.db)
-
-#         print("\nCommand Output:", result.output)
-
-#         # Ensure command fails with appropriate error
-#         assert result.exit_code != 0
-#         assert "Instance ID must be in range 0-62" in result.output
-
-#     def test_mst_instance_vlan_del_vlan_not_mapped(self):
-#         """Test failure when VLAN is not mapped to the MST instance."""
-#         result = self.runner.invoke(self.vlan, ['del', '2', '400'], obj=self.db)
-#         print("\nCommand Output:", result.output)
-#         assert result.exit_code != 0
-#         assert "VLAN 400 is not mapped to MST instance 2." in result.output
-
-#     def test_mst_instance_vlan_del_successful_removal(self):
-#         """Test successful removal of VLAN from MST instance."""
-#         result = self.runner.invoke(self.vlan, ['del', '2', '200'], obj=self.db)
-#         print("\nCommand Output:", result.output)
-#         assert result.exit_code == 0
-#         assert "VLAN 200 removed from MST instance 2." in result.output
-#         self.db.cfgdb.mod_entry.assert_called_once_with(
-#             "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": "100,300"}
-#         )
-
-#     def test_mst_instance_vlan_del_removal_of_last_vlan(self):
-#         """Test removal of the only VLAN in the list."""
-#         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-#             {"vlan_list": "100"} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
-#         )
-#         result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
-#         print("\nCommand Output:", result.output)
-#         assert result.exit_code == 0
-#         assert "VLAN 100 removed from MST instance 2." in result.output
-#         self.db.cfgdb.mod_entry.assert_called_once_with(
-#             "STP_MST_INST", "MST_INSTANCE|2", {"vlan_list": ""}
-#         )
-
-#     def test_mst_instance_vlan_del_empty_vlan_list(self):
-#         """Test failure when vlan_list is empty."""
-#         self.db.cfgdb.get_entry.side_effect = lambda t, k: (
-#             {"vlan_list": ""} if t == "STP_MST_INST" and k == "MST_INSTANCE|2" else None
-#         )
-#         result = self.runner.invoke(self.vlan, ['del', '2', '100'], obj=self.db)
-#         print("\nCommand Output:", result.output)
-#         assert result.exit_code != 0
-#         assert "VLAN 100 is not mapped to MST instance 2." in result.output
-
-
 class TestMstInstanceVlanDel:
     def setup_method(self):
         self.runner = CliRunner()
@@ -1903,46 +1796,6 @@ class TestMstInstanceInterfacePriority:
         result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '128'], obj=self.db)
         assert result.exit_code != 0
         assert "not a L2 interface" in result.output or "Invalid interface" in result.output
-
-    # def test_successful_priority_set(self):
-    #     self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})
-
-    #     # Completely override the INTERFACE entry to simulate a proper Layer 2 port
-    #     self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {
-    #         "admin_status": "up"  # any dummy field to replace ip_address
-    #     })
-
-    #     self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
-    #     self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
-    #         'bridge_priority': '28672'
-    #     })
-
-    #     result = self.runner.invoke(self.priority_cmd, ['2', 'Ethernet0', '128'], obj=self.db)
-    #     print("Command Output:\n", result.output)
-
-    #     updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
-    #     assert result.exit_code == 0
-    #     assert "Priority 128 set for interface Ethernet0 in MST instance 2" in result.output
-    #     assert updated['priority'] == '128'Ethernet0 in MST instance 2" in result.output
-    #     assert updated['priority'] == '128'
-
-    # def test_successful_path_cost_set(self):
-    #     # Clear any existing L3 config to make this interface Layer 2
-    #     self.db.cfgdb.set_entry('INTERFACE', 'Ethernet0', {})  # force Layer 2
-    #     self.db.cfgdb.set_entry('PORT', 'Ethernet0', {})       # interface must exist
-    #     self.db.cfgdb.set_entry('STP', 'GLOBAL', {'mode': 'mst'})
-    #     self.db.cfgdb.set_entry('STP_MST_INST', 'MST_INSTANCE|2', {
-    #         'bridge_priority': '28672'
-    #     })
-
-    #     result = self.runner.invoke(self.cost_cmd, ['2', 'Ethernet0', '2000'], obj=self.db)
-
-    #     print("\nCommand Output:\n", result.output)  # ✅ keep this for debugging if needed
-
-    #     updated = self.db.cfgdb.get_entry('STP_MST_PORT', 'MST_INSTANCE|2|Ethernet0')
-    #     assert result.exit_code == 0
-    #     assert "Path cost 2000 set for interface Ethernet0 in MST instance 2" in result.output
-    #     assert updated['path_cost'] == '2000'
 
 
 class TestStpInterfaceLinkTypeSet:

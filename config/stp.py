@@ -137,7 +137,6 @@ STP_DEFAULT_BRIDGE_PRIORITY = 32768
 PVST_MAX_INSTANCES = 255
 
 
-# K_TESTCASE
 def get_intf_list_in_vlan_member_table(config_db):
     """
     Get info from REDIS ConfigDB and create interface to vlan mapping
@@ -160,13 +159,11 @@ def is_valid_root_guard_timeout(ctx, root_guard_timeout):
         ctx.fail("STP root guard timeout must be in range 5-600")
 
 
-# K_TESTCASE
 def is_valid_forward_delay(ctx, forward_delay):
     if forward_delay not in range(STP_MIN_FORWARD_DELAY, STP_MAX_FORWARD_DELAY + 1):
         ctx.fail("STP forward delay value must be in range 4-30")
 
 
-# K_TESTCASE
 def is_valid_hello_interval(ctx, hello_interval):
     if hello_interval not in range(STP_MIN_HELLO_INTERVAL, STP_MAX_HELLO_INTERVAL + 1):
         ctx.fail("STP hello timer must be in range 1-10")
@@ -208,7 +205,6 @@ def is_valid_stp_vlan_parameters(ctx, db, vlan_name, param_type, new_value):
         ctx.fail("2*(forward_delay-1) >= max_age >= 2*(hello_time +1 ) not met for VLAN")
 
 
-# K_TESTCASE
 def is_valid_stp_global_parameters(ctx, db, param_type, new_value):
     stp_global_entry = db.get_entry('STP', "GLOBAL")
     cfg_forward_delay = stp_global_entry.get("forward_delay")
@@ -230,7 +226,6 @@ def get_max_stp_instances():
     return PVST_MAX_INSTANCES
 
 
-# K_TESTCASE
 def update_stp_vlan_parameter(ctx, db, param_type, new_value):
     stp_global_entry = db.get_entry('STP', "GLOBAL")
 
@@ -254,7 +249,6 @@ def check_if_vlan_exist_in_db(db, ctx, vid):
         ctx.fail("{} doesn't exist".format(vlan_name))
 
 
-# K_TESTCASE
 def enable_stp_for_vlans(db):
     vlan_count = 0
     fvs = {'enabled': 'true',
@@ -365,7 +359,6 @@ def is_portchannel_member_port(db, interface_name):
     return interface_name in get_pc_member_port_list(db)
 
 
-# K_TESTCASE
 def enable_stp_for_interfaces(db):
     fvs = {'enabled': 'true',
            'root_guard': 'false',
@@ -396,13 +389,11 @@ def is_global_stp_enabled(db):
         return False
 
 
-# K_TESTCASE
 def check_if_global_stp_enabled(db, ctx):
     if not is_global_stp_enabled(db):
         ctx.fail("Global STP is not enabled - first configure STP mode")
 
 
-# K_TESTCASE
 def get_global_stp_mode(db):
     stp_entry = db.get_entry('STP', "GLOBAL")
     mode = stp_entry.get("mode")
@@ -440,7 +431,6 @@ def get_bridge_mac_address(db):
     return bridge_mac_address
 
 
-# K_TESTCASE
 def enable_mst_instance0(db):
     mst_inst_fvs = {
         'bridge_priority': MST_DEFAULT_BRIDGE_PRIORITY
@@ -449,7 +439,6 @@ def enable_mst_instance0(db):
     db.set_entry('STP_MST_INST', f"MST_INSTANCE:INSTANCE{instance_id}", mst_inst_fvs)
 
 
-# K_TESTCASE
 def enable_mst_for_interfaces(db):
     fvs_port = {
         'edge_port': 'false',
@@ -482,7 +471,6 @@ def enable_mst_for_interfaces(db):
             db.set_entry('STP_PORT', po_ch_key, fvs_port)
 
 
-# K_TESTCASE
 def disable_global_pvst(db):
     db.set_entry('STP', "GLOBAL", None)
     db.delete_table('STP_VLAN')
@@ -490,7 +478,6 @@ def disable_global_pvst(db):
     db.delete_table('STP_VLAN_PORT')
 
 
-# K_TESTCASE
 def disable_global_mst(db):
     db.set_entry('STP', "GLOBAL", None)
     db.delete_table('STP_MST')
@@ -510,7 +497,6 @@ def spanning_tree(_db):
 # STP Global commands implementation
 ###############################################
 
-# K_TESTCASE
 # cmd: STP enable
 # Modifies & sets parameters in different tables for MST & PVST
 # config spanning_tree enable <pvst|mst>
@@ -558,7 +544,6 @@ def spanning_tree_enable(_db, mode):
         enable_mst_instance0(db)
 
 
-# K_TESTCASE
 # cmd: STP disable
 # config spanning_tree disable <pvst|mst> (Modify mode parameter for MST or PVST and Delete tables)
 # Modify mode in STP GLOBAL table to None
@@ -609,7 +594,6 @@ def stp_global_root_guard_timeout(_db, root_guard_timeout):
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
-# K_TESTCASE
 # cmd: STP global forward delay
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree forward_delay <4-30 seconds>
@@ -639,7 +623,6 @@ def stp_global_forward_delay(_db, forward_delay):
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
-# K_TESTCASE
 # cmd: STP global hello interval
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree hello <1-10 seconds>
@@ -669,7 +652,6 @@ def stp_global_hello_interval(_db, hello_interval):
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
-# K_TESTCASE
 # cmd: STP global max age
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree max_age <6-40 seconds>
@@ -703,7 +685,6 @@ def stp_global_max_age(_db, max_age):
         ctx.fail("Invalid STP mode configuration, no mode is enabled")
 
 
-# K_TESTCASE
 # cmd: STP global max hop
 # NO GLOBAL MAX HOP FOR PVST
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
@@ -767,7 +748,6 @@ def mst():
 
 
 # MST REGION commands implementation
-# K_TESTCASE
 # cmd: MST region-name
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree mst region-name <name>
@@ -792,7 +772,6 @@ def stp_mst_region_name(_db, region_name):
         db.mod_entry('STP_MST', "GLOBAL", {'name': region_name})
 
 
-# K_TESTCASE
 # cmd: MST Global revision number
 # MST CONFIGURATION IN THE STP_MST GLOBAL TABLE
 # config spanning_tree mst revision <0-65535>
@@ -953,7 +932,6 @@ def stp_vlan_hello_interval(_db, vid, hello_interval):
         db.mod_entry('STP_VLAN', vlan_name, {'hello_time': hello_interval})
 
 
-# REMAINING
 # not for MST
 # config spanning_tree vlan max_age <vlan-id> <6-40 seconds>
 @spanning_tree_vlan.command('max_age')
@@ -977,7 +955,6 @@ def stp_vlan_max_age(_db, vid, max_age):
         db.mod_entry('STP_VLAN', vlan_name, {'max_age': max_age})
 
 
-# REMAINING
 # not for MST
 # config spanning_tree vlan priority <vlan-id> <0-61440>
 @spanning_tree_vlan.command('priority')
@@ -1086,7 +1063,6 @@ def stp_interface_path_cost(_db, interface_name, cost):
                 vlan_intf_cost = vlan_intf_entry.get('path_cost')
                 if curr_intf_cost == vlan_intf_cost:
                     db.mod_entry('STP_VLAN_PORT', vlan_intf_key, {'path_cost': cost})
-    # end
 
 
 # STP interface portfast
@@ -1340,7 +1316,6 @@ def stp_vlan_interface_cost(_db, vid, interface_name, cost):
 # Configure an interface for MSTP.
 
 
-# REMAINING
 @spanning_tree_interface.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
@@ -1394,7 +1369,6 @@ def stp_interface_enable(_db, interface_name):
 @spanning_tree_interface.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_disable(_db, interface_name):
     """Disable STP for interface"""
     ctx = click.get_current_context()
@@ -1422,7 +1396,6 @@ def stp_interface_disable(_db, interface_name):
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def mstp_interface_edgeport(_db, state, interface_name):
     """Enable/Disable edge port on interface"""
     ctx = click.get_current_context()
@@ -1448,7 +1421,6 @@ def spanning_tree_interface_bpdu_guard(_db):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.option('-s', '--shutdown', is_flag=True)
 @clicommon.pass_db
-# REMIANING
 def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
     """Enable STP bpdu guard for interface"""
     ctx = click.get_current_context()
@@ -1472,7 +1444,6 @@ def stp_interface_bpdu_guard_enable(_db, interface_name, shutdown):
 @spanning_tree_interface_bpdu_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_bpdu_guard_disable(_db, interface_name):
     """Disable STP bpdu guard for interface"""
     ctx = click.get_current_context()
@@ -1502,7 +1473,6 @@ def spanning_tree_interface_root_guard(_db):
 @spanning_tree_interface_root_guard.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_root_guard_enable(_db, interface_name):
     """Enable STP root guard for interface"""
     ctx = click.get_current_context()
@@ -1530,7 +1500,6 @@ def spanning_tree_interface_root_guard():
 @spanning_tree_interface_root_guard.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_root_guard_disable(_db, interface_name):
     """Disable STP root guard for interface"""
     ctx = click.get_current_context()
@@ -1557,7 +1526,6 @@ def stp_interface_root_guard_disable(_db, interface_name):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority_value', metavar='<0-240>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_priority(_db, interface_name, priority_value):
     """Configure STP port priority for interface"""
     ctx = click.get_current_context()
@@ -1601,7 +1569,6 @@ STP_INTERFACE_MAX_COST = 200000000
 STP_INTERFACE_DEFAULT_COST = 0
 
 
-# REMAINING
 def is_valid_interface_cost(ctx, cost):
     """Validate if the provided cost is within the valid range"""
     if cost < STP_INTERFACE_MIN_COST or cost > STP_INTERFACE_MAX_COST:
@@ -1613,7 +1580,6 @@ def is_valid_interface_cost(ctx, cost):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_cost(_db, interface_name, cost):
     """Configure STP port cost for interface"""
     ctx = click.get_current_context()
@@ -1660,7 +1626,6 @@ def spanning_tree_interface_link_type(_db):
 )
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-# REMAINING
 def stp_interface_link_type_set(_db, link_type, interface_name):
     """Configure STP link type for interface"""
     ctx = click.get_current_context()
@@ -1720,7 +1685,6 @@ def mst_instance_interface():
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('priority', metavar='<0-240>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
     """Configure priority of an interface for an MST instance"""
     ctx = click.get_current_context()
@@ -1757,7 +1721,6 @@ def mst_instance_interface_priority(_db, instance_id, interface_name, priority):
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @click.argument('cost', metavar='<1-200000000>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
     """Configure path cost of an interface for an MST instance."""
     ctx = click.get_current_context()
@@ -1793,7 +1756,6 @@ def mst_instance_interface_cost(_db, instance_id, interface_name, cost):
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('priority_value', metavar='<0-61440>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def mst_instance_priority(_db, instance_id, priority_value):
     """
     Configure bridge priority for an MST instance.
@@ -1832,7 +1794,6 @@ def mst_instance_vlan():
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def mst_instance_vlan_add(_db, instance_id, vlan_id):
     """
     Map a VLAN to an MST instance.
@@ -1881,7 +1842,6 @@ spanning_tree.add_command(mst, "mst")
 @click.argument('instance_id', metavar='<instance-id>', required=True, type=int)
 @click.argument('vlan_id', metavar='<vlan-id>', required=True, type=int)
 @clicommon.pass_db
-# REMAINING
 def mst_instance_vlan_del(_db, instance_id, vlan_id):
     """
     Remove a VLAN from an MST instance.
