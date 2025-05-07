@@ -2,6 +2,7 @@ import re
 import click
 # import subprocess
 import utilities_common.cli as clicommon
+from natsort import natsorted
 from swsscommon.swsscommon import SonicV2Connector, ConfigDBConnector
 
 
@@ -401,3 +402,65 @@ def show_stp_vlan_statistics(ctx, vlanid):
 
                 click.echo("{:17}{:15}{:15}{:15}{}".format(
                     ifname, entry['bpdu_sent'], entry['bpdu_received'], entry['tc_sent'], entry['tc_received']))
+
+
+@click.group()
+@clicommon.pass_db
+def show_spanning_tree(_db):
+    """Show STP information"""
+    pass
+
+@show_spanning_tree.command('mst')
+@clicommon.pass_db
+def show_stp_mst(_db):
+    """Show MSTP information"""
+    db = _db.cfgdb
+
+    stp_global_entry = db.get_entry('STP', "GLOBAL")
+    mode = stp_global_entry.get("mode")
+
+    if mode != "mst":
+        click.echo("STP is not configured in MST mode")
+        return
+
+    click.echo("Spanning-tree Mode: MSTP")
+
+    # Fetch MST instances
+    mst_instances = db.get_table('STP_MST_INST')
+
+    for instance_key, instance_data in mst_instances.items():
+        instance_id = instance_key.split('|')[-1]
+        vlans_mapped = instance_data.get('vlan_list', 'None')
+        bridge_priority = instance_data.get('bridge_priority', 'Unknown')
+        click.echo(f"#######  MST{instance_id} (CIST)  Vlans mapped : {vlans_mapped}")
+
+        # Bridge and Root Information
+        bridge_mac = instance_data.get('bridge_mac', 'Unknown')
+        root_mac = instance_data.get('root_mac', 'Unknown')
+        click.echo(f"Bridge Address {bridge_priority}.{bridge_mac}")
+        click.echo(f"Root Address {bridge_priority}.{root_mac}")
+
+        # Interface Information
+        mst_ports = db.get_table('STP_MST_PORT')
+        click.echo("\nInterface           Role        State           Cost       Prio.Nbr    Type")
+        click.echo("---------------    --------     ----------      -------    ---------   -----------")
+
+        for port_key, port_data in mst_ports.items():
+            instance, port_name = port_key.split('|')[1:]
+            if instance == instance_id:
+                role = port_data.get('role', 'Unknown')
+                state = port_data.get('state', 'Unknown')
+                cost = port_data.get('path_cost', 'Unknown')
+                priority = port_data.get('priority', 'Unknown')
+                link_type = port_data.get('link_type', 'Unknown')
+                click.echo(f"{port_name:<16} {role:<12} {state:<12} {cost:<8} {priority:<10} {link_type}")
+
+# Register the command group
+@click.group()
+def cli():
+    pass
+
+cli.add_command(show_spanning_tree, "show_spanning_tree")
+
+if __name__ == "__main__":
+    cli()
