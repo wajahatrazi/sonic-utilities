@@ -2,7 +2,6 @@ import re
 import click
 # import subprocess
 import utilities_common.cli as clicommon
-from natsort import natsorted
 from swsscommon.swsscommon import SonicV2Connector, ConfigDBConnector
 
 
@@ -410,6 +409,7 @@ def show_spanning_tree(_db):
     """Show STP information"""
     pass
 
+
 @show_spanning_tree.command('mst')
 @clicommon.pass_db
 def show_stp_mst(_db):
@@ -455,12 +455,15 @@ def show_stp_mst(_db):
                 link_type = port_data.get('link_type', 'Unknown')
                 click.echo(f"{port_name:<16} {role:<12} {state:<12} {cost:<8} {priority:<10} {link_type}")
 
+
 # Register the command group
 @click.group()
 def cli():
     pass
 
+
 cli.add_command(show_spanning_tree, "show_spanning_tree")
+
 
 if __name__ == "__main__":
     cli()
