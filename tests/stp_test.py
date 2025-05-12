@@ -1,9 +1,11 @@
 import os
+import pytest
 from unittest.mock import MagicMock, patch
 import click
-import pytest
 from click.testing import CliRunner
-import show.stp
+from show.stp import (
+    show_stp_mst_detail,
+)
 from config.stp import (
   is_valid_interface_cost
  )
@@ -2385,7 +2387,7 @@ class TestShowStpMstDetail:
         self.db = MagicMock()
         self.db.cfgdb = MagicMock()
 
-    @patch('stp.click.echo')
+    @patch('click.echo')
     def test_show_stp_mst_detail_not_mst_mode(self, mock_echo):
         # Mock database to return non-MST mode
         self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
@@ -2395,18 +2397,18 @@ class TestShowStpMstDetail:
         assert result.exit_code == 0
         mock_echo.assert_called_with("STP is not configured in MST mode")
 
-    @patch('stp.click.echo')
+    @patch('click.echo')
     def test_show_stp_mst_detail_no_instances(self, mock_echo):
         # Mock MST mode and empty MST_INST table
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.return_value = {}
 
         # Run command
-        result = self.runner.invoke(show.stp.show_stp_mst_detail, ['detail'], obj=self.db)
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
         assert not mock_echo.called
 
-    @patch('stp.click.echo')
+    @patch('click.echo')
     def test_show_stp_mst_detail_with_instances(self, mock_echo):
         # Mock MST mode and MST_INST table with data
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
@@ -2437,7 +2439,7 @@ class TestShowStpMstDetail:
         ]
 
         # Run command
-        result = self.runner.invoke(show.stp.show_stp_mst_detail, ['detail'], obj=self.db)
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
         assert mock_echo.call_count > 0
 
