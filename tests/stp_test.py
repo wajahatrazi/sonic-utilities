@@ -2432,7 +2432,7 @@ class TestShowStpMstDetail:
                     'designated_bridge': 'AA:BB:CC:DD:EE:FF',
                     'designated_cost': '0',
                     'designated_port': '1'
-            },
+                    },
             }
         ]
 
