@@ -2412,10 +2412,27 @@ class TestShowStpMstDetail:
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
             {
-                'MST_INSTANCE|1': {'vlan_list': '100-200', 'bridge_priority': '28672', 'bridge_mac': 'AA:BB:CC:DD:EE:FF', 'root_mac': '00:11:22:33:44:55'}
+                'MST_INSTANCE|1': {
+                    'vlan_list': '100-200',
+                    'bridge_priority': '28672',
+                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+                    'root_mac': '00:11:22:33:44:55'
+                },
             },
             {
-                'MST_INSTANCE|1|Ethernet0': {'role': 'Root', 'state': 'Forwarding', 'path_cost': '2000', 'priority': '128', 'port_id': '1', 'forward_transitions': '2', 'bpdu_send': '5', 'bpdu_recv': '3', 'designated_bridge': 'AA:BB:CC:DD:EE:FF', 'designated_cost': '0', 'designated_port': '1'}
+                'MST_INSTANCE|1|Ethernet0': {
+                    'role': 'Root',
+                    'state': 'Forwarding',
+                    'path_cost': '2000',
+                    'priority': '128',
+                    'port_id': '1',
+                    'forward_transitions': '2',
+                    'bpdu_send': '5',
+                    'bpdu_recv': '3',
+                    'designated_bridge': 'AA:BB:CC:DD:EE:FF',
+                    'designated_cost': '0',
+                    'designated_port': '1'
+            },
             }
         ]
 
