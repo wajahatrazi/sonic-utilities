@@ -2413,7 +2413,6 @@ class TestShowStpMstDetail:
         # If no instances are found, confirm the expected output
         mock_echo.assert_called_once_with("STP is not configured in MST mode")
 
-
     @patch('click.echo')
     def test_show_stp_mst_detail_with_instances(self, mock_echo):
         # Mock MST mode and MST_INST table with data
@@ -2448,6 +2447,74 @@ class TestShowStpMstDetail:
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
         assert mock_echo.call_count > 0
+
+
+class TestShowStpMstDetailExtended:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = MagicMock()
+        self.db.cfgdb = MagicMock()
+
+    @patch('click.echo')
+    def test_mst_not_configured(self, mock_echo):
+        self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+        assert result.exit_code == 0
+        mock_echo.assert_called_once_with("STP is not configured in MST mode")
+
+    @patch('click.echo')
+    def test_no_mst_instances(self, mock_echo):
+        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+        self.db.cfgdb.get_table.side_effect = [{}, {}]
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+        assert result.exit_code == 0
+        assert not mock_echo.called
+
+    @patch('click.echo')
+    def test_mst_instance_with_no_ports(self, mock_echo):
+        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+        self.db.cfgdb.get_table.side_effect = [
+            {'MST_INSTANCE|1': {
+                'vlan_list': '100-200',
+                'bridge_priority': '28672',
+                'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+                'root_mac': '00:11:22:33:44:55'
+            }},
+            {}
+        ]
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+        assert result.exit_code == 0
+        assert mock_echo.call_count == 3  # Only instance info, no ports
+
+    @patch('click.echo')
+    def test_mst_instance_with_ports(self, mock_echo):
+        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+        self.db.cfgdb.get_table.side_effect = [
+            {'MST_INSTANCE|1': {
+                'vlan_list': '100-200',
+                'bridge_priority': '28672',
+                'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+                'root_mac': '00:11:22:33:44:55'
+            }},
+            {
+                'MST_INSTANCE|1|Ethernet0': {
+                    'role': 'Root',
+                    'state': 'Forwarding',
+                    'path_cost': '2000',
+                    'priority': '128',
+                    'port_id': '1',
+                    'forward_transitions': '2',
+                    'bpdu_send': '5',
+                    'bpdu_recv': '3',
+                    'designated_bridge': 'AA:BB:CC:DD:EE:FF',
+                    'designated_cost': '0',
+                    'designated_port': '1'
+                }
+            }
+        ]
+        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+        assert result.exit_code == 0
+        assert mock_echo.call_count > 3  # Instance info + port info
 
 
     @classmethod
