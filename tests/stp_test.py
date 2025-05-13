@@ -2406,7 +2406,7 @@ class TestShowStpMstDetail:
 
         # Run command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-        
+
         assert result.exit_code == 0
 
         # Adjust the assertion based on the actual behavior
