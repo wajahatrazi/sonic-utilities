@@ -2468,7 +2468,7 @@ class TestShowStpMstDetailExtended:
         self.db.cfgdb.get_table.side_effect = [{}, {}]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        assert not mock_echo.called
+        assert mock_echo.call_count == 0  # No output expected when no instances are found
 
     @patch('click.echo')
     def test_mst_instance_with_no_ports(self, mock_echo):
@@ -2484,7 +2484,8 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        assert mock_echo.call_count == 3  # Only instance info, no ports
+        # 4 expected calls: VLAN info, Bridge Address, Root Address, newline
+        assert mock_echo.call_count == 4
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
@@ -2514,7 +2515,8 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        assert mock_echo.call_count > 3  # Instance info + port info
+        # 8 expected calls: VLAN info, Bridge Address, Root Address, Port info, Port details, newline
+        assert mock_echo.call_count == 8
 
 
     @classmethod
