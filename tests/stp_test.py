@@ -2485,8 +2485,8 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # 2 expected calls: Bridge info and Root info (no ports)
-        assert mock_echo.call_count == 2
+        # 3 expected calls: VLAN info, Bridge Address, Root Address
+        assert mock_echo.call_count == 3
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
@@ -2516,8 +2516,8 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # 4 expected calls: Bridge info, Root info, Port info, Port details
-        assert mock_echo.call_count == 4
+        # 6 expected calls: VLAN info, Bridge Address, Root Address, Port info, Port details, newline
+        assert mock_echo.call_count == 6
 
 
     @classmethod
