@@ -2457,6 +2457,7 @@ class TestShowStpMstDetailExtended:
 
     @patch('click.echo')
     def test_mst_not_configured(self, mock_echo):
+        # Simulate that STP is not configured in MST mode
         self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
@@ -2464,14 +2465,16 @@ class TestShowStpMstDetailExtended:
 
     @patch('click.echo')
     def test_no_mst_instances(self, mock_echo):
+        # Simulate MST mode but no instances found
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [{}, {}]
+        self.db.cfgdb.get_table.side_effect = [{}, {}]  # Simulate empty MST instances
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        assert mock_echo.call_count == 0
+        assert mock_echo.call_count == 0  # No output since there are no instances
 
     @patch('click.echo')
     def test_mst_instance_with_no_ports(self, mock_echo):
+        # Simulate MST instance but with no port information
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
             {
@@ -2491,6 +2494,7 @@ class TestShowStpMstDetailExtended:
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
+        # Simulate MST instance with ports information
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
             {
