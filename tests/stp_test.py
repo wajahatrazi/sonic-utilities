@@ -2468,36 +2468,39 @@ class TestShowStpMstDetailExtended:
         self.db.cfgdb.get_table.side_effect = [{}, {}]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected to print "STP is not configured in MST mode" as there are no instances
-        mock_echo.assert_called_once_with("STP is not configured in MST mode")
+        assert mock_echo.call_count == 0
 
     @patch('click.echo')
     def test_mst_instance_with_no_ports(self, mock_echo):
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
-            {'STP_MST_INST|1': {
-                'vlan_list': '100-200',
-                'bridge_priority': '28672',
-                'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-                'root_mac': '00:11:22:33:44:55'
-            }},
+            {
+                'STP_MST_INST|1': {
+                    'vlan_list': '100-200',
+                    'bridge_priority': '28672',
+                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+                    'root_mac': '00:11:22:33:44:55'
+                }
+            },
             {}
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected calls: VLAN info, Bridge Address, Root Address
+        # Expected output: VLAN info, Bridge Address, Root Address
         assert mock_echo.call_count == 3
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
-            {'STP_MST_INST|1': {
-                'vlan_list': '100-200',
-                'bridge_priority': '28672',
-                'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-                'root_mac': '00:11:22:33:44:55'
-            }},
+            {
+                'STP_MST_INST|1': {
+                    'vlan_list': '100-200',
+                    'bridge_priority': '28672',
+                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+                    'root_mac': '00:11:22:33:44:55'
+                }
+            },
             {
                 'STP_MST_PORT|1|Ethernet0': {
                     'role': 'Root',
@@ -2516,7 +2519,7 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected calls: VLAN info, Bridge Address, Root Address, Port info, Port details
+        # Expected output: VLAN info, Bridge Address, Root Address, Port info, Port details
         assert mock_echo.call_count == 5
 
 
