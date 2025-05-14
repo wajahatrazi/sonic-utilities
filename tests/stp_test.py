@@ -2458,17 +2458,26 @@ class TestShowStpMstDetailExtended:
 
     @patch('click.echo')
     def test_no_mst_instances(self, mock_echo):
+        # Simulating no MST instances by returning empty dictionaries
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [{}, {}]
+        self.db.cfgdb.get_table.side_effect = [
+            {},  # First call to get_table for MST instances returns empty
+            {}   # Second call returns empty, simulating no ports
+        ]
+        
+        # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+
+        # Assertions to validate the output
         assert result.exit_code == 0
-        assert mock_echo.call_count == 0
+        assert mock_echo.call_count == 0  # No output expected
 
     @patch('click.echo')
     def test_mst_instance_with_no_ports(self, mock_echo):
+        # Simulating one MST instance with no ports
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
-            {
+            {  # First call: MST instance configuration
                 'STP_MST_INST|1': {
                     'vlan_list': '100-200',
                     'bridge_priority': '28672',
@@ -2476,11 +2485,15 @@ class TestShowStpMstDetailExtended:
                     'root_mac': '00:11:22:33:44:55'
                 }
             },
-            {}
+            {}  # Second call: No ports for the MST instance
         ]
+        
+        # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+
+        # Assertions to validate the output
         assert result.exit_code == 0
-        assert mock_echo.call_count == 3
+        assert mock_echo.call_count == 3  # Expecting 3 lines of output
         expected_calls = [
             ('#######  MST1 (CIST)  Vlans mapped : 100-200',),
             ('Bridge Address 28672.AA:BB:CC:DD:EE:FF',),
@@ -2490,9 +2503,10 @@ class TestShowStpMstDetailExtended:
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
+        # Simulating one MST instance with ports
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [
-            {
+            {  # First call: MST instance configuration
                 'STP_MST_INST|1': {
                     'vlan_list': '100-200',
                     'bridge_priority': '28672',
@@ -2500,7 +2514,7 @@ class TestShowStpMstDetailExtended:
                     'root_mac': '00:11:22:33:44:55'
                 }
             },
-            {
+            {  # Second call: Port information for Ethernet0
                 'STP_MST_PORT|1|Ethernet0': {
                     'role': 'Root',
                     'state': 'Forwarding',
@@ -2516,9 +2530,13 @@ class TestShowStpMstDetailExtended:
                 }
             }
         ]
+        
+        # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+
+        # Assertions to validate the output
         assert result.exit_code == 0
-        assert mock_echo.call_count == 5
+        assert mock_echo.call_count == 5  # Expecting 5 lines of output
         expected_calls = [
             ('#######  MST1 (CIST)  Vlans mapped : 100-200',),
             ('Bridge Address 28672.AA:BB:CC:DD:EE:FF',),
@@ -2527,7 +2545,6 @@ class TestShowStpMstDetailExtended:
             ('Port info    port id 1 priority 128 cost 2000',)
         ]
         mock_echo.assert_has_calls(expected_calls, any_order=False)
-
     @classmethod
     def teardown_class(cls):
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
