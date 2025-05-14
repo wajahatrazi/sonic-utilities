@@ -2464,7 +2464,7 @@ class TestShowStpMstDetailExtended:
             {},  # First call to get_table for MST instances returns empty
             {}   # Second call returns empty, simulating no ports
         ]
-        
+
         # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
 
@@ -2487,7 +2487,7 @@ class TestShowStpMstDetailExtended:
             },
             {}  # Second call: No ports for the MST instance
         ]
-        
+
         # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
 
@@ -2530,7 +2530,7 @@ class TestShowStpMstDetailExtended:
                 }
             }
         ]
-        
+
         # Invoking the CLI command
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
 
