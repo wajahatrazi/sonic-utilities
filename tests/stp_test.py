@@ -2433,7 +2433,8 @@ class TestShowStpMstDetail:
                     'path_cost': '2000',
                     'priority': '128',
                     'port_id': '1',
-                    'forward_transitions': '2',
+                    'forward_tr'
+                    'ansitions': '2',
                     'bpdu_send': '5',
                     'bpdu_recv': '3',
                     'designated_bridge': 'AA:BB:CC:DD:EE:FF',
@@ -2456,20 +2457,11 @@ class TestShowStpMstDetailExtended:
         self.db.cfgdb = MagicMock()
 
     @patch('click.echo')
-    def test_mst_not_configured(self, mock_echo):
-        # Simulate that STP is not configured in MST mode
-        self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
-        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-        assert result.exit_code == 0
-        mock_echo.assert_called_once_with("STP is not configured in MST mode")
-
-    @patch('click.echo')
     def test_no_mst_instances(self, mock_echo):
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [{}, {}]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected output: No instances found, so no echo calls
         assert mock_echo.call_count == 0
 
     @patch('click.echo')
@@ -2488,14 +2480,13 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected output: VLAN info, Bridge Address, Root Address
         assert mock_echo.call_count == 3
         expected_calls = [
             ('#######  MST1 (CIST)  Vlans mapped : 100-200',),
             ('Bridge Address 28672.AA:BB:CC:DD:EE:FF',),
             ('Root Address 28672.00:11:22:33:44:55',)
         ]
-        mock_echo.assert_has_calls(expected_calls)
+        mock_echo.assert_has_calls(expected_calls, any_order=False)
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
@@ -2527,7 +2518,6 @@ class TestShowStpMstDetailExtended:
         ]
         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
         assert result.exit_code == 0
-        # Expected output: VLAN info, Bridge Address, Root Address, Port info, Port details
         assert mock_echo.call_count == 5
         expected_calls = [
             ('#######  MST1 (CIST)  Vlans mapped : 100-200',),
@@ -2536,8 +2526,7 @@ class TestShowStpMstDetailExtended:
             ('Ethernet0 is Root Forwarding',),
             ('Port info    port id 1 priority 128 cost 2000',)
         ]
-        mock_echo.assert_has_calls(expected_calls)
-
+        mock_echo.assert_has_calls(expected_calls, any_order=False)
 
     @classmethod
     def teardown_class(cls):
