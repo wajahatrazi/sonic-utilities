@@ -2381,75 +2381,6 @@ class TestMstpInterfaceEdgePort:
         assert "STP not enabled" in result.output
 
 
-# class TestShowStpMstDetail:
-#     def setup_method(self):
-#         self.runner = CliRunner()
-#         self.db = MagicMock()
-#         self.db.cfgdb = MagicMock()
-
-#     @patch('click.echo')
-#     def test_show_stp_mst_detail_not_mst_mode(self, mock_echo):
-#         # Mock database to return non-MST mode
-#         self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
-
-#         # Run command
-#         result = self.runner.invoke(show.stp.show_stp_mst_detail, ['detail'], obj=self.db)
-#         assert result.exit_code == 0
-#         mock_echo.assert_called_with("STP is not configured in MST mode")
-
-#     @patch('click.echo')
-#     def test_show_stp_mst_detail_no_instances(self, mock_echo):
-#         """Test MST detail when no instances are present."""
-#         # Mock MST mode and empty MST_INST table
-#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-#         self.db.cfgdb.get_table.return_value = {}
-
-#         # Run command
-#         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-
-#         assert result.exit_code == 0
-
-#         # Adjust the assertion based on the actual behavior
-#         # If no instances are found, confirm the expected output
-#         mock_echo.assert_called_once_with("STP is not configured in MST mode")
-
-#     @patch('click.echo')
-#     def test_show_stp_mst_detail_with_instances(self, mock_echo):
-#         # Mock MST mode and MST_INST table with data
-#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-#         self.db.cfgdb.get_table.side_effect = [
-#             {
-#                 'MST_INSTANCE|1': {
-#                     'vlan_list': '100-200',
-#                     'bridge_priority': '28672',
-#                     'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-#                     'root_mac': '00:11:22:33:44:55'
-#                 },
-#             },
-#             {
-#                 'MST_INSTANCE|1|Ethernet0': {
-#                     'role': 'Root',
-#                     'state': 'Forwarding',
-#                     'path_cost': '2000',
-#                     'priority': '128',
-#                     'port_id': '1',
-#                     'forward_tr'
-#                     'ansitions': '2',
-#                     'bpdu_send': '5',
-#                     'bpdu_recv': '3',
-#                     'designated_bridge': 'AA:BB:CC:DD:EE:FF',
-#                     'designated_cost': '0',
-#                     'designated_port': '1'
-#                     },
-#             }
-#         ]
-
-#         # Run command
-#         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-#         assert result.exit_code == 0
-#         assert mock_echo.call_count > 0
-
-
 class TestShowStpMstDetail:
     def setup_method(self):
         self.runner = CliRunner()
@@ -2512,6 +2443,159 @@ class TestShowStpMstDetail:
         assert "Ethernet0 is Root Forwarding" in result.output
         assert "Port info    port id 8000 priority 128 cost 200" in result.output
         assert "Bpdu send 5, received 5" in result.output
+
+
+class TestShowStpMstDetails:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+
+    # Existing tests from stp_test.py (omitted for brevity, assumed to be present)
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_partial_instance_data(self, mock_get_table, mock_get_entry):
+        """Test MST detail with partial instance data (missing fields)."""
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|1": {
+                    "bridge_priority": "32768"  # Missing vlan_list, bridge_mac, root_mac
+                }
+            },
+            {
+                "STP_MST_PORT|1|Ethernet0": {
+                    "role": "Root",
+                    "state": "Forwarding"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST1 (CIST)  Vlans mapped : None" in result.output
+        assert "Bridge Address 32768.Unknown" in result.output
+        assert "Root Address 32768.Unknown" in result.output
+        assert "Ethernet0 is Root Forwarding" in result.output
+        assert "Port info    port id Unknown priority Unknown cost Unknown" in result.output
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_multiple_instances(self, mock_get_table, mock_get_entry):
+        """Test MST detail with multiple MST instances."""
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|1": {
+                    "vlan_list": "10,20",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:aa:bb:cc:dd:ee"
+                },
+                "STP_MST_INST|2": {
+                    "vlan_list": "30,40",
+                    "bridge_priority": "4096",
+                    "bridge_mac": "00:66:77:88:99:00",
+                    "root_mac": "00:ff:ee:dd:cc:bb"
+                }
+            },
+            {
+                "STP_MST_PORT|1|Ethernet0": {
+                    "role": "Root",
+                    "state": "Forwarding"
+                },
+                "STP_MST_PORT|2|Ethernet1": {
+                    "role": "Designated",
+                    "state": "Forwarding"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
+        assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
+        assert "Ethernet0 is Root Forwarding" in result.output
+        assert "#######  MST2 (CIST)  Vlans mapped : 30,40" in result.output
+        assert "Bridge Address 4096.00:66:77:88:99:00" in result.output
+        assert "Ethernet1 is Designated Forwarding" in result.output
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_multiple_ports(self, mock_get_table, mock_get_entry):
+        """Test MST detail with multiple ports for a single instance."""
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|1": {
+                    "vlan_list": "10,20",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:aa:bb:cc:dd:ee"
+                }
+            },
+            {
+                "STP_MST_PORT|1|Ethernet0": {
+                    "role": "Root",
+                    "state": "Forwarding",
+                    "path_cost": "200",
+                    "priority": "128"
+                },
+                "STP_MST_PORT|1|Ethernet1": {
+                    "role": "Designated",
+                    "state": "Forwarding",
+                    "path_cost": "300",
+                    "priority": "64"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
+        assert "Ethernet0 is Root Forwarding" in result.output
+        assert "Port info    port id Unknown priority 128 cost 200" in result.output
+        assert "Ethernet1 is Designated Forwarding" in result.output
+        assert "Port info    port id Unknown priority 64 cost 300" in result.output
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_empty_port_table(self, mock_get_table, mock_get_entry):
+        """Test MST detail with an instance but no ports configured."""
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|1": {
+                    "vlan_list": "10,20",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:aa:bb:cc:dd:ee"
+                }
+            },
+            {}  # Empty port table
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
+        assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
+        assert "Ethernet" not in result.output  # No port details should appear
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_malformed_instance_key(self, mock_get_table, mock_get_entry):
+        """Test MST detail with a malformed instance key."""
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|invalid": {}  # Malformed key (no instance ID)
+            },
+            {}
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST" not in result.output  # No instance output due to malformed key
 
 
 def teardown_class(cls):
