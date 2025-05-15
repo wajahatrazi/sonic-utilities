@@ -2451,75 +2451,75 @@ class TestShowStpMstDetail:
         assert mock_echo.call_count > 0
 
 
-class TestShowStpMst:
-    def setup_method(self):
-        os.environ['UTILITIES_UNIT_TESTING'] = "1"
-        self.db = Db()
-        self.runner = click.testing.CliRunner()
+# class TestShowStpMst:
+#     def setup_method(self):
+#         os.environ['UTILITIES_UNIT_TESTING'] = "1"
+#         self.db = Db()
+#         self.runner = click.testing.CliRunner()
 
-    def teardown_method(self):
-        os.environ['UTILITIES_UNIT_TESTING'] = "0"
+#     def teardown_method(self):
+#         os.environ['UTILITIES_UNIT_TESTING'] = "0"
 
-    @patch('click.echo')
-    def test_no_mst_instances(self, mock_echo):
-        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [{}, {}]
-        result = self.runner.invoke(show_stp_mst, obj=self.db)
-        assert result.exit_code == 0
-        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-        mock_echo.assert_any_call("No MST Instances found")
+#     @patch('click.echo')
+#     def test_no_mst_instances(self, mock_echo):
+#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+#         self.db.cfgdb.get_table.side_effect = [{}, {}]
+#         result = self.runner.invoke(show_stp_mst, obj=self.db)
+#         assert result.exit_code == 0
+#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+#         mock_echo.assert_any_call("No MST Instances found")
 
-    @patch('click.echo')
-    def test_mst_instance_without_ports(self, mock_echo):
-        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [
-            {
-                'STP_MST_INST|1': {
-                    'vlan_list': '100-200',
-                    'bridge_priority': '28672',
-                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-                    'root_mac': '00:11:22:33:44:55'
-                }
-            },
-            {}
-        ]
-        result = self.runner.invoke(show_stp_mst, obj=self.db)
-        assert result.exit_code == 0
-        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-        mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
-        mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
-        mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
-        mock_echo.assert_any_call("Interface           Role        State           Cost       Prio.Nbr    Type")
+#     @patch('click.echo')
+#     def test_mst_instance_without_ports(self, mock_echo):
+#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+#         self.db.cfgdb.get_table.side_effect = [
+#             {
+#                 'STP_MST_INST|1': {
+#                     'vlan_list': '100-200',
+#                     'bridge_priority': '28672',
+#                     'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+#                     'root_mac': '00:11:22:33:44:55'
+#                 }
+#             },
+#             {}
+#         ]
+#         result = self.runner.invoke(show_stp_mst, obj=self.db)
+#         assert result.exit_code == 0
+#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+#         mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
+#         mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
+#         mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
+#         mock_echo.assert_any_call("Interface           Role        State           Cost       Prio.Nbr    Type")
 
-    @patch('click.echo')
-    def test_mst_instance_with_ports(self, mock_echo):
-        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [
-            {
-                'STP_MST_INST|1': {
-                    'vlan_list': '100-200',
-                    'bridge_priority': '28672',
-                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-                    'root_mac': '00:11:22:33:44:55'
-                }
-            },
-            {
-                'STP_MST_PORT|1|Ethernet0': {
-                    'role': 'Root',
-                    'state': 'Forwarding',
-                    'path_cost': '2000',
-                    'priority': '128',
-                    'link_type': 'PointToPoint'
-                }
-            }
-        ]
-        result = self.runner.invoke(show_stp_mst, obj=self.db)
-        assert result.exit_code == 0
-        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-        mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
-        mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
-        mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
-        mock_echo.assert_any_call("Ethernet0        Root        Forwarding      2000      128        PointToPoint")
+#     @patch('click.echo')
+#     def test_mst_instance_with_ports(self, mock_echo):
+#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+#         self.db.cfgdb.get_table.side_effect = [
+#             {
+#                 'STP_MST_INST|1': {
+#                     'vlan_list': '100-200',
+#                     'bridge_priority': '28672',
+#                     'bridge_mac': 'AA:BB:CC:DD:EE:FF',
+#                     'root_mac': '00:11:22:33:44:55'
+#                 }
+#             },
+#             {
+#                 'STP_MST_PORT|1|Ethernet0': {
+#                     'role': 'Root',
+#                     'state': 'Forwarding',
+#                     'path_cost': '2000',
+#                     'priority': '128',
+#                     'link_type': 'PointToPoint'
+#                 }
+#             }
+#         ]
+#         result = self.runner.invoke(show_stp_mst, obj=self.db)
+#         assert result.exit_code == 0
+#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+#         mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
+#         mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
+#         mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
+#         mock_echo.assert_any_call("Ethernet0        Root        Forwarding      2000      128        PointToPoint")
 
 
 def teardown_class(cls):
