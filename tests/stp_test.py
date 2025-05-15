@@ -2465,6 +2465,7 @@ class TestShowStpMst:
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
         assert "Spanning-tree Mode: MSTP" in result.output
+        assert "#######  MST1 (CIST)  Vlans mapped : None" not in result.output
         assert "No MST instances configured." in result.output
 
     @patch('click.echo')
@@ -2484,8 +2485,7 @@ class TestShowStpMst:
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
         assert "Spanning-tree Mode: MSTP" in result.output
-        assert "MST1" in result.output
-        assert "Vlans mapped : 100-200" in result.output
+        assert "#######  MST1 (CIST)  Vlans mapped : 100-200" in result.output
         assert "Bridge Address 28672.AA:BB:CC:DD:EE:FF" in result.output
         assert "Root Address 28672.00:11:22:33:44:55" in result.output
 
@@ -2514,13 +2514,14 @@ class TestShowStpMst:
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
         assert "Spanning-tree Mode: MSTP" in result.output
-        assert "MST1" in result.output
-        assert "Vlans mapped : 100-200" in result.output
+        assert "#######  MST1 (CIST)  Vlans mapped : 100-200" in result.output
         assert "Bridge Address 28672.AA:BB:CC:DD:EE:FF" in result.output
         assert "Root Address 28672.00:11:22:33:44:55" in result.output
         assert "Ethernet0" in result.output
         assert "Root Forwarding" in result.output
         assert "Cost 2000" in result.output
+        assert "128" in result.output
+        assert "PointToPoint" in result.output
 
 
 def teardown_class(cls):
