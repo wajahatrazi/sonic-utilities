@@ -5,7 +5,6 @@ import click
 from click.testing import CliRunner
 from show.stp import (
     show_stp_mst_detail,
-    show_stp_mst
 )
 from config.stp import (
   is_valid_interface_cost
@@ -173,7 +172,7 @@ class TestStp(object):
         result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
-        if result.exit_code != 0:
+        if result.e,xit_code != 0:
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
@@ -2520,6 +2519,70 @@ class TestShowStpMstDetail:
 #         mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
 #         mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
 #         mock_echo.assert_any_call("Ethernet0        Root        Forwarding      2000      128        PointToPoint")
+
+
+class TestShowStpMstDetail:
+    def setup_method(self):
+        self.runner = CliRunner()
+        self.db = Db()
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_not_mst_mode(self, mock_get_table, mock_get_entry):
+        mock_get_entry.return_value = {"mode": "pvst"}
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "STP is not configured in MST mode" in result.output
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_no_instances(self, mock_get_table, mock_get_entry):
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.return_value = {}
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "####### MST" not in result.output
+
+    @patch('utilities_common.db.Db.cfgdb.get_entry')
+    @patch('utilities_common.db.Db.cfgdb.get_table')
+    def test_mst_detail_with_instances(self, mock_get_table, mock_get_entry):
+        mock_get_entry.return_value = {"mode": "mst"}
+        mock_get_table.side_effect = [
+            {
+                "STP_MST_INST|1": {
+                    "vlan_list": "10,20",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:aa:bb:cc:dd:ee"
+                }
+            },
+            {
+                "STP_MST_PORT|1|Ethernet0": {
+                    "role": "Root",
+                    "state": "Forwarding",
+                    "path_cost": "200",
+                    "priority": "128",
+                    "port_id": "8000",
+                    "forward_transitions": "1",
+                    "bpdu_send": "5",
+                    "bpdu_recv": "5",
+                    "designated_bridge": "00:11:22:33:44:55",
+                    "designated_cost": "200",
+                    "designated_port": "8000"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        assert result.exit_code == 0
+        assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
+        assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
+        assert "Root Address 32768.00:aa:bb:cc:dd:ee" in result.output
+        assert "Ethernet0 is Root Forwarding" in result.output
+        assert "Port info    port id 8000 priority 128 cost 200" in result.output
+        assert "Bpdu send 5, received 5" in result.output
 
 
 def teardown_class(cls):
