@@ -172,7 +172,7 @@ class TestStp(object):
         result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
-        if result.e,xit_code != 0:
+        if result.exit_code != 0:
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
@@ -2381,144 +2381,73 @@ class TestMstpInterfaceEdgePort:
         assert "STP not enabled" in result.output
 
 
-class TestShowStpMstDetail:
-    def setup_method(self):
-        self.runner = CliRunner()
-        self.db = MagicMock()
-        self.db.cfgdb = MagicMock()
-
-    @patch('click.echo')
-    def test_show_stp_mst_detail_not_mst_mode(self, mock_echo):
-        # Mock database to return non-MST mode
-        self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
-
-        # Run command
-        result = self.runner.invoke(show.stp.show_stp_mst_detail, ['detail'], obj=self.db)
-        assert result.exit_code == 0
-        mock_echo.assert_called_with("STP is not configured in MST mode")
-
-    @patch('click.echo')
-    def test_show_stp_mst_detail_no_instances(self, mock_echo):
-        """Test MST detail when no instances are present."""
-        # Mock MST mode and empty MST_INST table
-        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.return_value = {}
-
-        # Run command
-        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-
-        assert result.exit_code == 0
-
-        # Adjust the assertion based on the actual behavior
-        # If no instances are found, confirm the expected output
-        mock_echo.assert_called_once_with("STP is not configured in MST mode")
-
-    @patch('click.echo')
-    def test_show_stp_mst_detail_with_instances(self, mock_echo):
-        # Mock MST mode and MST_INST table with data
-        self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-        self.db.cfgdb.get_table.side_effect = [
-            {
-                'MST_INSTANCE|1': {
-                    'vlan_list': '100-200',
-                    'bridge_priority': '28672',
-                    'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-                    'root_mac': '00:11:22:33:44:55'
-                },
-            },
-            {
-                'MST_INSTANCE|1|Ethernet0': {
-                    'role': 'Root',
-                    'state': 'Forwarding',
-                    'path_cost': '2000',
-                    'priority': '128',
-                    'port_id': '1',
-                    'forward_tr'
-                    'ansitions': '2',
-                    'bpdu_send': '5',
-                    'bpdu_recv': '3',
-                    'designated_bridge': 'AA:BB:CC:DD:EE:FF',
-                    'designated_cost': '0',
-                    'designated_port': '1'
-                    },
-            }
-        ]
-
-        # Run command
-        result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
-        assert result.exit_code == 0
-        assert mock_echo.call_count > 0
-
-
-# class TestShowStpMst:
+# class TestShowStpMstDetail:
 #     def setup_method(self):
-#         os.environ['UTILITIES_UNIT_TESTING'] = "1"
-#         self.db = Db()
-#         self.runner = click.testing.CliRunner()
-
-#     def teardown_method(self):
-#         os.environ['UTILITIES_UNIT_TESTING'] = "0"
+#         self.runner = CliRunner()
+#         self.db = MagicMock()
+#         self.db.cfgdb = MagicMock()
 
 #     @patch('click.echo')
-#     def test_no_mst_instances(self, mock_echo):
-#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-#         self.db.cfgdb.get_table.side_effect = [{}, {}]
-#         result = self.runner.invoke(show_stp_mst, obj=self.db)
+#     def test_show_stp_mst_detail_not_mst_mode(self, mock_echo):
+#         # Mock database to return non-MST mode
+#         self.db.cfgdb.get_entry.return_value = {'mode': 'pvst'}
+
+#         # Run command
+#         result = self.runner.invoke(show.stp.show_stp_mst_detail, ['detail'], obj=self.db)
 #         assert result.exit_code == 0
-#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-#         mock_echo.assert_any_call("No MST Instances found")
+#         mock_echo.assert_called_with("STP is not configured in MST mode")
 
 #     @patch('click.echo')
-#     def test_mst_instance_without_ports(self, mock_echo):
+#     def test_show_stp_mst_detail_no_instances(self, mock_echo):
+#         """Test MST detail when no instances are present."""
+#         # Mock MST mode and empty MST_INST table
+#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+#         self.db.cfgdb.get_table.return_value = {}
+
+#         # Run command
+#         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
+
+#         assert result.exit_code == 0
+
+#         # Adjust the assertion based on the actual behavior
+#         # If no instances are found, confirm the expected output
+#         mock_echo.assert_called_once_with("STP is not configured in MST mode")
+
+#     @patch('click.echo')
+#     def test_show_stp_mst_detail_with_instances(self, mock_echo):
+#         # Mock MST mode and MST_INST table with data
 #         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
 #         self.db.cfgdb.get_table.side_effect = [
 #             {
-#                 'STP_MST_INST|1': {
+#                 'MST_INSTANCE|1': {
 #                     'vlan_list': '100-200',
 #                     'bridge_priority': '28672',
 #                     'bridge_mac': 'AA:BB:CC:DD:EE:FF',
 #                     'root_mac': '00:11:22:33:44:55'
-#                 }
-#             },
-#             {}
-#         ]
-#         result = self.runner.invoke(show_stp_mst, obj=self.db)
-#         assert result.exit_code == 0
-#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-#         mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
-#         mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
-#         mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
-#         mock_echo.assert_any_call("Interface           Role        State           Cost       Prio.Nbr    Type")
-
-#     @patch('click.echo')
-#     def test_mst_instance_with_ports(self, mock_echo):
-#         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-#         self.db.cfgdb.get_table.side_effect = [
-#             {
-#                 'STP_MST_INST|1': {
-#                     'vlan_list': '100-200',
-#                     'bridge_priority': '28672',
-#                     'bridge_mac': 'AA:BB:CC:DD:EE:FF',
-#                     'root_mac': '00:11:22:33:44:55'
-#                 }
+#                 },
 #             },
 #             {
-#                 'STP_MST_PORT|1|Ethernet0': {
+#                 'MST_INSTANCE|1|Ethernet0': {
 #                     'role': 'Root',
 #                     'state': 'Forwarding',
 #                     'path_cost': '2000',
 #                     'priority': '128',
-#                     'link_type': 'PointToPoint'
-#                 }
+#                     'port_id': '1',
+#                     'forward_tr'
+#                     'ansitions': '2',
+#                     'bpdu_send': '5',
+#                     'bpdu_recv': '3',
+#                     'designated_bridge': 'AA:BB:CC:DD:EE:FF',
+#                     'designated_cost': '0',
+#                     'designated_port': '1'
+#                     },
 #             }
 #         ]
-#         result = self.runner.invoke(show_stp_mst, obj=self.db)
+
+#         # Run command
+#         result = self.runner.invoke(show_stp_mst_detail, ['detail'], obj=self.db)
 #         assert result.exit_code == 0
-#         mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
-#         mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
-#         mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
-#         mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
-#         mock_echo.assert_any_call("Ethernet0        Root        Forwarding      2000      128        PointToPoint")
+#         assert mock_echo.call_count > 0
 
 
 class TestShowStpMstDetail:
