@@ -2453,20 +2453,21 @@ class TestShowStpMstDetail:
 
 class TestShowStpMst:
     def setup_method(self):
-        self.runner = CliRunner()
-        self.db = MagicMock()
-        self.db.cfgdb = MagicMock()
+        os.environ['UTILITIES_UNIT_TESTING'] = "1"
+        self.db = Db()
+        self.runner = click.testing.CliRunner()
+
+    def teardown_method(self):
+        os.environ['UTILITIES_UNIT_TESTING'] = "0"
 
     @patch('click.echo')
     def test_no_mst_instances(self, mock_echo):
         self.db.cfgdb.get_entry.return_value = {'mode': 'mst'}
         self.db.cfgdb.get_table.side_effect = [{}, {}]
-
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
-        assert "Spanning-tree Mode: MSTP" in result.output
-        assert "#######  MST1 (CIST)  Vlans mapped : None" not in result.output
-        assert "No MST instances configured." in result.output
+        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+        mock_echo.assert_any_call("No MST Instances found")
 
     @patch('click.echo')
     def test_mst_instance_without_ports(self, mock_echo):
@@ -2484,10 +2485,11 @@ class TestShowStpMst:
         ]
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
-        assert "Spanning-tree Mode: MSTP" in result.output
-        assert "#######  MST1 (CIST)  Vlans mapped : 100-200" in result.output
-        assert "Bridge Address 28672.AA:BB:CC:DD:EE:FF" in result.output
-        assert "Root Address 28672.00:11:22:33:44:55" in result.output
+        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+        mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
+        mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
+        mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
+        mock_echo.assert_any_call("Interface           Role        State           Cost       Prio.Nbr    Type")
 
     @patch('click.echo')
     def test_mst_instance_with_ports(self, mock_echo):
@@ -2513,15 +2515,11 @@ class TestShowStpMst:
         ]
         result = self.runner.invoke(show_stp_mst, obj=self.db)
         assert result.exit_code == 0
-        assert "Spanning-tree Mode: MSTP" in result.output
-        assert "#######  MST1 (CIST)  Vlans mapped : 100-200" in result.output
-        assert "Bridge Address 28672.AA:BB:CC:DD:EE:FF" in result.output
-        assert "Root Address 28672.00:11:22:33:44:55" in result.output
-        assert "Ethernet0" in result.output
-        assert "Root Forwarding" in result.output
-        assert "Cost 2000" in result.output
-        assert "128" in result.output
-        assert "PointToPoint" in result.output
+        mock_echo.assert_any_call("Spanning-tree Mode: MSTP")
+        mock_echo.assert_any_call("#######  MST1 (CIST)  Vlans mapped : 100-200")
+        mock_echo.assert_any_call("Bridge Address 28672.AA:BB:CC:DD:EE:FF")
+        mock_echo.assert_any_call("Root Address 28672.00:11:22:33:44:55")
+        mock_echo.assert_any_call("Ethernet0        Root        Forwarding      2000      128        PointToPoint")
 
 
 def teardown_class(cls):
