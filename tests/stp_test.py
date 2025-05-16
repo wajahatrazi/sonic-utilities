@@ -80,12 +80,17 @@ Ethernet4        100    Consistent state
 """
 
 
-class TestStp(object):
+class TestStp:
     @classmethod
     def setup_class(cls):
-        os.environ['UTILITIES_UNIT_TESTING'] = "1"
-        print("SETUP")
+        os.environ["UTILITIES_UNIT_TESTING"] = "1"
 
+    @classmethod
+    def teardown_class(cls):
+        os.environ["UTILITIES_UNIT_TESTING"] = "0"
+
+
+class Teststp(object):
     def test_show_spanning_tree(self):
         runner = CliRunner()
         db = Db()
@@ -2381,19 +2386,22 @@ class TestMstpInterfaceEdgePort:
         assert "STP not enabled" in result.output
 
 
-class TestShowStpMstDetail:
+class TestShowStpMstDetail(TestStp):
     def setup_method(self):
         self.runner = CliRunner()
         self.db = Db()
         # Ensure cfgdb is properly initialized
         self.db.cfgdb = MagicMock()
+        # Debug: Print available commands to verify structure
+        print("Available commands in show.cli.commands:", list(show.cli.commands.keys()))
 
     def test_mst_detail_not_mst_mode(self):
         # Mock cfgdb methods on the instance
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
 
-        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
+        # Invoke command (try this if nested path fails)
+        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
         assert result.exit_code == 0
         assert "STP is not configured in MST mode" in result.output
 
@@ -2402,7 +2410,8 @@ class TestShowStpMstDetail:
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(return_value={})
 
-        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
+        # Invoke command
+        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
         assert result.exit_code == 0
         assert "####### MST" not in result.output
 
@@ -2424,7 +2433,7 @@ class TestShowStpMstDetail:
                     "state": "Forwarding",
                     "path_cost": "200",
                     "priority": "128",
-                    "port_id": "8000",
+                    "port_id": "800 Tania
                     "forward_transitions": "1",
                     "bpdu_send": "5",
                     "bpdu_recv": "5",
@@ -2435,7 +2444,8 @@ class TestShowStpMstDetail:
             }
         ])
 
-        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
+        # Invoke command
+        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
         assert result.exit_code == 0
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
         assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
@@ -2443,8 +2453,3 @@ class TestShowStpMstDetail:
         assert "Ethernet0 is Root Forwarding" in result.output
         assert "Port info    port id 8000 priority 128 cost 200" in result.output
         assert "Bpdu send 5, received 5" in result.output
-
-
-def teardown_class(cls):
-    os.environ['UTILITIES_UNIT_TESTING'] = "0"
-    print("TEARDOWN")
