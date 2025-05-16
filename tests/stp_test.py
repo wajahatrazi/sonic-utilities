@@ -2385,31 +2385,31 @@ class TestShowStpMstDetail:
     def setup_method(self):
         self.runner = CliRunner()
         self.db = Db()
+        # Ensure cfgdb is properly initialized
+        self.db.cfgdb = MagicMock()
 
-    @patch('utilities_common.db.Db.cfgdb.get_entry')
-    @patch('utilities_common.db.Db.cfgdb.get_table')
-    def test_mst_detail_not_mst_mode(self, mock_get_table, mock_get_entry):
-        mock_get_entry.return_value = {"mode": "pvst"}
+    def test_mst_detail_not_mst_mode(self):
+        # Mock cfgdb methods on the instance
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
+        self.db.cfgdb.get_table = MagicMock()
 
-        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "STP is not configured in MST mode" in result.output
 
-    @patch('utilities_common.db.Db.cfgdb.get_entry')
-    @patch('utilities_common.db.Db.cfgdb.get_table')
-    def test_mst_detail_no_instances(self, mock_get_table, mock_get_entry):
-        mock_get_entry.return_value = {"mode": "mst"}
-        mock_get_table.return_value = {}
+    def test_mst_detail_no_instances(self):
+        # Mock cfgdb methods on the instance
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
+        self.db.cfgdb.get_table = MagicMock(return_value={})
 
-        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "####### MST" not in result.output
 
-    @patch('utilities_common.db.Db.cfgdb.get_entry')
-    @patch('utilities_common.db.Db.cfgdb.get_table')
-    def test_mst_detail_with_instances(self, mock_get_table, mock_get_entry):
-        mock_get_entry.return_value = {"mode": "mst"}
-        mock_get_table.side_effect = [
+    def test_mst_detail_with_instances(self):
+        # Mock cfgdb methods on the instance
+        self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
+        self.db.cfgdb.get_table = MagicMock(side_effect=[
             {
                 "STP_MST_INST|1": {
                     "vlan_list": "10,20",
@@ -2433,15 +2433,16 @@ class TestShowStpMstDetail:
                     "designated_port": "8000"
                 }
             }
-        ]
+        ])
 
-        result = self.runner.invoke(show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["stp"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
         assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
         assert "Root Address 32768.00:aa:bb:cc:dd:ee" in result.output
         assert "Ethernet0 is Root Forwarding" in result.output
         assert "Port info    port id 8000 priority 128 cost 200" in result.output
+        assert "Bpdu send 5, received 5" in result.output result.output
         assert "Bpdu send 5, received 5" in result.output
 
 
