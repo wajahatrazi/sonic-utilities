@@ -2442,7 +2442,6 @@ class TestShowStpMstDetail:
         assert "Root Address 32768.00:aa:bb:cc:dd:ee" in result.output
         assert "Ethernet0 is Root Forwarding" in result.output
         assert "Port info    port id 8000 priority 128 cost 200" in result.output
-        assert "Bpdu send 5, received 5" in result.output result.output
         assert "Bpdu send 5, received 5" in result.output
 
 
