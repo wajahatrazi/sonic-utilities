@@ -2433,7 +2433,7 @@ class TestShowStpMstDetail(TestStp):
                     "state": "Forwarding",
                     "path_cost": "200",
                     "priority": "128",
-                    "port_id": "800 Tania
+                    "port_id": "8000"
                     "forward_transitions": "1",
                     "bpdu_send": "5",
                     "bpdu_recv": "5",
