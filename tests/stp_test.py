@@ -3,9 +3,9 @@ import pytest
 from unittest.mock import MagicMock, patch
 import click
 from click.testing import CliRunner
-from show.stp import (
-    show_stp_mst_detail,
-)
+# from show.stp import (
+#     show_stp_mst_detail,
+# )
 from config.stp import (
   is_valid_interface_cost
  )
