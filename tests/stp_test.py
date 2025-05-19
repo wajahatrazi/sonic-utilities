@@ -2444,7 +2444,7 @@ class TestShowStpMstDetail(TestStp):
             }
         ])
 
-        # Invoke command
+        # Invoke  command
         result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
         assert result.exit_code == 0
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
