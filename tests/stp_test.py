@@ -2400,7 +2400,7 @@ class TestShowStpMstDetail(TestStp):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
 
-        # Invoke command (try this if nested path fails)
+        # Invoke command
         result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
         assert result.exit_code == 0
         assert "STP is not configured in MST mode" in result.output
@@ -2433,7 +2433,7 @@ class TestShowStpMstDetail(TestStp):
                     "state": "Forwarding",
                     "path_cost": "200",
                     "priority": "128",
-                    "port_id": "8000"
+                    "port_id": "8000",  # Fixed: Added comma
                     "forward_transitions": "1",
                     "bpdu_send": "5",
                     "bpdu_recv": "5",
