@@ -2386,6 +2386,7 @@ class TestMstpInterfaceEdgePort:
         assert "STP not enabled" in result.output
 
 
+# xys
 class TestShowStpMstDetail(TestStp):
     def setup_method(self):
         self.runner = CliRunner()
