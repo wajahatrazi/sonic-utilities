@@ -2398,22 +2398,14 @@ class TestShowStpMstDetail(TestStp):
     def test_mst_detail_not_mst_mode(self):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
-        result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst detail"],
-            [],
-            obj=self.db
-        )
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "STP is not configured in MST mode" in result.output
 
     def test_mst_detail_no_instances(self):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(return_value={})
-        result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst detail"],
-            [],
-            obj=self.db
-        )
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "####### MST" not in result.output
 
@@ -2444,11 +2436,7 @@ class TestShowStpMstDetail(TestStp):
                 }
             }
         ])
-        result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst detail"],
-            [],
-            obj=self.db
-        )
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
         assert "Bridge Address 32768.00:11:22:33:44:55" in result.output

@@ -410,12 +410,12 @@ def show_spanning_tree(_db):
     pass
 
 
-@show_spanning_tree.command('mst')
+@show_spanning_tree.command('mst detail', short_help='Show MSTP detailed information')
+@click.argument('detail', required=False)
 @clicommon.pass_db
-def show_stp_mst(_db):
-    """Show MSTP information"""
+def show_stp_mst_detail(_db, detail):
+    """Show MSTP detailed information"""
     db = _db.cfgdb
-
     stp_global_entry = db.get_entry('STP', "GLOBAL")
     mode = stp_global_entry.get("mode")
 
@@ -423,28 +423,18 @@ def show_stp_mst(_db):
         click.echo("STP is not configured in MST mode")
         return
 
-    click.echo("Spanning-tree Mode: MSTP")
-
-    # Fetch MST instances
     mst_instances = db.get_table('STP_MST_INST')
-
     for instance_key, instance_data in mst_instances.items():
         instance_id = instance_key.split('|')[-1]
         vlans_mapped = instance_data.get('vlan_list', 'None')
         bridge_priority = instance_data.get('bridge_priority', 'Unknown')
         click.echo(f"#######  MST{instance_id} (CIST)  Vlans mapped : {vlans_mapped}")
-
-        # Bridge and Root Information
         bridge_mac = instance_data.get('bridge_mac', 'Unknown')
         root_mac = instance_data.get('root_mac', 'Unknown')
         click.echo(f"Bridge Address {bridge_priority}.{bridge_mac}")
         click.echo(f"Root Address {bridge_priority}.{root_mac}")
 
-        # Interface Information
         mst_ports = db.get_table('STP_MST_PORT')
-        click.echo("\nInterface           Role        State           Cost       Prio.Nbr    Type")
-        click.echo("---------------    --------     ----------      -------    ---------   -----------")
-
         for port_key, port_data in mst_ports.items():
             instance, port_name = port_key.split('|')[1:]
             if instance == instance_id:
@@ -452,8 +442,20 @@ def show_stp_mst(_db):
                 state = port_data.get('state', 'Unknown')
                 cost = port_data.get('path_cost', 'Unknown')
                 priority = port_data.get('priority', 'Unknown')
-                link_type = port_data.get('link_type', 'Unknown')
-                click.echo(f"{port_name:<16} {role:<12} {state:<12} {cost:<8} {priority:<10} {link_type}")
+                port_id = port_data.get('port_id', 'Unknown')
+                transitions = port_data.get('forward_transitions', '0')
+                bpdu_send = port_data.get('bpdu_send', '0')
+                bpdu_recv = port_data.get('bpdu_recv', '0')
+                designated_bridge = port_data.get('designated_bridge', 'Unknown')
+                designated_cost = port_data.get('designated_cost', '0')
+                designated_port = port_data.get('designated_port', 'Unknown')
+
+                click.echo(f"{port_name} is {role} {state}")
+                click.echo(f"Port info    port id {port_id} priority {priority} cost {cost}")
+                click.echo(f"Designated   Address {designated_bridge} cost {designated_cost}")
+                click.echo(f"Designated bridge Address {designated_bridge} port id {designated_port}")
+                click.echo(f"Timers: forward transitions {transitions}")
+                click.echo(f"Bpdu send {bpdu_send}, received {bpdu_recv}")
 
 
 @show_spanning_tree.command('mst detail', short_help='Show MSTP detailed information')
