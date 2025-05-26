@@ -460,31 +460,22 @@ def show_stp_mst(_db):
 @click.argument('detail', required=False)
 @clicommon.pass_db
 def show_stp_mst_detail(_db, detail):
-    """Show MSTP detailed information"""
     db = _db.cfgdb
-
     stp_global_entry = db.get_entry('STP', "GLOBAL")
     mode = stp_global_entry.get("mode")
-
     if mode != "mst":
         click.echo("STP is not configured in MST mode")
         return
-
-    # Fetch MST instances
     mst_instances = db.get_table('STP_MST_INST')
-
     for instance_key, instance_data in mst_instances.items():
         instance_id = instance_key.split('|')[-1]
         vlans_mapped = instance_data.get('vlan_list', 'None')
         bridge_priority = instance_data.get('bridge_priority', 'Unknown')
         click.echo(f"#######  MST{instance_id} (CIST)  Vlans mapped : {vlans_mapped}")
-
         bridge_mac = instance_data.get('bridge_mac', 'Unknown')
         root_mac = instance_data.get('root_mac', 'Unknown')
         click.echo(f"Bridge Address {bridge_priority}.{bridge_mac}")
         click.echo(f"Root Address {bridge_priority}.{root_mac}")
-
-        # Interface details
         mst_ports = db.get_table('STP_MST_PORT')
         for port_key, port_data in mst_ports.items():
             instance, port_name = port_key.split('|')[1:]
@@ -500,7 +491,6 @@ def show_stp_mst_detail(_db, detail):
                 designated_bridge = port_data.get('designated_bridge', 'Unknown')
                 designated_cost = port_data.get('designated_cost', '0')
                 designated_port = port_data.get('designated_port', 'Unknown')
-
                 click.echo(f"{port_name} is {role} {state}")
                 click.echo(f"Port info    port id {port_id} priority {priority} cost {cost}")
                 click.echo(f"Designated   Address {designated_bridge} cost {designated_cost}")

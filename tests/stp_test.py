@@ -2,7 +2,9 @@ import os
 import pytest
 from unittest.mock import MagicMock, patch
 import click
+from utilities_common.db import Db
 from click.testing import CliRunner
+import show.main as show
 # from show.stp import (
 #     show_stp_mst_detail,
 # )
@@ -2390,33 +2392,24 @@ class TestShowStpMstDetail(TestStp):
     def setup_method(self):
         self.runner = CliRunner()
         self.db = Db()
-        # Ensure cfgdb is properly initialized
         self.db.cfgdb = MagicMock()
-        # Debug: Print available commands to verify structure
         print("Available commands in show.cli.commands:", list(show.cli.commands.keys()))
 
     def test_mst_detail_not_mst_mode(self):
-        # Mock cfgdb methods on the instance
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
-
-        # Invoke command
-        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "STP is not configured in MST mode" in result.output
 
     def test_mst_detail_no_instances(self):
-        # Mock cfgdb methods on the instance
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(return_value={})
-
-        # Invoke command
-        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "####### MST" not in result.output
 
     def test_mst_detail_with_instances(self):
-        # Mock cfgdb methods on the instance
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(side_effect=[
             {
@@ -2433,7 +2426,7 @@ class TestShowStpMstDetail(TestStp):
                     "state": "Forwarding",
                     "path_cost": "200",
                     "priority": "128",
-                    "port_id": "8000",  # Fixed: Added comma
+                    "port_id": "8000",
                     "forward_transitions": "1",
                     "bpdu_send": "5",
                     "bpdu_recv": "5",
@@ -2443,9 +2436,7 @@ class TestShowStpMstDetail(TestStp):
                 }
             }
         ])
-
-        # Invoke command
-        result = self.runner.invoke(show.show_stp_mst_detail, [], obj=self.db)
+        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst"].commands["detail"], [], obj=self.db)
         assert result.exit_code == 0
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
         assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
