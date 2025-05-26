@@ -2399,7 +2399,7 @@ class TestShowStpMstDetail(TestStp):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst"].commands["detail"],
+            show.cli.commands["spanning-tree"].commands["mst detail"],
             [],
             obj=self.db
         )
@@ -2410,7 +2410,7 @@ class TestShowStpMstDetail(TestStp):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(return_value={})
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst"].commands["detail"],
+            show.cli.commands["spanning-tree"].commands["mst detail"],
             [],
             obj=self.db
         )
@@ -2445,7 +2445,7 @@ class TestShowStpMstDetail(TestStp):
             }
         ])
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst"].commands["detail"],
+            show.cli.commands["spanning-tree"].commands["mst detail"],
             [],
             obj=self.db
         )
@@ -2455,4 +2455,7 @@ class TestShowStpMstDetail(TestStp):
         assert "Root Address 32768.00:aa:bb:cc:dd:ee" in result.output
         assert "Ethernet0 is Root Forwarding" in result.output
         assert "Port info    port id 8000 priority 128 cost 200" in result.output
+        assert "Designated   Address 00:11:22:33:44:55 cost 200" in result.output
+        assert "Designated bridge Address 00:11:22:33:44:55 port id 8000" in result.output
+        assert "Timers: forward transitions 1" in result.output
         assert "Bpdu send 5, received 5" in result.output
