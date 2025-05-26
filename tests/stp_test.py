@@ -2394,19 +2394,31 @@ class TestShowStpMstDetail(TestStp):
         self.db = Db()
         self.db.cfgdb = MagicMock()
         print("Available commands in show.cli.commands:", list(show.cli.commands.keys()))
+        try:
+            print("Spanning-tree subcommands:", list(show.cli.commands["spanning-tree"].commands.keys()))
+        except KeyError as e:
+            print(f"KeyError accessing spanning-tree commands: {e}")
 
     def test_mst_detail_not_mst_mode(self):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
-        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
-        assert result.exit_code == 0
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"],
+            ["mst", "detail"],
+            obj=self.db
+        )
+        assert result.exit_code == 0, f"Command failed: {result.output}"
         assert "STP is not configured in MST mode" in result.output
 
     def test_mst_detail_no_instances(self):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "mst"})
         self.db.cfgdb.get_table = MagicMock(return_value={})
-        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
-        assert result.exit_code == 0
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"],
+            ["mst", "detail"],
+            obj=self.db
+        )
+        assert result.exit_code == 0, f"Command failed: {result.output}"
         assert "####### MST" not in result.output
 
     def test_mst_detail_with_instances(self):
@@ -2436,8 +2448,12 @@ class TestShowStpMstDetail(TestStp):
                 }
             }
         ])
-        result = self.runner.invoke(show.cli.commands["spanning-tree"].commands["mst detail"], [], obj=self.db)
-        assert result.exit_code == 0
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"],
+            ["mst", "detail"],
+            obj=self.db
+        )
+        assert result.exit_code == 0, f"Command failed: {result.output}"
         assert "#######  MST1 (CIST)  Vlans mapped : 10,20" in result.output
         assert "Bridge Address 32768.00:11:22:33:44:55" in result.output
         assert "Root Address 32768.00:aa:bb:cc:dd:ee" in result.output
