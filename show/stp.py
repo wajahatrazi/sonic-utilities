@@ -368,7 +368,6 @@ def show_stp_vlan_statistics(ctx, vlanid):
                 click.echo("{:17}{:15}{:15}{:15}{}".format(
                     ifname, entry['bpdu_sent'], entry['bpdu_received'], entry['tc_sent'], entry['tc_received']))
 
-
 @click.group()
 @clicommon.pass_db
 def show_spanning_tree(_db):
@@ -423,11 +422,9 @@ def show_stp_mst_detail(_db, detail):
                 click.echo(f"Timers: forward transitions {transitions}")
                 click.echo(f"Bpdu send {bpdu_send}, received {bpdu_recv}")
 
-
 @click.group()
 def cli():
     pass
-
 
 cli.add_command(show_spanning_tree, "show_spanning_tree")
 
