@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import re
-import stp 
 import click
 import lazy_object_proxy
 import utilities_common.cli as clicommon
