@@ -366,7 +366,7 @@ def show_stp_vlan_statistics(ctx, vlanid):
                     entry['tc_received'] = '-'
 
                 click.echo("{:17}{:15}{:15}{:15}{}".format(
-                    ifname, ['bpdu_sent'], entry['bpdu_received'], entry['tc_sent'], entry['tc_received']))
+                    ifname, entry['bpdu_sent'], entry['bpdu_received'], entry['tc_sent'], entry['tc_received']))
 
 
 @click.group()
