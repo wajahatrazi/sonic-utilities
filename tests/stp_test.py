@@ -2403,7 +2403,7 @@ class TestShowStpMstDetail(TestStp):
         self.db.cfgdb.get_entry = MagicMock(return_value={"mode": "pvst"})
         self.db.cfgdb.get_table = MagicMock()
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst detail"],
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
             [],
             obj=self.db
         )
