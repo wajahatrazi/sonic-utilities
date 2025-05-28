@@ -2386,3 +2386,252 @@ class TestMstpInterfaceEdgePort:
 
         assert result.exit_code != 0
         assert "STP not enabled" in result.output
+
+
+class TestShowStpMstDetail:
+    def setup_method(self):
+        """Setup test environment before each test."""
+        self.runner = CliRunner()
+        self.db = Db()
+        self.db.cfgdb = MagicMock()  # Mock the config database
+
+    def test_mst_detail_non_mst_mode(self):
+        """Test show spanning-tree mst-detail when STP mode is not MST."""
+        # Mock STP global entry with non-MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
+
+    def test_mst_detail_empty_mst_instances(self):
+        """Test show spanning-tree mst-detail with no MST instances."""
+        # Mock STP global entry with MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        # Mock empty MST instance table
+        self.db.cfgdb.get_table.return_value = {}
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert result.output == "", "Output should be empty for no MST instances"
+
+    def test_mst_detail_with_instances_no_ports(self):
+        """Test show spanning-tree mst-detail with MST instances but no ports."""
+        # Mock STP global entry with MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        # Mock MST instance table with one instance
+        self.db.cfgdb.get_table.side_effect = [
+            {
+                "MST_INSTANCE|1": {
+                    "vlan_list": "100,200",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:66:77:88:99:AA"
+                }
+            },
+            {}  # Empty MST port table
+        ]
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        expected_output = (
+            "#######  MST1 (CIST)  Vlans mapped : 100,200\n"
+            "Bridge Address 32768.00:11:22:33:44:55\n"
+            "Root Address 32768.00:66:77:88:99:AA\n"
+        )
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert result.output == expected_output, "Output mismatch for MST instance with no ports"
+
+    def test_mst_detail_with_instances_and_ports(self):
+        """Test show spanning-tree mst-detail with MST instances and ports."""
+        # Mock STP global entry with MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        # Mock MST instance and port tables
+        self.db.cfgdb.get_table.side_effect = [
+            {
+                "MST_INSTANCE|1": {
+                    "vlan_list": "100,200",
+                    "bridge_priority": "32768",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:66:77:88:99:AA"
+                }
+            },
+            {
+                "MST_INSTANCE|1|Ethernet0": {
+                    "role": "Root",
+                    "state": "Forwarding",
+                    "path_cost": "2000",
+                    "priority": "128",
+                    "port_id": "0.128",
+                    "forward_transitions": "5",
+                    "bpdu_send": "100",
+                    "bpdu_recv": "50",
+                    "designated_bridge": "32768.00:11:22:33:44:55",
+                    "designated_cost": "0",
+                    "designated_port": "0.128"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        expected_output = (
+            "#######  MST1 (CIST)  Vlans mapped : 100,200\n"
+            "Bridge Address 32768.00:11:22:33:44:55\n"
+            "Root Address 32768.00:66:77:88:99:AA\n"
+            "Ethernet0 is Root Forwarding\n"
+            "Port info    port id 0.128 priority 128 cost 2000\n"
+            "Designated   Address 32768.00:11:22:33:44:55 cost 0\n"
+            "Designated bridge Address 32768.00:11:22:33:44:55 port id 0.128\n"
+            "Timers: forward transitions 5\n"
+            "Bpdu send 100, received 50\n"
+        )
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert result.output == expected_output, "Output mismatch for MST instance with ports"
+
+    def test_mst_detail_missing_fields(self):
+        """Test show spanning-tree mst-detail with missing fields in database."""
+        # Mock STP global entry with MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        # Mock MST instance and port tables with missing fields
+        self.db.cfgdb.get_table.side_effect = [
+            {
+                "MST_INSTANCE|2": {}  # No fields provided
+            },
+            {
+                "MST_INSTANCE|2|Ethernet1": {}  # No fields provided
+            }
+        ]
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        expected_output = (
+            "#######  MST2 (CIST)  Vlans mapped : None\n"
+            "Bridge Address Unknown.Unknown\n"
+            "Root Address Unknown.Unknown\n"
+            "Ethernet1 is Unknown Unknown\n"
+            "Port info    port id Unknown priority Unknown cost Unknown\n"
+            "Designated   Address Unknown cost 0\n"
+            "Designated bridge Address Unknown port id Unknown\n"
+            "Timers: forward transitions 0\n"
+            "Bpdu send 0, received 0\n"
+        )
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert result.output == expected_output, "Output mismatch for missing fields"
+
+    def test_mst_detail_multiple_instances(self):
+        """Test show spanning-tree mst-detail with multiple MST instances and ports."""
+        # Mock STP global entry with MST mode
+        self.db.cfgdb.get_entry.return_value = {"mode": "mst"}
+        # Mock MST instance and port tables with multiple instances
+        self.db.cfgdb.get_table.side_effect = [
+            {
+                "MST_INSTANCE|1": {
+                    "vlan_list": "100",
+                    "bridge_priority": "4096",
+                    "bridge_mac": "00:AA:BB:CC:DD:EE",
+                    "root_mac": "00:FF:EE:DD:CC:BB"
+                },
+                "MST_INSTANCE|2": {
+                    "vlan_list": "200,300",
+                    "bridge_priority": "8192",
+                    "bridge_mac": "00:11:22:33:44:55",
+                    "root_mac": "00:66:77:88:99:AA"
+                }
+            },
+            {
+                "MST_INSTANCE|1|Ethernet0": {
+                    "role": "Designated",
+                    "state": "Forwarding",
+                    "path_cost": "1000",
+                    "priority": "64",
+                    "port_id": "0.64",
+                    "forward_transitions": "3",
+                    "bpdu_send": "50",
+                    "bpdu_recv": "25",
+                    "designated_bridge": "4096.00:AA:BB:CC:DD:EE",
+                    "designated_cost": "0",
+                    "designated_port": "0.64"
+                },
+                "MST_INSTANCE|2|Ethernet1": {
+                    "role": "Root",
+                    "state": "Forwarding",
+                    "path_cost": "2000",
+                    "priority": "128",
+                    "port_id": "0.128",
+                    "forward_transitions": "7",
+                    "bpdu_send": "200",
+                    "bpdu_recv": "100",
+                    "designated_bridge": "8192.00:11:22:33:44:55",
+                    "designated_cost": "0",
+                    "designated_port": "0.128"
+                }
+            }
+        ]
+
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            [],
+            obj=self.db
+        )
+
+        print(f"\nCommand Output:\n{result.output}")
+
+        expected_output = (
+            "#######  MST1 (CIST)  Vlans mapped : 100\n"
+            "Bridge Address 4096.00:AA:BB:CC:DD:EE\n"
+            "Root Address 4096.00:FF:EE:DD:CC:BB\n"
+            "Ethernet0 is Designated Forwarding\n"
+            "Port info    port id 0.64 priority 64 cost 1000\n"
+            "Designated   Address 4096.00:AA:BB:CC:DD:EE cost 0\n"
+            "Designated bridge Address 4096.00:AA:BB:CC:DD:EE port id 0.64\n"
+            "Timers: forward transitions 3\n"
+            "Bpdu send 50, received 25\n"
+            "#######  MST2 (CIST)  Vlans mapped : 200,300\n"
+            "Bridge Address 8192.00:11:22:33:44:55\n"
+            "Root Address 8192.00:66:77:88:99:AA\n"
+            "Ethernet1 is Root Forwarding\n"
+            "Port info    port id 0.128 priority 128 cost 2000\n"
+            "Designated   Address 8192.00:11:22:33:44:55 cost 0\n"
+            "Designated bridge Address 8192.00:11:22:33:44:55 port id 0.128\n"
+            "Timers: forward transitions 7\n"
+            "Bpdu send 200, received 100\n"
+        )
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert result.output == expected_output, "Output mismatch for multiple MST instances"
