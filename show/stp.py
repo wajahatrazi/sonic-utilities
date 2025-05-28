@@ -375,11 +375,9 @@ def show_spanning_tree(_db):
     """Show STP information"""
     pass
 
-
-@show_spanning_tree.command('mst detail', short_help='Show MSTP detailed information')
-@click.argument('detail', required=False)
+@show_spanning_tree.command('mst-detail', short_help='Show MSTP detailed information')
 @clicommon.pass_db
-def show_stp_mst_detail(_db, detail):
+def show_stp_mst_detail(_db):
     """Show MSTP detailed information"""
     db = _db.cfgdb
     stp_global_entry = db.get_entry('STP', "GLOBAL")
