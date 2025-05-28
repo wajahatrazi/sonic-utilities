@@ -375,6 +375,7 @@ def show_spanning_tree(_db):
     """Show STP information"""
     pass
 
+
 @show_spanning_tree.command('mst-detail', short_help='Show MSTP detailed information')
 @clicommon.pass_db
 def show_stp_mst_detail(_db):
