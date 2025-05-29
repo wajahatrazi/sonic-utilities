@@ -2400,16 +2400,26 @@ class TestShowStpMstDetail:
         # Mock STP global entry with non-MST mode
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
-            [],
-            obj=self.db
-        )
+        # Debug: Print available commands to diagnose KeyError
+        try:
+            available_commands = show.cli.commands["spanning-tree"].commands.keys()
+            print(f"Available spanning-tree subcommands: {available_commands}")
+        except KeyError as e:
+            print(f"Error accessing commands: {e}")
 
-        print(f"\nCommand Output:\n{result.output}")
+        try:
+            result = self.runner.invoke(
+                show.cli.commands["spanning-tree"].commands["mst-detail"],
+                [],
+                obj=self.db
+            )
 
-        assert result.exit_code == 0, "Command should execute successfully"
-        assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
+            print(f"\nCommand Output:\n{result.output}")
+
+            assert result.exit_code == 0, "Command should execute successfully"
+            assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
+        except KeyError as e:
+            pytest.fail(f"Command 'mst-detail' not found: {e}. Please verify command registration in stp.py.")
 
     def test_mst_detail_empty_mst_instances(self):
         """Test show spanning-tree mst-detail with no MST instances."""
