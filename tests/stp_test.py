@@ -2400,26 +2400,39 @@ class TestShowStpMstDetail:
         # Mock STP global entry with non-MST mode
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        # Debug: Print available commands to diagnose KeyError
+        # Debug: Print CLI hierarchy
         try:
-            available_commands = show.cli.commands["spanning-tree"].commands.keys()
-            print(f"Available spanning-tree subcommands: {available_commands}")
-        except KeyError as e:
-            print(f"Error accessing commands: {e}")
+            spanning_tree_commands = show.cli.commands.get("spanning-tree")
+            if spanning_tree_commands:
+                available_commands = spanning_tree_commands.commands.keys()
+                print(f"Available spanning-tree subcommands: {available_commands}")
+            else:
+                print("Error: 'spanning-tree' command not found in show.cli.commands")
+        except Exception as e:
+            print(f"Error accessing CLI commands: {e}")
 
-        try:
-            result = self.runner.invoke(
-                show.cli.commands["spanning-tree"].commands["mst-detail"],
-                [],
-                obj=self.db
-            )
+        # Try invoking the command with 'mst-detail' or 'mst_detail'
+        command_names = ["mst-detail", "mst_detail"]
+        result = None
+        for cmd_name in command_names:
+            try:
+                result = self.runner.invoke(
+                    show.cli.commands["spanning-tree"].commands[cmd_name],
+                    [],
+                    obj=self.db
+                )
+                print(f"Successfully invoked command: {cmd_name}")
+                break
+            except KeyError as e:
+                print(f"Command '{cmd_name}' not found: {e}")
 
-            print(f"\nCommand Output:\n{result.output}")
+        if result is None:
+            pytest.fail("Failed to invoke command: 'mst-detail' or 'mst_detail' not found. Please verify command registration in stp.py.")
 
-            assert result.exit_code == 0, "Command should execute successfully"
-            assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
-        except KeyError as e:
-            pytest.fail(f"Command 'mst-detail' not found: {e}. Please verify command registration in stp.py.")
+        print(f"\nCommand Output:\n{result.output}")
+
+        assert result.exit_code == 0, "Command should execute successfully"
+        assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
 
     def test_mst_detail_empty_mst_instances(self):
         """Test show spanning-tree mst-detail with no MST instances."""
