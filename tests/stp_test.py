@@ -2427,7 +2427,10 @@ class TestShowStpMstDetail:
                 print(f"Command '{cmd_name}' not found: {e}")
 
         if result is None:
-            pytest.fail("Failed to invoke command: 'mst-detail' or 'mst_detail' not found. Please verify command registration in stp.py.")
+            pytest.fail(
+                "Failed to invoke command: 'mst-detail' or 'mst_detail' not found. "
+                "Please verify command registration in stp.py."
+            )
 
         print(f"\nCommand Output:\n{result.output}")
 
