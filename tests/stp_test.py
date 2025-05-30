@@ -2402,7 +2402,7 @@ class TestShowStpMstDetail:
 
         # Invoke the command
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst_detail"],
+            show.cli.commands["spanning-tree"].commands["mst-detail"],
             [],
             obj=self.db
         )
