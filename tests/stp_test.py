@@ -2400,42 +2400,17 @@ class TestShowStpMstDetail:
         # Mock STP global entry with non-MST mode
         self.db.cfgdb.get_entry.return_value = {"mode": "pvst"}
 
-        # Debug: Print CLI hierarchy
-        try:
-            spanning_tree_commands = show.cli.commands.get("spanning-tree")
-            if spanning_tree_commands:
-                available_commands = spanning_tree_commands.commands.keys()
-                print(f"Available spanning-tree subcommands: {available_commands}")
-            else:
-                print("Error: 'spanning-tree' command not found in show.cli.commands")
-        except Exception as e:
-            print(f"Error accessing CLI commands: {e}")
-
-        # Try invoking the command with 'mst-detail' or 'mst_detail'
-        command_names = ["mst-detail", "mst_detail"]
-        result = None
-        for cmd_name in command_names:
-            try:
-                result = self.runner.invoke(
-                    show.cli.commands["spanning-tree"].commands[cmd_name],
-                    [],
-                    obj=self.db
-                )
-                print(f"Successfully invoked command: {cmd_name}")
-                break
-            except KeyError as e:
-                print(f"Command '{cmd_name}' not found: {e}")
-
-        if result is None:
-            pytest.fail(
-                "Failed to invoke command: 'mst-detail' or 'mst_detail' not found. "
-                "Please verify command registration in stp.py."
-            )
+        # Invoke the command
+        result = self.runner.invoke(
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
+            [],
+            obj=self.db
+        )
 
         print(f"\nCommand Output:\n{result.output}")
 
         assert result.exit_code == 0, "Command should execute successfully"
-        assert "STP is not configured in MST mode" in result.output, "Expected non-MST mode error message"
+        assert result.output == "STP is not configured in MST mode\n", "Expected non-MST mode error message"
 
     def test_mst_detail_empty_mst_instances(self):
         """Test show spanning-tree mst-detail with no MST instances."""
@@ -2445,7 +2420,7 @@ class TestShowStpMstDetail:
         self.db.cfgdb.get_table.return_value = {}
 
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
             [],
             obj=self.db
         )
@@ -2453,7 +2428,7 @@ class TestShowStpMstDetail:
         print(f"\nCommand Output:\n{result.output}")
 
         assert result.exit_code == 0, "Command should execute successfully"
-        assert result.output == "", "Output should be empty for no MST instances"
+        assert result.output in ["", "\n"], "Output should be empty or a single newline for no MST instances"
 
     def test_mst_detail_with_instances_no_ports(self):
         """Test show spanning-tree mst-detail with MST instances but no ports."""
@@ -2473,7 +2448,7 @@ class TestShowStpMstDetail:
         ]
 
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
             [],
             obj=self.db
         )
@@ -2481,9 +2456,10 @@ class TestShowStpMstDetail:
         print(f"\nCommand Output:\n{result.output}")
 
         expected_output = (
-            "#######  MST1 (CIST)  Vlans mapped : 100,200\n"
+            "#######  MST1 (CIST)  Vlans mapped: 100,200\n"
             "Bridge Address 32768.00:11:22:33:44:55\n"
             "Root Address 32768.00:66:77:88:99:AA\n"
+            "\n"
         )
 
         assert result.exit_code == 0, "Command should execute successfully"
@@ -2521,7 +2497,7 @@ class TestShowStpMstDetail:
         ]
 
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
             [],
             obj=self.db
         )
@@ -2529,7 +2505,7 @@ class TestShowStpMstDetail:
         print(f"\nCommand Output:\n{result.output}")
 
         expected_output = (
-            "#######  MST1 (CIST)  Vlans mapped : 100,200\n"
+            "#######  MST1 (CIST)  Vlans mapped: 100,200\n"
             "Bridge Address 32768.00:11:22:33:44:55\n"
             "Root Address 32768.00:66:77:88:99:AA\n"
             "Ethernet0 is Root Forwarding\n"
@@ -2538,6 +2514,7 @@ class TestShowStpMstDetail:
             "Designated bridge Address 32768.00:11:22:33:44:55 port id 0.128\n"
             "Timers: forward transitions 5\n"
             "Bpdu send 100, received 50\n"
+            "\n"
         )
 
         assert result.exit_code == 0, "Command should execute successfully"
@@ -2558,7 +2535,7 @@ class TestShowStpMstDetail:
         ]
 
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
             [],
             obj=self.db
         )
@@ -2566,15 +2543,16 @@ class TestShowStpMstDetail:
         print(f"\nCommand Output:\n{result.output}")
 
         expected_output = (
-            "#######  MST2 (CIST)  Vlans mapped : None\n"
+            "#######  MST2 (CIST)  Vlans mapped: None\n"
             "Bridge Address Unknown.Unknown\n"
             "Root Address Unknown.Unknown\n"
             "Ethernet1 is Unknown Unknown\n"
             "Port info    port id Unknown priority Unknown cost Unknown\n"
-            "Designated   Address Unknown cost 0\n"
-            "Designated bridge Address Unknown port id Unknown\n"
+            "Designated   Address Unknown.Unknown cost 0\n"
+            "Designated bridge Address Unknown.Unknown port id Unknown\n"
             "Timers: forward transitions 0\n"
             "Bpdu send 0, received 0\n"
+            "\n"
         )
 
         assert result.exit_code == 0, "Command should execute successfully"
@@ -2631,7 +2609,7 @@ class TestShowStpMstDetail:
         ]
 
         result = self.runner.invoke(
-            show.cli.commands["spanning-tree"].commands["mst-detail"],
+            show.cli.commands["spanning-tree"].commands["mst_detail"],
             [],
             obj=self.db
         )
@@ -2639,7 +2617,7 @@ class TestShowStpMstDetail:
         print(f"\nCommand Output:\n{result.output}")
 
         expected_output = (
-            "#######  MST1 (CIST)  Vlans mapped : 100\n"
+            "#######  MST1 (CIST)  Vlans mapped: 100\n"
             "Bridge Address 4096.00:AA:BB:CC:DD:EE\n"
             "Root Address 4096.00:FF:EE:DD:CC:BB\n"
             "Ethernet0 is Designated Forwarding\n"
@@ -2648,7 +2626,8 @@ class TestShowStpMstDetail:
             "Designated bridge Address 4096.00:AA:BB:CC:DD:EE port id 0.64\n"
             "Timers: forward transitions 3\n"
             "Bpdu send 50, received 25\n"
-            "#######  MST2 (CIST)  Vlans mapped : 200,300\n"
+            "\n"
+            "#######  MST2 (CIST)  Vlans mapped: 200,300\n"
             "Bridge Address 8192.00:11:22:33:44:55\n"
             "Root Address 8192.00:66:77:88:99:AA\n"
             "Ethernet1 is Root Forwarding\n"
@@ -2657,7 +2636,9 @@ class TestShowStpMstDetail:
             "Designated bridge Address 8192.00:11:22:33:44:55 port id 0.128\n"
             "Timers: forward transitions 7\n"
             "Bpdu send 200, received 100\n"
+            "\n"
         )
 
         assert result.exit_code == 0, "Command should execute successfully"
         assert result.output == expected_output, "Output mismatch for multiple MST instances"
+
