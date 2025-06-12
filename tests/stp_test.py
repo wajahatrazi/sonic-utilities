@@ -2641,3 +2641,4 @@ class TestShowStpMstDetail:
 
         assert result.exit_code == 0, "Command should execute successfully"
         assert result.output == expected_output, "Output mismatch for multiple MST instances"
+
