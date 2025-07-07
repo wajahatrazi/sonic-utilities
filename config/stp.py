@@ -519,8 +519,6 @@ def spanning_tree_enable(_db, mode):
         ctx.fail("PVST is already configured; please disable PVST before enabling MST")
 
     if mode == "pvst":
-        # disable_global_mst(db)
-
         fvs = {'mode': mode,
                'rootguard_timeout': STP_DEFAULT_ROOT_GUARD_TIMEOUT,
                'forward_delay': STP_DEFAULT_FORWARD_DELAY,
@@ -534,8 +532,6 @@ def spanning_tree_enable(_db, mode):
         enable_stp_for_vlans(db)  # Enable STP for VLAN by default
 
     elif mode == "mst":
-        # disable_global_pvst(db)
-
         fvs = {'mode': mode
                }
         db.set_entry('STP', "GLOBAL", fvs)
