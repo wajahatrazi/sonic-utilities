@@ -689,10 +689,19 @@ class TestStpVlanMaxAge:
         runner = CliRunner()
         db = MagicMock()
         db.cfgdb = db
-        db.mod_entry = MagicMock()  # <-- Ensure mod_entry is a mock
+        db.mod_entry = MagicMock()
 
-        # Simulate VLAN exists and STP is enabled for VLAN
-        db.get_entry = MagicMock(return_value={"enabled": "true", "max_age": "10"})
+        # Simulate DB state for all required tables/keys
+        def get_entry_side_effect(table, key):
+            if table == 'STP_VLAN' and key == 'Vlan100':
+                return {"enabled": "true", "max_age": "10"}
+            if table == 'VLAN' and key == 'Vlan100':
+                return {"vlanid": "100"}
+            if table == 'STP' and key == 'GLOBAL':
+                return {"mode": "pvst"}
+            return {}
+
+        db.get_entry = MagicMock(side_effect=get_entry_side_effect)
 
         with patch('config.stp.get_global_stp_mode', return_value='pvst'), \
              patch('config.stp.check_if_vlan_exist_in_db') as mock_vlan_exist, \
