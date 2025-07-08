@@ -2336,9 +2336,10 @@ class TestMstpInterfaceEdgePort:
         self.db = Db()
         self.db.cfgdb = self.cfgdb
 
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
-    def test_edgeport_enable(self, mock_check_valid, mock_check_enabled):
+    def test_edgeport_enable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
@@ -2350,9 +2351,10 @@ class TestMstpInterfaceEdgePort:
         assert result.exit_code == 0
         self.cfgdb.mod_entry.assert_called_with("STP_PORT", "Ethernet0", {"edge_port": "true"})
 
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
-    def test_edgeport_disable(self, mock_check_valid, mock_check_enabled):
+    def test_edgeport_disable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
@@ -2364,8 +2366,9 @@ class TestMstpInterfaceEdgePort:
         assert result.exit_code == 0
         self.cfgdb.mod_entry.assert_called_with("STP_PORT", "Ethernet1", {"edge_port": "false"})
 
+    @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled"))
-    def test_edgeport_invalid_stp_state(self, mock_check_enabled):
+    def test_edgeport_invalid_stp_state(self, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
@@ -2379,5 +2382,6 @@ class TestMstpInterfaceEdgePort:
 
     @classmethod
     def teardown_class(cls):
+        import os
         os.environ['UTILITIES_UNIT_TESTING'] = "0"
         print("TEARDOWN")

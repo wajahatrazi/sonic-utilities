@@ -719,8 +719,9 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         """Test setting link type to auto when STP is not enabled"""
         error_message = "STP is not enabled for interface Ethernet0"
 
-        # Mock STP check to raise exception
-        with patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+        # Patch get_global_stp_mode to return 'mst'
+        with patch('config.stp.get_global_stp_mode', return_value='mst'), \
+             patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
             mock_stp_check.side_effect = click.ClickException(error_message)
 
             result = self.runner.invoke(
