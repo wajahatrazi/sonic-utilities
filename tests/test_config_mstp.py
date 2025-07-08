@@ -593,14 +593,15 @@ class TestSpanningTreeEnable:
             runner = CliRunner()
             result = runner.invoke(spanning_tree_enable, ['mst'], obj=mock_db)
 
-            # Verify execution matches current implementation
+            # These should always be called if the code path is taken
+            mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
+                'mode': 'mst'
+            })
+            mock_enable_interfaces.assert_called_once()
+            mock_enable_instance0.assert_called_once()
+
+            # Output/exit code assertion
             assert result.exit_code in (0, 2)  # Accept either success or current error code
-            if result.exit_code == 0:
-                mock_db.cfgdb.set_entry.assert_called_once_with('STP', 'GLOBAL', {
-                    'mode': 'mst'
-                })
-                mock_enable_interfaces.assert_called_once()
-                mock_enable_instance0.assert_called_once()
 
     def test_enable_pvst_when_mst_configured(self, mock_db):
         """Test enabling PVST mode when MST is already configured"""
