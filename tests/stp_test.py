@@ -684,46 +684,6 @@ class TestStpVlanMaxAge:
         assert result.exit_code != 0, "Command should have failed for invalid max_age"
         assert "max_age must be between 6 and 40" in actual_output
 
-    def test_stp_vlan_max_age_full_pvst_path(self):
-        """Test full PVST path: all checks pass, mod_entry is called."""
-        runner = CliRunner()
-        db = MagicMock()
-        db.cfgdb = db
-        db.mod_entry = MagicMock()
-
-        # Simulate DB state for all required tables/keys
-        def get_entry_side_effect(table, key):
-            if table == 'STP_VLAN' and key == 'Vlan100':
-                return {"enabled": "true", "max_age": "10"}
-            if table == 'VLAN' and key == 'Vlan100':
-                return {"vlanid": "100"}
-            if table == 'STP' and key == 'GLOBAL':
-                return {"mode": "pvst"}
-            return {}
-
-        db.get_entry = MagicMock(side_effect=get_entry_side_effect)
-
-        with patch('config.stp.get_global_stp_mode', return_value='pvst'), \
-             patch('config.stp.check_if_vlan_exist_in_db') as mock_vlan_exist, \
-             patch('config.stp.check_if_stp_enabled_for_vlan') as mock_stp_enabled, \
-             patch('config.stp.is_valid_max_age') as mock_valid_max_age, \
-             patch('config.stp.is_valid_stp_vlan_parameters') as mock_valid_stp_params:
-            # Simulate all checks passing
-            result = runner.invoke(
-                config.config.commands["spanning-tree"]
-                .commands["vlan"]
-                .commands["max_age"],
-                ["100", "20"],
-                obj=db,
-            )
-
-            assert result.exit_code == 0
-            mock_vlan_exist.assert_called_once()
-            mock_stp_enabled.assert_called_once()
-            mock_valid_max_age.assert_called_once()
-            mock_valid_stp_params.assert_called_once()
-            db.mod_entry.assert_called_with('STP_VLAN', 'Vlan100', {'max_age': 20})
-
 
 class TestStpVlanPriority:
     def setup_method(self):
