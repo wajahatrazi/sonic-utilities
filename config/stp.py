@@ -1,4 +1,3 @@
-
 #
 # 'spanning-tree'  group ('config spanning-tree ...')
 #
@@ -1082,6 +1081,9 @@ def stp_interface_portfast_enable(_db, interface_name):
     """Enable STP portfast for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode == "mst":
+        ctx.fail("Portfast is supported only for PVST mode")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'portfast': 'true'})
@@ -1098,6 +1100,9 @@ def stp_interface_portfast_disable(_db, interface_name):
     """Disable STP portfast for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode == "mst":
+        ctx.fail("Portfast is supported only for PVST mode")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'portfast': 'false'})
@@ -1183,6 +1188,9 @@ def stp_interface_uplink_fast_enable(_db, interface_name):
     """Enable STP uplink fast for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode == "mst":
+        ctx.fail("Uplink fast is supported only for PVST mode")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'uplink_fast': 'true'})
@@ -1197,6 +1205,9 @@ def stp_interface_uplink_fast_disable(_db, interface_name):
     """Disable STP uplink fast for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode == "mst":
+        ctx.fail("Uplink fast is supported only for PVST mode")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'uplink_fast': 'false'})
@@ -1245,6 +1256,9 @@ def stp_interface_link_type_auto(_db, interface_name):
     """Configure STP link type as auto for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode == "pvst":
+        ctx.fail("Link type configuration is not supported in PVST mode")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'link_type': 'auto'})
@@ -1344,7 +1358,9 @@ def stp_interface_enable(_db, interface_name):
     if current_mode == 'mstp':
         fvs.update({
             'edge_port': 'false',
-            'link_type': 'auto'
+            'link_type': 'auto',
+            'portfast': 'false',
+            'uplink_fast': 'false'
         })
     elif current_mode == 'pvst':
         fvs.update({
@@ -1396,6 +1412,9 @@ def mstp_interface_edgeport(_db, state, interface_name):
     """Enable/Disable edge port on interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
+    current_mode = get_global_stp_mode(db)
+    if current_mode != "mst":
+        ctx.fail("Edgeport is supported for MSTP only")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true' if state == 'enable' else 'false'})
@@ -1798,8 +1817,11 @@ def mst_instance_vlan_add(_db, instance_id, vlan_id):
     db = _db.cfgdb
 
     # Validate instance_id range
-    if not (0 <= instance_id < MST_MAX_INSTANCES):
+    if not (0 < instance_id < MST_MAX_INSTANCES):
         ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES - 1}")
+    # Disallow VLAN configuration for MST instance 0
+    if instance_id == 0:
+        ctx.fail("VLAN configuration for MST instance 0 is not allowed.")
 
     # Check if instance exists
     instance_key = f"MST_INSTANCE|{instance_id}"
@@ -1848,6 +1870,10 @@ def mst_instance_vlan_del(_db, instance_id, vlan_id):
     # Validate instance_id range
     if not (0 <= instance_id < MST_MAX_INSTANCES):
         ctx.fail(f"Instance ID must be in range 0-{MST_MAX_INSTANCES - 1}")
+
+    # Disallow VLAN delete from MST instance 0
+    if instance_id == 0:
+        ctx.fail("VLAN delete from MST instance 0 is not allowed.")
 
     # Check if instance exists
     instance_key = f"MST_INSTANCE|{instance_id}"
