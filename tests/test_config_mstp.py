@@ -586,7 +586,7 @@ class TestSpanningTreeEnable:
         """Test enabling MST mode on a fresh configuration"""
         # Setup mock to return empty config (fresh state)
         mock_db.cfgdb.get_entry.side_effect = lambda table, entry: {}
-        mock_db.get_entry = mock_db.cfgdb.get_entry  
+        mock_db.get_entry = mock_db.cfgdb.get_entry
 
         with patch('config.stp.enable_mst_for_interfaces') as mock_enable_interfaces, \
              patch('config.stp.enable_mst_instance0') as mock_enable_instance0:
