@@ -689,6 +689,10 @@ class TestStpVlanMaxAge:
         runner = CliRunner()
         db = MagicMock()
         db.cfgdb = db
+        db.mod_entry = MagicMock()  # <-- Ensure mod_entry is a mock
+
+        # Simulate VLAN exists and STP is enabled for VLAN
+        db.get_entry = MagicMock(return_value={"enabled": "true", "max_age": "10"})
 
         with patch('config.stp.get_global_stp_mode', return_value='pvst'), \
              patch('config.stp.check_if_vlan_exist_in_db') as mock_vlan_exist, \
