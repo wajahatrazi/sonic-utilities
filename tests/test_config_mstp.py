@@ -744,19 +744,17 @@ class TestSpanningTreeInterfaceLinkTypeAuto:
         with patch('config.stp.get_global_stp_mode', return_value='mst'), \
              patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
              patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
-           mock_interface_check.side_effect = click.ClickException(error_message)
+            mock_interface_check.side_effect = click.ClickException(error_message)
 
-           result = self.runner.invoke(
+            result = self.runner.invoke(
                stp_interface_link_type_auto,
                [self.interface_name],
                obj={'db': mock_db})
 
-            # Verify command failed with correct error
-           assert result.exit_code != 0
-           assert error_message in result.output
+            assert result.exit_code != 0
+            assert error_message in result.output
 
-            # Verify database was not updated
-           mock_db.cfgdb.mod_entry.assert_not_called()
+            mock_db.cfgdb.mod_entry.assert_not_called()
 
     def test_stp_interface_link_type_auto_missing_interface(self, mock_db):
         """Test command without providing interface name"""
