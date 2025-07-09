@@ -199,16 +199,16 @@ class TestStp(object):
         cli_runner = CliRunner()
         db = Db()
 
-        # Disable MST (should succeed or be idempotent)
-        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["mst"], obj=db)
+        # Enable MST (should succeed)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         if result.exit_code != 0:
             print(f'Error Output:\n{result.output}')
             assert result.exit_code == 0
 
-        # Enable MST (should succeed)
-        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
+        # Disable MST (should succeed or be idempotent)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["mst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         if result.exit_code != 0:
