@@ -192,10 +192,54 @@ class TestStp(object):
             assert result.exit_code == 0
 
         result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["pvst"], obj=db)
+        assert result.exit_code != 0
+        assert "PVST is already configured" in result.output
+
+    def test_disable_enable_global_mst(self):
+        cli_runner = CliRunner()
+        db = Db()
+
+        # Disable MST (should succeed or be idempotent)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["mst"], obj=db)
+        print("exit code {}".format(result.exit_code))
+        print("result code {}".format(result.output))
+        if result.exit_code != 0:
+            print(f'Error Output:\n{result.output}')
+            assert result.exit_code == 0
+
+        # Enable MST (should succeed)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
+        print("exit code {}".format(result.exit_code))
+        print("result code {}".format(result.output))
+        if result.exit_code != 0:
+            print(f'Error Output:\n{result.output}')
+            assert result.exit_code == 0
+
+        # Add a VLAN and member to simulate config
+        result = cli_runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
+        print(result.exit_code)
+        if result.exit_code != 0:
+            print(f'Error Output:\n{result.output}')
+            assert result.exit_code == 0
+
+        result = cli_runner.invoke(
+            config.config.commands["vlan"]
+            .commands["member"]
+            .commands["add"],
+            ["100", "Ethernet4"],
+            obj=db,
+        )
+        print(result.exit_code)
+        if result.exit_code != 0:
+            print(f'Error Output:\n{result.output}')
+            assert result.exit_code == 0
+
+        # Try to enable MST again (should fail with already configured message)
+        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
         print("exit code {}".format(result.exit_code))
         print("result code {}".format(result.output))
         assert result.exit_code != 0
-        assert "PVST is already configured" in result.output
+        assert "MST is already configured" in result.output
 
     def test_add_vlan_enable_pvst(self):
         runner = CliRunner()
