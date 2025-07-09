@@ -199,45 +199,60 @@ class TestStp(object):
         cli_runner = CliRunner()
         db = Db()
 
-        # Enable MST (should succeed)
-        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        # Ensure STP is disabled first (clear any existing config)
+        result = cli_runner.invoke(
+            config.config.commands["spanning-tree"].commands["disable"], 
+            ["mst"], 
+            obj=db
+        )
+        print("Disable MST exit code:", result.exit_code)
         if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
+            print(f'Disable Error:\n{result.output}')
             assert result.exit_code == 0
 
-        # Disable MST (should succeed or be idempotent)
-        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["disable"], ["mst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        # Now enable MST (should succeed)
+        result = cli_runner.invoke(
+            config.config.commands["spanning-tree"].commands["enable"], 
+            ["mst"], 
+            obj=db
+        )
+        print("Enable MST exit code:", result.exit_code)
+        print("Enable MST output:", result.output)
         if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+            print(f'Enable Error:\n{result.output}')
+        assert result.exit_code == 0, "MST enable should succeed after disabling existing STP"
 
-        # Add a VLAN and member to simulate config
-        result = cli_runner.invoke(config.config.commands["vlan"].commands["add"], ["100"], obj=db)
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+        # Rest of the test (disable, VLAN config, re-enable check)...
+        # Disable MST (should succeed)
+        result = cli_runner.invoke(
+            config.config.commands["spanning-tree"].commands["disable"], 
+            ["mst"], 
+            obj=db
+        )
+        assert result.exit_code == 0
+
+        # Add VLAN and member (simulate config)
+        result = cli_runner.invoke(
+            config.config.commands["vlan"].commands["add"], 
+            ["100"], 
+            obj=db
+        )
+        assert result.exit_code == 0
 
         result = cli_runner.invoke(
-            config.config.commands["vlan"]
-            .commands["member"]
-            .commands["add"],
+            config.config.commands["vlan"].commands["member"].commands["add"],
             ["100", "Ethernet4"],
             obj=db,
         )
-        print(result.exit_code)
-        if result.exit_code != 0:
-            print(f'Error Output:\n{result.output}')
-            assert result.exit_code == 0
+        assert result.exit_code == 0
 
-        # Try to enable MST again (should fail with already configured message)
-        result = cli_runner.invoke(config.config.commands["spanning-tree"].commands["enable"], ["mst"], obj=db)
-        print("exit code {}".format(result.exit_code))
-        print("result code {}".format(result.output))
+        # Re-enable MST (should fail with "already configured")
+        result = cli_runner.invoke(
+            config.config.commands["spanning-tree"].commands["enable"], 
+            ["mst"], 
+            obj=db
+        )
+        print("Re-enable MST output:", result.output)
         assert result.exit_code != 0
         assert "MST is already configured" in result.output
 
