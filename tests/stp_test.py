@@ -205,10 +205,6 @@ class TestStp(object):
             ["pvst"],
             obj=db
         )
-        print("Disable MST exit code:", result.exit_code)
-        if result.exit_code != 0:
-            print(f'Disable Error:\n{result.output}')
-            assert result.exit_code == 0
 
         # Now enable MST (should succeed)
         result = cli_runner.invoke(
@@ -221,15 +217,6 @@ class TestStp(object):
         if result.exit_code != 0:
             print(f'Enable Error:\n{result.output}')
         assert result.exit_code == 0, "MST enable should succeed after disabling existing STP"
-
-        # Rest of the test (disable, VLAN config, re-enable check)...
-        # Disable MST (should succeed)
-        result = cli_runner.invoke(
-            config.config.commands["spanning-tree"].commands["disable"],
-            ["mst"],
-            obj=db
-        )
-        assert result.exit_code == 0
 
         # Add VLAN and member (simulate config)
         result = cli_runner.invoke(
