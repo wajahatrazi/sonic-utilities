@@ -2093,9 +2093,7 @@ class TestStpInterfacePriority:
 
         assert result.exit_code == 0
         self.cfgdb.mod_entry.assert_called_with('STP_PORT', 'Ethernet8', {
-            'priority': '240',
-            'edge_port': 'false',
-            'link_type': 'auto'
+            'priority': '240'
         })
 
     @patch('config.stp.get_global_stp_mode', return_value='pvst')
