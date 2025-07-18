@@ -64,7 +64,6 @@ import click
 import utilities_common.cli as clicommon
 from natsort import natsorted
 import logging
-from utilities_common.cli import validate_params
 
 # MSTP parameters
 
