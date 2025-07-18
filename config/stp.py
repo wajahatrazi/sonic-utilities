@@ -51,8 +51,8 @@
     config spanning_tree mst instance <instance-id> interface <ifname> cost <cost-value>
 
     INTERFACE GROUP:
-    config spanning_tree interface edgeport enable <ifname> #enable edgeport on interface for mst
-    config spanning_tree interface edgeport disable <ifname> #disable edgeport on interface for mst
+    config spanning_tree interface edge_port enable <ifname> #enable edge_port on interface for mst
+    config spanning_tree interface edge_port disable <ifname> #disable edge_port on interface for mst
 
     config spanning_tree interface link_type point-to-point <interface_name>
     config spanning_tree interface link_type shared <interface_name>
@@ -64,6 +64,7 @@ import click
 import utilities_common.cli as clicommon
 from natsort import natsorted
 import logging
+from utilities_common.cli import validate_params
 
 # MSTP parameters
 
@@ -786,8 +787,8 @@ def stp_global_revision(_db, revision):
         ctx.fail("Configuration not supported for PVST")
 
     elif current_mode == "mst":
-        # if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
-        if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION):
+        # Valid revisions are inclusive: [MST_MIN_REVISION, MST_MAX_REVISION]
+        if revision not in range(MST_MIN_REVISION, MST_MAX_REVISION + 1):
             ctx.fail("STP revision number must be in range 0-65535")
 
         db.mod_entry('STP_MST', "GLOBAL", {'revision': revision})
@@ -1108,25 +1109,25 @@ def stp_interface_portfast_disable(_db, interface_name):
     db.mod_entry('STP_PORT', interface_name, {'portfast': 'false'})
 
 
-# config spanning_tree interface edgeport
+# config spanning_tree interface edge_port
 # Only for MST
 
-@spanning_tree_interface.group('edgeport')
+@spanning_tree_interface.group('edge_port')
 @clicommon.pass_db
-def spanning_tree_interface_edgeport(_db):
-    """Configure STP edgeport for interface"""
+def spanning_tree_interface_edge_port(_db):
+    """Configure STP edge_port for interface"""
     pass
 
-# config spanning_tree interface edgeport enable <interface_name>
+# config spanning_tree interface edge_port enable <interface_name>
 # This should check the mode attribute in the STP global table.
-# If the mode is PVST, it should not allow configuring edgeport.
+# If the mode is PVST, it should not allow configuring edge_port.
 
 
-@spanning_tree_interface_edgeport.command('enable')
+@spanning_tree_interface_edge_port.command('enable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-def stp_interface_edgeport_enable(_db, interface_name):
-    """Enable STP edgeport for interface"""
+def stp_interface_edge_port_enable(_db, interface_name):
+    """Enable STP edge_port for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
 
@@ -1138,34 +1139,34 @@ def stp_interface_edgeport_enable(_db, interface_name):
 
     # Ensure mode is MSTP, otherwise fail
     if current_mode == "pvst":
-        ctx.fail("Edgeport configuration is not supported in PVST mode. This command is only allowed in MSTP mode.")
+        ctx.fail("edge_port configuration is not supported in PVST mode. This command is only allowed in MSTP mode.")
 
     # Validate the interface
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
 
-    # Enable edgeport for the interface
-    db.mod_entry('STP_PORT', interface_name, {'edgeport': 'true'})
+    # Enable edge_port for the interface
+    db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true'})
 
-    click.echo(f"Edgeport enabled on {interface_name} in MSTP mode.")
+    click.echo(f"edge_port enabled on {interface_name} in MSTP mode.")
 
 
-# config spanning_tree interface edgeport disable <interface_name>
+# config spanning_tree interface edge_port disable <interface_name>
 # MST CONFIGURATION IN THE STP_PORT TABLE
 # It should the mode attribute in the STP global table
 # If the mode is PVST, then it should tell that the mode if PVST, and this cannot be done.
 
 
-@spanning_tree_interface_edgeport.command('disable')
+@spanning_tree_interface_edge_port.command('disable')
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-def stp_interface_edgeport_disable(_db, interface_name):
-    """Disable STP edgeport for interface"""
+def stp_interface_edge_port_disable(_db, interface_name):
+    """Disable STP edge_port for interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
-    db.mod_entry('STP_PORT', interface_name, {'edgeport': 'false'})
+    db.mod_entry('STP_PORT', interface_name, {'edge_port': 'false'})
 
 
 # STP interface root uplink_fast
@@ -1402,19 +1403,19 @@ def stp_interface_disable(_db, interface_name):
         click.echo("No STP mode selected. Please select a mode first.")
 
 
-# config spanning_tree interface edgeport {enable|disable} <ifname>
+# config spanning_tree interface edge_port {enable|disable} <ifname>
 # This command allow enabling or disabling of edge port on an interface.
-@spanning_tree_interface.command('edgeport')
+@spanning_tree_interface.command('edge_port')
 @click.argument('state', metavar='<enable|disable>', required=True, type=click.Choice(['enable', 'disable']))
 @click.argument('interface_name', metavar='<interface_name>', required=True)
 @clicommon.pass_db
-def mstp_interface_edgeport(_db, state, interface_name):
+def mstp_interface_edge_port(_db, state, interface_name):
     """Enable/Disable edge port on interface"""
     ctx = click.get_current_context()
     db = _db.cfgdb
     current_mode = get_global_stp_mode(db)
     if current_mode != "mst":
-        ctx.fail("Edgeport is supported for MSTP only")
+        ctx.fail("edge_port is supported for MSTP only")
     check_if_stp_enabled_for_interface(ctx, db, interface_name)
     check_if_interface_is_valid(ctx, db, interface_name)
     db.mod_entry('STP_PORT', interface_name, {'edge_port': 'true' if state == 'enable' else 'false'})
@@ -1567,7 +1568,7 @@ def stp_interface_priority(_db, interface_name, priority_value):
 
     if stp_mode == "pvst":
         fvs.update({'portfast': 'false', 'uplink_fast': 'false'})
-    elif stp_mode == "mst":
+    elif stp_mode == "mstp":
         fvs.update({'edge_port': 'false', 'link_type': 'auto'})
 
     # Update the database entry

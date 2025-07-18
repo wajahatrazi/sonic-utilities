@@ -1273,14 +1273,14 @@ class TestStpInterfaceDisable:
         assert "No STP mode selected" in result.output
 
 
-class TestMstpInterfaceEdgeport:
+class TestMstpInterfaceedge_port:
     def setup_method(self):
         """Setup test environment before each test."""
         self.db = MagicMock()  # Mock database
         self.db.cfgdb = MagicMock()  # Mock configuration DB
         self.runner = MagicMock()  # Mock CLI runner
 
-    def test_mstp_edgeport_stp_not_enabled(self):
+    def test_mstp_edge_port_stp_not_enabled(self):
         """Test that configuring edge port fails if STP is not enabled for the interface."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={})  # STP not enabled
@@ -1292,7 +1292,7 @@ class TestMstpInterfaceEdgeport:
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["enable", "Ethernet0"],  # Valid interface
             obj=self.db,
         )
@@ -1303,7 +1303,7 @@ class TestMstpInterfaceEdgeport:
         assert result.exit_code != 0, "Command should have failed because STP is not enabled"
         assert "stp is not enabled for ethernet0" in actual_output
 
-    def test_mstp_edgeport_invalid_interface(self):
+    def test_mstp_edge_port_invalid_interface(self):
         """Test that configuring edge port fails for an invalid interface."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
@@ -1315,7 +1315,7 @@ class TestMstpInterfaceEdgeport:
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["enable", "InvalidInterface"],  # Invalid interface
             obj=self.db,
         )
@@ -1326,7 +1326,7 @@ class TestMstpInterfaceEdgeport:
         assert result.exit_code != 0, "Command should have failed for invalid interface"
         assert "invalid interface name" in actual_output
 
-    def test_mstp_edgeport_enable_success(self):
+    def test_mstp_edge_port_enable_success(self):
         """Test that edge port is successfully enabled on a valid interface."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
@@ -1338,7 +1338,7 @@ class TestMstpInterfaceEdgeport:
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["enable", "Ethernet1"],  # Valid interface
             obj=self.db,
         )
@@ -1349,7 +1349,7 @@ class TestMstpInterfaceEdgeport:
         assert result.exit_code == 0, "Command should have succeeded"
         assert "edge port is enabled for interface ethernet1" in actual_output
 
-    def test_mstp_edgeport_disable_success(self):
+    def test_mstp_edge_port_disable_success(self):
         """Test that edge port is successfully disabled on a valid interface."""
 
         self.db.cfgdb.get_entry = MagicMock(return_value={"enabled": "true"})
@@ -1361,7 +1361,7 @@ class TestMstpInterfaceEdgeport:
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["disable", "Ethernet2"],  # Valid interface
             obj=self.db,
         )
@@ -2375,7 +2375,7 @@ class TestStpInterfaceBpduGuardEnable:
         assert "Invalid interface" in result.output
 
 
-class TestMstpInterfaceEdgePort:
+class TestMstpInterfaceedge_port:
     def setup_method(self):
         self.runner = CliRunner()
         self.cfgdb = MagicMock()
@@ -2385,11 +2385,11 @@ class TestMstpInterfaceEdgePort:
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
-    def test_edgeport_enable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
+    def test_edge_port_enable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["enable", "Ethernet0"],
             obj=self.db
         )
@@ -2400,11 +2400,11 @@ class TestMstpInterfaceEdgePort:
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface')
     @patch('config.stp.check_if_interface_is_valid')
-    def test_edgeport_disable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
+    def test_edge_port_disable(self, mock_check_valid, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["disable", "Ethernet1"],
             obj=self.db
         )
@@ -2414,11 +2414,11 @@ class TestMstpInterfaceEdgePort:
 
     @patch('config.stp.get_global_stp_mode', return_value='mst')
     @patch('config.stp.check_if_stp_enabled_for_interface', side_effect=click.ClickException("STP not enabled"))
-    def test_edgeport_invalid_stp_state(self, mock_check_enabled, mock_get_mode):
+    def test_edge_port_invalid_stp_state(self, mock_check_enabled, mock_get_mode):
         result = self.runner.invoke(
             config.config.commands["spanning-tree"]
             .commands["interface"]
-            .commands["edgeport"],
+            .commands["edge_port"],
             ["enable", "Ethernet2"],
             obj=self.db
         )

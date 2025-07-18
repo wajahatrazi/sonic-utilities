@@ -8,9 +8,9 @@ from config.stp import (
     is_valid_forward_delay,
     stp_interface_link_type_auto,
     stp_interface_link_type_shared,
-    stp_interface_edgeport_disable,
+    stp_interface_edge_port_disable,
     spanning_tree_enable,
-    stp_interface_edgeport_enable,
+    stp_interface_edge_port_enable,
     stp_global_max_hops,
     stp_mst_region_name,
     stp_interface_link_type_point_to_point,
@@ -632,24 +632,24 @@ class TestSpanningTreeEnable:
                 mock_enable_instance0.assert_called_once()
 
 
-class TestSpanningTreeInterfaceEdgeportEnable:
+class TestSpanningTreeInterfaceedge_portEnable:
     @pytest.fixture
     def mock_db(self):
         db = MagicMock()
         db.cfgdb = MagicMock()
         return db
 
-    def test_stp_interface_edgeport_enable_missing_interface(self, mock_db):
-        """Test enabling STP edgeport without providing interface name"""
+    def test_stp_interface_edge_port_enable_missing_interface(self, mock_db):
+        """Test enabling STP edge_port without providing interface name"""
         runner = CliRunner()
-        result = runner.invoke(stp_interface_edgeport_enable, obj=mock_db)
+        result = runner.invoke(stp_interface_edge_port_enable, obj=mock_db)
 
         # Verify command failed due to missing required argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 
-    def test_stp_interface_edgeport_enable_stp_not_enabled(self, mock_db):
-        """Test enabling STP edgeport when STP is not enabled for interface"""
+    def test_stp_interface_edge_port_enable_stp_not_enabled(self, mock_db):
+        """Test enabling STP edge_port when STP is not enabled for interface"""
         interface_name = "Ethernet0"
 
         # Set up mock for STP check to fail
@@ -657,12 +657,12 @@ class TestSpanningTreeInterfaceEdgeportEnable:
             mock_stp_check.side_effect = click.ClickException("STP is not enabled for interface")
 
             runner = CliRunner()
-            result = runner.invoke(stp_interface_edgeport_enable, [interface_name], obj=mock_db)
+            result = runner.invoke(stp_interface_edge_port_enable, [interface_name], obj=mock_db)
 
             # Verify command failed
             assert result.exit_code != 0
             expected_error = (
-                "Edgeport configuration is not supported in PVST mode. "
+                "edge_port configuration is not supported in PVST mode. "
                 "This command is only allowed in MSTP mode."
             )
             assert expected_error in result.output
@@ -671,10 +671,10 @@ class TestSpanningTreeInterfaceEdgeportEnable:
             mock_db.cfgdb.mod_entry.assert_not_called()
 
 
-class TestSpanningTreeInterfaceEdgeportDisable:
+class TestSpanningTreeInterfaceedge_portDisable:
 
-    def test_stp_interface_edgeport_disable_stp_not_enabled(self, mock_db):
-        """Test disabling STP edgeport when STP is not enabled for interface"""
+    def test_stp_interface_edge_port_disable_stp_not_enabled(self, mock_db):
+        """Test disabling STP edge_port when STP is not enabled for interface"""
         interface_name = "Ethernet0"
 
         # Set up mock database
@@ -689,7 +689,7 @@ class TestSpanningTreeInterfaceEdgeportDisable:
             mock_stp_check.side_effect = click.ClickException("STP is not enabled for interface")
 
             runner = CliRunner()
-            result = runner.invoke(stp_interface_edgeport_disable, [interface_name], obj=mock_db)
+            result = runner.invoke(stp_interface_edge_port_disable, [interface_name], obj=mock_db)
 
             # Verify command failed
             assert result.exit_code != 0
@@ -699,10 +699,10 @@ class TestSpanningTreeInterfaceEdgeportDisable:
             mock_mod_entry.assert_not_called()
 
     @pytest.mark.parametrize('mock_db', [()])
-    def test_stp_interface_edgeport_disable_missing_interface(self, mock_db):
-        """Test disabling STP edgeport without providing interface name"""
+    def test_stp_interface_edge_port_disable_missing_interface(self, mock_db):
+        """Test disabling STP edge_port without providing interface name"""
         runner = CliRunner()
-        result = runner.invoke(stp_interface_edgeport_disable, obj=mock_db)
+        result = runner.invoke(stp_interface_edge_port_disable, obj=mock_db)
 
         # Verify command failed due to missing required argument
         assert result.exit_code != 0
