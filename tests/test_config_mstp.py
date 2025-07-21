@@ -595,8 +595,14 @@ class TestSpanningTreeEnable:
             {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
         )
 
+        print(mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
+            {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
+        ))
         runner = CliRunner()
         result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
+
+        print(result.output)
+        print(result.exit_code)
 
         # Verify the command fails with the correct error
         assert result.exit_code != 0
