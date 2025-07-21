@@ -587,7 +587,7 @@ class TestSpanningTreeEnable:
                 })
                 mock_enable_interfaces.assert_called_once()
                 mock_enable_vlans.assert_called_once()
-   
+
     def test_enable_pvst_when_mst_configured(self, mock_db):
         """Test enabling PVST when MST is already configured"""
         # Force mock to return MST mode
