@@ -550,7 +550,7 @@ def test_stp_global_max_hops_mst_valid():
     # Create complete mock environment
     mock_db = MagicMock()
     mock_db.cfgdb = MagicMock()
-    
+
     # Mock the database responses
     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
         {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else
@@ -564,7 +564,7 @@ def test_stp_global_max_hops_mst_valid():
         runner = CliRunner()
         result = runner.invoke(
             stp_global_max_hops,
-            ['20'], 
+            ['20'],
             obj={'db': mock_db}  # Note the different obj structure
         )
 
@@ -593,10 +593,11 @@ def test_stp_global_max_hops_mst_invalid_low():
             ['0'],
             obj={'db': mock_db}
         )
-        
+
         print("Actual output:", result.output)
         assert result.exit_code != 0
         assert "STP max hops must be in range 1-40" in result.output
+
 
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
