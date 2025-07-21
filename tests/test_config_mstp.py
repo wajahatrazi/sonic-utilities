@@ -544,59 +544,52 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
 
+def test_stp_global_max_hops_valid_mst(monkeypatch, mock_db):
+    """Test MST mode with a valid max_hops value."""
+    # Simulate MST mode
+    mock_db.cfgdb.get_entry.return_value = {"mode": "mst"}
+    # Patch mod_entry to track calls
+    called = {}
 
-def test_stp_global_max_hops_mst_valid():
-    """Test valid max_hops configuration for MST mode"""
-    # Create complete mock environment
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
+    def fake_mod_entry(table, key, fvs):
+        called['table'] = table
+        called['key'] = key
+        called['fvs'] = fvs
+    monkeypatch.setattr(mock_db.cfgdb, "mod_entry", fake_mod_entry)
 
-    # Mock the database responses
-    mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
-        {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else
-        {} if table == 'STP_MST' else None
-    )
-
-    # Mock the check function to do nothing
-    with patch('config.stp.check_if_global_stp_enabled') as mock_check:
-        mock_check.return_value = None
-
-        runner = CliRunner()
-        result = runner.invoke(
-            stp_global_max_hops,
-            ['20'],
-            obj={'db': mock_db}  # Note the different obj structure
-        )
-
-        # Debug output
-        print("Actual output:", result.output)
-        print("Exit code:", result.exit_code)
-
-        assert result.exit_code == 0
-        mock_db.cfgdb.mod_entry.assert_called_once_with(
-            'STP_MST', 'GLOBAL', {'max_hops': 20}
-        )
+    runner = CliRunner()
+    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
+    assert result.exit_code == 0
+    assert called['table'] == 'STP_MST'
+    assert called['key'] == 'GLOBAL'
+    assert called['fvs'] == {'max_hops': 20}
 
 
-def test_stp_global_max_hops_mst_invalid_low():
-    """Test max_hops below minimum for MST mode"""
-    mock_db = MagicMock()
-    mock_db.cfgdb = MagicMock()
-    mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
+def test_stp_global_max_hops_invalid_value(mock_db):
+    """Test MST mode with an invalid max_hops value (out of range)."""
+    mock_db.cfgdb.get_entry.return_value = {"mode": "mst"}
+    runner = CliRunner()
+    result = runner.invoke(stp_global_max_hops, ['100'], obj=mock_db)  # 100 is out of range
+    assert "STP max hops must be in range 1-40" in result.output
+    assert result.exit_code != 0
 
-    with patch('config.stp.check_if_global_stp_enabled') as mock_check:
-        mock_check.return_value = None
 
-        runner = CliRunner()
-        result = runner.invoke(
-            stp_global_max_hops,
-            ['0'],
-            obj={'db': mock_db}
-        )
+def test_stp_global_max_hops_invalid_mode_configured(mock_db):
+    """Test with an invalid mode (not pvst or mst)."""
+    mock_db.cfgdb.get_entry.return_value = {"mode": "invalid_mode"}
+    runner = CliRunner()
+    result = runner.invoke(stp_global_max_hops, ['10'], obj=mock_db)
+    assert "Invalid STP mode configured" in result.output
+    assert result.exit_code != 0
 
-        print("Actual output:", result.output)
-        assert result.exit_code != 0
-        assert "STP max hops must be in range 1-40" in result.output
+
+def test_stp_global_max_hops_invalid_mode_configured(mock_db):
+    """Test with an invalid mode (not pvst or mst)."""
+    mock_db.cfgdb.get_entry.return_value = {"mode": "invalid_mode"}
+    runner = CliRunner()
+    result = runner.invoke(stp_global_max_hops, ['10'], obj=mock_db)
+    assert "Invalid STP mode configured" in result.output
+    assert result.exit_code != 0
 
 
 # Constants for STP default values
