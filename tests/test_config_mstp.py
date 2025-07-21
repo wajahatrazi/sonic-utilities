@@ -549,19 +549,6 @@ class TestSpanningTreeEnable:
         assert "PVST is already configured; please disable PVST before enabling MST" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
 
-    def test_enable_pvst_when_mst_configured(self, mock_db):
-        """Test enabling PVST when MST is already configured"""
-        # Force mock to return MST mode
-        mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}  # Simulate MST being active
-
-        runner = CliRunner()
-        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
-
-        # Verify the command fails with the correct error
-        assert result.exit_code != 0
-        assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
-        mock_db.cfgdb.set_entry.assert_not_called()  # Ensure no DB changes
-
     def test_enable_pvst_when_already_configured(self, mock_db):
         """Test enabling PVST mode when it's already configured"""
         # Override mock to return PVST mode
@@ -600,6 +587,19 @@ class TestSpanningTreeEnable:
                 })
                 mock_enable_interfaces.assert_called_once()
                 mock_enable_vlans.assert_called_once()
+    
+    def test_enable_pvst_when_mst_configured(self, mock_db):
+        """Test enabling PVST when MST is already configured"""
+        # Force mock to return MST mode
+        mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}  # Simulate MST being active
+
+        runner = CliRunner()
+        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
+
+        # Verify the command fails with the correct error
+        assert result.exit_code != 0
+        assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
+        mock_db.cfgdb.set_entry.assert_not_called()  # Ensure no DB changes
 
     def test_enable_mst_when_already_configured(self, mock_db):
         """Test enabling MST mode when it's already configured"""
