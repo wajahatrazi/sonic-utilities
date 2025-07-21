@@ -118,32 +118,24 @@ def test_stp_mst_region_name_pvst(mock_db, patch_functions):
         assert "Configuration not supported for PVST" in result.output
 
 
-def test_stp_disable_correct_mode():
+def test_stp_disable_pvst_mode():
+    """Test disabling PVST mode when it's active."""
     with patch('config.stp.get_global_stp_mode', return_value="pvst"), \
          patch('config.stp.disable_global_pvst') as mock_pvst:
 
-        # Simulate invoking the command with "pvst" mode
         ctx = click.testing.CliRunner().invoke(stp_disable, ['pvst'])
-
-        # Assert that the function ran successfully (exit code 0)
         assert ctx.exit_code == 0
-
-        # Ensure that disable_global_pvst was called
         mock_pvst.assert_called_once()
 
 
-def test_stp_disable_correct_mode():
+def test_stp_disable_mst_mode():
+    """Test disabling MST mode when it's active."""
     with patch('config.stp.get_global_stp_mode', return_value="mst"), \
-         patch('config.stp.disable_global_mst') as mock_pvst:
+         patch('config.stp.disable_global_mst') as mock_mst:
 
-        # Simulate invoking the command with "mst" mode
         ctx = click.testing.CliRunner().invoke(stp_disable, ['mst'])
-
-        # Assert that the function ran successfully (exit code 0)
         assert ctx.exit_code == 0
-
-        # Ensure that disable_global_mst was called
-        mock_pvst.assert_called_once()
+        mock_mst.assert_called_once()
 
 
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
@@ -556,7 +548,7 @@ class TestSpanningTreeEnable:
         assert result.exit_code != 0
         assert "PVST is already configured; please disable PVST before enabling MST" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
-    
+
     def test_enable_pvst_when_mst_configured(self, mock_db):
         """Test enabling PVST mode when MST is already configured"""
         # Override mock to return MST mode
@@ -610,20 +602,6 @@ class TestSpanningTreeEnable:
                 })
                 mock_enable_interfaces.assert_called_once()
                 mock_enable_vlans.assert_called_once()
-
-    def test_enable_pvst_when_mst_configured(self, mock_db):
-        """Test enabling PVST mode when MST is already configured"""
-        # Setup mock to return MST configuration
-        mock_db.cfgdb.get_entry.return_value = {'mode': 'mst'}
-
-        runner = CliRunner()
-        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
-
-        # Verify command fails with appropriate error code
-        assert result.exit_code in (1, 2)  # Accept either error code
-        if result.exit_code == 1:
-            assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
-        mock_db.cfgdb.set_entry.assert_not_called()
 
     def test_enable_mst_when_already_configured(self, mock_db):
         """Test enabling MST mode when it's already configured"""
