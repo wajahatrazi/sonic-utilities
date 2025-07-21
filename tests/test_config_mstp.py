@@ -674,7 +674,6 @@ class TestSpanningTreeEnable:
             assert "MST is already configured" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
 
-
     def test_enable_mst_fresh_config(self, mock_db):
         """Test enabling MST mode on a fresh configuration"""
         # Setup mock to return empty config (fresh state)
