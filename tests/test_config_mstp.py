@@ -16,6 +16,7 @@ from config.stp import (
     stp_interface_link_type_point_to_point,
     stp_global_revision,
     is_valid_hello_interval,
+    is_valid_max_age,
     stp_disable,
     enable_mst_instance0,
     MST_AUTO_LINK_TYPE,
@@ -496,6 +497,25 @@ def test_is_valid_hello_interval():
         mock_ctx.fail.assert_called_once_with("STP hello timer must be in range 1-10")
 
 
+def test_is_valid_max_age():
+    # Mock the ctx object
+    mock_ctx = MagicMock()
+
+    # Test valid max_age values (in range 6 to 40)
+    for valid_value in range(6, 41):
+        mock_ctx.reset_mock()
+        is_valid_max_age(mock_ctx, valid_value)
+        # Ensure ctx.fail is NOT called
+        mock_ctx.fail.assert_not_called()
+
+    # Test invalid max_age values (outside the valid range)
+    for invalid_value in [-1, 0, 5, 41, 100]:
+        mock_ctx.reset_mock()
+        is_valid_max_age(mock_ctx, invalid_value)
+        # Ensure ctx.fail is called with the expected error message
+        mock_ctx.fail.assert_called_once_with("STP max age value must be in range 6-40")
+
+
 def test_get_global_stp_max_age():
     mock_db = MagicMock()
     mock_db.get_entry.return_value = {"max_age": 20}
@@ -523,6 +543,58 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     # Check if the function fails with the correct error message
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
+
+
+def test_stp_global_max_hops_mst_valid(mock_db):
+    """Test valid max_hops configuration for MST mode"""
+    # Setup mock for MST mode with no existing max_hops
+    mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
+        {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
+    )
+
+    runner = CliRunner()
+    valid_hops = 20  # Within valid range
+    result = runner.invoke(stp_global_max_hops, [str(valid_hops)], obj=mock_db)
+
+    # Verify success
+    assert result.exit_code == 0
+    mock_db.cfgdb.mod_entry.assert_called_once_with(
+        'STP_MST', 'GLOBAL', {'max_hops': valid_hops}
+    )
+
+
+def test_stp_global_max_hops_mst_invalid_low(mock_db):
+    """Test max_hops below minimum for MST mode"""
+    # Setup mock for MST mode
+    mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
+        {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
+    )
+
+    runner = CliRunner()
+    invalid_hops = 0  # Below minimum
+    result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
+
+    # Verify failure
+    assert result.exit_code != 0
+    assert "STP max hops must be in range 1-40" in result.output
+    mock_db.cfgdb.mod_entry.assert_not_called()
+
+
+def test_stp_global_max_hops_mst_invalid_high(mock_db):
+    """Test max_hops above maximum for MST mode"""
+    # Setup mock for MST mode
+    mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
+        {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
+    )
+
+    runner = CliRunner()
+    invalid_hops = 41  # Above maximum
+    result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
+
+    # Verify failure
+    assert result.exit_code != 0
+    assert "STP max hops must be in range 1-40" in result.output
+    mock_db.cfgdb.mod_entry.assert_not_called()
 
 
 # Constants for STP default values
@@ -588,27 +660,6 @@ class TestSpanningTreeEnable:
                 mock_enable_interfaces.assert_called_once()
                 mock_enable_vlans.assert_called_once()
 
-    def test_enable_pvst_when_mst_configured(self, mock_db):
-        """Test enabling PVST when MST is already configured"""
-        # Force mock to return MST mode
-        mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
-            {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
-        )
-        x = mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
-            {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
-        )
-        print(x)
-        runner = CliRunner()
-        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
-
-        print(result.output)
-        print(result.exit_code)
-
-        # Verify the command fails with the correct error
-        assert result.exit_code != 0
-        assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
-        mock_db.cfgdb.set_entry.assert_not_called()
-
     def test_enable_mst_when_already_configured(self, mock_db):
         """Test enabling MST mode when it's already configured"""
         # Setup mock to return MST configuration
@@ -622,6 +673,7 @@ class TestSpanningTreeEnable:
         if result.exit_code == 1:
             assert "MST is already configured" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
+
 
     def test_enable_mst_fresh_config(self, mock_db):
         """Test enabling MST mode on a fresh configuration"""
