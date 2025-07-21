@@ -132,6 +132,20 @@ def test_stp_disable_correct_mode():
         mock_pvst.assert_called_once()
 
 
+def test_stp_disable_correct_mode():
+    with patch('config.stp.get_global_stp_mode', return_value="mst"), \
+         patch('config.stp.disable_global_mst') as mock_pvst:
+
+        # Simulate invoking the command with "mst" mode
+        ctx = click.testing.CliRunner().invoke(stp_disable, ['mst'])
+
+        # Assert that the function ran successfully (exit code 0)
+        assert ctx.exit_code == 0
+
+        # Ensure that disable_global_mst was called
+        mock_pvst.assert_called_once()
+
+
 @patch('config.stp.check_if_global_stp_enabled')  # Mock the imported function
 @patch('config.stp.get_global_stp_mode')          # Mock the imported function
 @patch('config.stp.clicommon.pass_db')  # Mock the decorator
@@ -542,6 +556,21 @@ class TestSpanningTreeEnable:
         assert result.exit_code != 0
         assert "PVST is already configured; please disable PVST before enabling MST" in result.output
         mock_db.cfgdb.set_entry.assert_not_called()
+    
+    def test_enable_pvst_when_mst_configured(self, mock_db):
+        """Test enabling PVST mode when MST is already configured"""
+        # Override mock to return MST mode
+        mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
+            {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(spanning_tree_enable, ['pvst'], obj=mock_db)
+
+        # Assertions
+        assert result.exit_code != 0  # Command should fail
+        assert "MSTP is already configured; please disable MST before enabling PVST" in result.output
+        mock_db.cfgdb.set_entry.assert_not_called()  # No changes should be made
 
     def test_enable_pvst_when_already_configured(self, mock_db):
         """Test enabling PVST mode when it's already configured"""
