@@ -544,58 +544,53 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
 
-
-def test_stp_global_max_hops_mst_valid(mock_db):
+@patch('config.stp.check_if_global_stp_enabled')
+def test_stp_global_max_hops_mst_valid(mock_check_enabled, mock_db):
     """Test valid max_hops configuration for MST mode"""
-    # Setup mock for MST mode with no existing max_hops
+    # Setup mock for MST mode
     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
         {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
     )
+    mock_check_enabled.return_value = None  # Don't raise exception
 
     runner = CliRunner()
-    valid_hops = 20  # Within valid range
+    valid_hops = 20
     result = runner.invoke(stp_global_max_hops, [str(valid_hops)], obj=mock_db)
 
-    # Verify success
     assert result.exit_code == 0
     mock_db.cfgdb.mod_entry.assert_called_once_with(
         'STP_MST', 'GLOBAL', {'max_hops': valid_hops}
     )
 
-
-def test_stp_global_max_hops_mst_invalid_low(mock_db):
+@patch('config.stp.check_if_global_stp_enabled')
+def test_stp_global_max_hops_mst_invalid_low(mock_check_enabled, mock_db):
     """Test max_hops below minimum for MST mode"""
-    # Setup mock for MST mode
     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
         {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
     )
+    mock_check_enabled.return_value = None
 
     runner = CliRunner()
-    invalid_hops = 0  # Below minimum
-    result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
+    result = runner.invoke(stp_global_max_hops, ['0'], obj=mock_db)
 
-    # Verify failure
     assert result.exit_code != 0
     assert "STP max hops must be in range 1-40" in result.output
     mock_db.cfgdb.mod_entry.assert_not_called()
 
-
-def test_stp_global_max_hops_mst_invalid_high(mock_db):
+@patch('config.stp.check_if_global_stp_enabled')
+def test_stp_global_max_hops_mst_invalid_high(mock_check_enabled, mock_db):
     """Test max_hops above maximum for MST mode"""
-    # Setup mock for MST mode
     mock_db.cfgdb.get_entry.side_effect = lambda table, entry: (
         {'mode': 'mst'} if table == 'STP' and entry == 'GLOBAL' else {}
     )
+    mock_check_enabled.return_value = None
 
     runner = CliRunner()
-    invalid_hops = 41  # Above maximum
-    result = runner.invoke(stp_global_max_hops, [str(invalid_hops)], obj=mock_db)
+    result = runner.invoke(stp_global_max_hops, ['41'], obj=mock_db)
 
-    # Verify failure
     assert result.exit_code != 0
     assert "STP max hops must be in range 1-40" in result.output
     mock_db.cfgdb.mod_entry.assert_not_called()
-
 
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
