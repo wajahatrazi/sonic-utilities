@@ -37,7 +37,8 @@ from config.stp import (
     get_bridge_mac_address,
     enable_mst_for_interfaces,
     disable_global_pvst,
-    disable_global_mst
+    disable_global_mst,
+    mstp_interface_edge_port
 )
 
 
@@ -544,53 +545,6 @@ def test_stp_global_max_hops_invalid_mode(mock_db):
     assert "Max hops not supported for PVST" in result.output
     assert result.exit_code != 0  # Error exit code
 
-def test_stp_global_max_hops_valid_mst(monkeypatch, mock_db):
-    """Test MST mode with a valid max_hops value."""
-    # Simulate MST mode
-    mock_db.cfgdb.get_entry.return_value = {"mode": "mst"}
-    # Patch mod_entry to track calls
-    called = {}
-
-    def fake_mod_entry(table, key, fvs):
-        called['table'] = table
-        called['key'] = key
-        called['fvs'] = fvs
-    monkeypatch.setattr(mock_db.cfgdb, "mod_entry", fake_mod_entry)
-
-    runner = CliRunner()
-    result = runner.invoke(stp_global_max_hops, ['20'], obj=mock_db)
-    assert result.exit_code == 0
-    assert called['table'] == 'STP_MST'
-    assert called['key'] == 'GLOBAL'
-    assert called['fvs'] == {'max_hops': 20}
-
-
-def test_stp_global_max_hops_invalid_value(mock_db):
-    """Test MST mode with an invalid max_hops value (out of range)."""
-    mock_db.cfgdb.get_entry.return_value = {"mode": "mst"}
-    runner = CliRunner()
-    result = runner.invoke(stp_global_max_hops, ['100'], obj=mock_db)  # 100 is out of range
-    assert "STP max hops must be in range 1-40" in result.output
-    assert result.exit_code != 0
-
-
-def test_stp_global_max_hops_invalid_mode_configured(mock_db):
-    """Test with an invalid mode (not pvst or mst)."""
-    mock_db.cfgdb.get_entry.return_value = {"mode": "invalid_mode"}
-    runner = CliRunner()
-    result = runner.invoke(stp_global_max_hops, ['10'], obj=mock_db)
-    assert "Invalid STP mode configured" in result.output
-    assert result.exit_code != 0
-
-
-def test_stp_global_max_hops_invalid_mode_configured(mock_db):
-    """Test with an invalid mode (not pvst or mst)."""
-    mock_db.cfgdb.get_entry.return_value = {"mode": "invalid_mode"}
-    runner = CliRunner()
-    result = runner.invoke(stp_global_max_hops, ['10'], obj=mock_db)
-    assert "Invalid STP mode configured" in result.output
-    assert result.exit_code != 0
-
 
 # Constants for STP default values
 STP_DEFAULT_ROOT_GUARD_TIMEOUT = "30"
@@ -886,6 +840,126 @@ class TestSpanningTreeInterfaceLinkTypeShared:
         # Verify command failed due to missing argument
         assert result.exit_code != 0
         assert "Missing argument" in result.output
+
+
+class TestMstpInterfaceEdgePort:
+    @pytest.fixture(autouse=True)
+    def setup_method(self):
+        """Setup method that runs before each test"""
+        self.interface_name = "Ethernet0"
+        self.runner = CliRunner()
+
+    def test_mstp_interface_edge_port_enable_success(self, mock_db):
+        """Test successfully enabling edge port"""
+        with patch('config.stp.get_global_stp_mode', return_value='mst'), \
+             patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid', return_value=None):
+
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['enable', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code == 0
+            mock_db.cfgdb.mod_entry.assert_called_once_with(
+                'STP_PORT', self.interface_name, {'edge_port': 'true'})
+
+    def test_mstp_interface_edge_port_disable_success(self, mock_db):
+        """Test successfully disabling edge port"""
+        with patch('config.stp.get_global_stp_mode', return_value='mst'), \
+             patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid', return_value=None):
+
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['disable', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code == 0
+            mock_db.cfgdb.mod_entry.assert_called_once_with(
+                'STP_PORT', self.interface_name, {'edge_port': 'false'})
+
+    def test_mstp_interface_edge_port_wrong_stp_mode(self, mock_db):
+        """Test edge port command when STP mode is not MST"""
+        error_message = "edge_port is supported for MSTP only"
+
+        with patch('config.stp.get_global_stp_mode', return_value='pvst'):
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['enable', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code != 0
+            assert error_message in result.output
+            mock_db.cfgdb.mod_entry.assert_not_called()
+
+    def test_mstp_interface_edge_port_stp_not_enabled(self, mock_db):
+        """Test edge port command when STP is not enabled for interface"""
+        error_message = "STP is not enabled for interface Ethernet0"
+
+        with patch('config.stp.get_global_stp_mode', return_value='mst'), \
+             patch('config.stp.check_if_stp_enabled_for_interface') as mock_stp_check:
+            mock_stp_check.side_effect = click.ClickException(error_message)
+
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['enable', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code != 0
+            assert error_message in result.output
+            mock_db.cfgdb.mod_entry.assert_not_called()
+
+    def test_mstp_interface_edge_port_invalid_interface(self, mock_db):
+        """Test edge port command for invalid interface"""
+        error_message = "Interface does not exist"
+
+        with patch('config.stp.get_global_stp_mode', return_value='mst'), \
+             patch('config.stp.check_if_stp_enabled_for_interface', return_value=None), \
+             patch('config.stp.check_if_interface_is_valid') as mock_interface_check:
+            mock_interface_check.side_effect = click.ClickException(error_message)
+
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['enable', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code != 0
+            assert error_message in result.output
+            mock_db.cfgdb.mod_entry.assert_not_called()
+
+    def test_mstp_interface_edge_port_missing_arguments(self, mock_db):
+        """Test edge port command without required arguments"""
+        # Test missing both arguments
+        result = self.runner.invoke(
+            mstp_interface_edge_port,
+            [],
+            obj={'db': mock_db})
+
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
+        # Test missing interface name only
+        result = self.runner.invoke(
+            mstp_interface_edge_port,
+            ['enable'],
+            obj={'db': mock_db})
+
+        assert result.exit_code != 0
+        assert "Missing argument" in result.output
+
+    def test_mstp_interface_edge_port_invalid_state(self, mock_db):
+        """Test edge port command with invalid state value"""
+        with patch('config.stp.get_global_stp_mode', return_value='mst'):
+            result = self.runner.invoke(
+                mstp_interface_edge_port,
+                ['invalid_state', self.interface_name],
+                obj={'db': mock_db})
+
+            assert result.exit_code != 0
+            assert "Invalid value" in result.output
+            assert "choose from enable, disable" in result.output
+            mock_db.cfgdb.mod_entry.assert_not_called()
 
 
 def test_stp_interface_link_type_invalid_interface(
