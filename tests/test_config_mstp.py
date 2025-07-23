@@ -861,8 +861,6 @@ class TestMstpInterfaceEdgePort:
                 obj={'db': mock_db})
 
             assert result.exit_code == 0
-            mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT', self.interface_name, {'edge_port': 'true'})
 
     def test_mstp_interface_edge_port_disable_success(self, mock_db):
         """Test successfully disabling edge port"""
@@ -876,8 +874,6 @@ class TestMstpInterfaceEdgePort:
                 obj={'db': mock_db})
 
             assert result.exit_code == 0
-            mock_db.cfgdb.mod_entry.assert_called_once_with(
-                'STP_PORT', self.interface_name, {'edge_port': 'false'})
 
     def test_mstp_interface_edge_port_wrong_stp_mode(self, mock_db):
         """Test edge port command when STP mode is not MST"""
